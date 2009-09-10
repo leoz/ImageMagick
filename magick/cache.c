@@ -184,6 +184,7 @@ MagickExport Cache AcquirePixelCache(const unsigned long number_threads)
     ThrowFatalException(ResourceLimitFatalError,"MemoryAllocationFailed");
   (void) ResetMagickMemory(cache_info,0,sizeof(*cache_info));
   cache_info->type=UndefinedCache;
+  cache_info->mode=IOMode;
   cache_info->colorspace=RGBColorspace;
   cache_info->file=(-1);
   cache_info->id=GetMagickThreadId();
@@ -2081,6 +2082,7 @@ MagickExport Cache GetImagePixelCache(Image *image,
     time_limit;
 
   MagickBooleanType
+    destroy,
     status;
 
   if (image->debug != MagickFalse)
@@ -2095,6 +2097,7 @@ MagickExport Cache GetImagePixelCache(Image *image,
     ThrowFatalException(ResourceLimitFatalError,"TimeLimitExceeded");
   assert(image->cache != (Cache) NULL);
   cache_info=(CacheInfo *) image->cache;
+  destroy=MagickFalse;
   (void) LockSemaphoreInfo(cache_info->semaphore);
   if (cache_info->reference_count > 1)
     {
@@ -2120,13 +2123,15 @@ MagickExport Cache GetImagePixelCache(Image *image,
                 status=ClonePixelCachePixels(clone_info,cache_info,exception);
               if (status != MagickFalse)
                 {
-                  cache_info->reference_count--;
+                  destroy=MagickTrue;
                   image->cache=clone_image.cache;
                 }
             }
         }
     }
   (void) UnlockSemaphoreInfo(cache_info->semaphore);
+  if (destroy != MagickFalse)
+    DestroyPixelCache(cache_info);
   if (status != MagickFalse)
     {
       /*
@@ -3910,6 +3915,7 @@ static MagickBooleanType OpenPixelCache(Image *image,const MapMode mode,
   source_info.file=(-1);
   (void) FormatMagickString(cache_info->filename,MaxTextExtent,"%s[%ld]",
     image->filename,GetImageIndexInList(image));
+  cache_info->mode=mode;
   cache_info->rows=image->rows;
   cache_info->columns=image->columns;
   cache_info->active_index_channel=((image->storage_class == PseudoClass) ||
@@ -4169,13 +4175,13 @@ MagickExport MagickBooleanType PersistPixelCache(Image *image,
             {
               (void) CopyMagickString(cache_info->cache_filename,filename,
                 MaxTextExtent);
-              cache_info=(CacheInfo *) ReferencePixelCache(cache_info);
               *offset+=cache_info->length+pagesize-(cache_info->length %
                 pagesize);
+              (void) UnlockSemaphoreInfo(cache_info->semaphore);
+              cache_info=(CacheInfo *) ReferencePixelCache(cache_info);
               if (image->debug != MagickFalse)
                 (void) LogMagickEvent(CacheEvent,GetMagickModule(),
                   "Usurp resident persistent cache");
-              (void) UnlockSemaphoreInfo(cache_info->semaphore);
               return(MagickTrue);
             }
         }

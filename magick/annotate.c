@@ -164,9 +164,6 @@ MagickExport MagickBooleanType AnnotateImage(Image *image,
     primitive[MaxTextExtent],
     **textlist;
 
-  double
-    height;
-
   DrawInfo
     *annotate,
     *annotate_info;
@@ -193,6 +190,7 @@ MagickExport MagickBooleanType AnnotateImage(Image *image,
     metrics;
 
   unsigned long
+    height,
     number_lines;
 
   assert(image != (Image *) NULL);
@@ -235,9 +233,8 @@ MagickExport MagickBooleanType AnnotateImage(Image *image,
     annotate_info->affine.ty=geometry_info.psi-image->page.y;
     (void) CloneString(&annotate->text,textlist[i]);
     (void) GetTypeMetrics(image,annotate,&metrics);
-    height=metrics.height;
-    if (draw_info->interline_spacing != 0.0)
-      height+=draw_info->interline_spacing;
+    height=(long) (metrics.ascent-metrics.descent+
+      draw_info->interline_spacing+0.5);
     switch (annotate->gravity)
     {
       case UndefinedGravity:
@@ -397,7 +394,7 @@ MagickExport MagickBooleanType AnnotateImage(Image *image,
         undercolor_info->affine.tx=offset.x-draw_info->affine.ry*metrics.ascent;
         undercolor_info->affine.ty=offset.y-draw_info->affine.sy*metrics.ascent;
         (void) FormatMagickString(primitive,MaxTextExtent,
-          "rectangle 0,0 %g,%g",metrics.origin.x,height);
+          "rectangle 0,0 %g,%lu",metrics.origin.x,height);
         (void) CloneString(&undercolor_info->primitive,primitive);
         (void) DrawImage(image,undercolor_info);
         (void) DestroyDrawInfo(undercolor_info);
@@ -616,9 +613,6 @@ MagickExport MagickBooleanType GetMultilineTypeMetrics(Image *image,
   TypeMetric
     extent;
 
-  unsigned long
-    number_lines;
-
   assert(image != (Image *) NULL);
   assert(image->signature == MagickSignature);
   if (image->debug != MagickFalse)
@@ -652,9 +646,8 @@ MagickExport MagickBooleanType GetMultilineTypeMetrics(Image *image,
     if (extent.width > metrics->width)
       *metrics=extent;
   }
-  number_lines=(unsigned long) i;
-  metrics->height=(double) number_lines*(long) (metrics->ascent-
-    metrics->descent+0.5);
+  metrics->height=(double) (i*(unsigned long) (metrics->ascent-
+    metrics->descent+0.5)+(i-1)*draw_info->interline_spacing);
   /*
     Relinquish resources.
   */
@@ -1926,7 +1919,8 @@ static MagickBooleanType RenderX11(Image *image,const DrawInfo *draw_info,
     }
   (void) FormatMagickString(annotate_info.geometry,MaxTextExtent,
     "%lux%lu+%ld+%ld",width,height,(long) (offset->x+0.5),
-    (long) (offset->y-metrics->ascent-metrics->descent+0.5));
+    (long) (offset->y-metrics->ascent-metrics->descent+
+    draw_info->interline_spacing+0.5));
   pixel.pen_color.red=ScaleQuantumToShort(draw_info->fill.red);
   pixel.pen_color.green=ScaleQuantumToShort(draw_info->fill.green);
   pixel.pen_color.blue=ScaleQuantumToShort(draw_info->fill.blue);
