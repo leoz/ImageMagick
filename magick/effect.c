@@ -1434,6 +1434,10 @@ MagickExport Image *DespeckleImage(const Image *image,ExceptionInfo *exception)
 {
 #define DespeckleImageTag  "Despeckle/Image"
 
+  CacheView
+    *despeckle_view,
+    *image_view;
+
   Image
     *despeckle_image;
 
@@ -1451,12 +1455,8 @@ MagickExport Image *DespeckleImage(const Image *image,ExceptionInfo *exception)
     length;
 
   static const int
-    X[4]= {0, 1, 1,-1},
-    Y[4]= {1, 0, 1, 1};
-
-  CacheView
-    *despeckle_view,
-    *image_view;
+    X[4] = {0, 1, 1,-1},
+    Y[4] = {1, 0, 1, 1};
 
   /*
     Allocate despeckled image.
@@ -1499,7 +1499,7 @@ MagickExport Image *DespeckleImage(const Image *image,ExceptionInfo *exception)
   image_view=AcquireCacheView(image);
   despeckle_view=AcquireCacheView(despeckle_image);
 #if defined(MAGICKCORE_OPENMP_SUPPORT)
-  #pragma omp parallel for schedule(dynamic,1) shared(status)
+  #pragma omp parallel for schedule(dynamic,4) shared(status)
 #endif
   for (channel=0; channel <= 3; channel++)
   {
@@ -1509,6 +1509,7 @@ MagickExport Image *DespeckleImage(const Image *image,ExceptionInfo *exception)
 
     register long
       i,
+      id,
       x;
 
     register Quantum
@@ -1517,8 +1518,10 @@ MagickExport Image *DespeckleImage(const Image *image,ExceptionInfo *exception)
 
     if (status == MagickFalse)
       continue;
-    pixel=pixels[GetOpenMPThreadId()];
+    id=GetOpenMPThreadId();
+    pixel=pixels[id];
     (void) ResetMagickMemory(pixel,0,length*sizeof(*pixel));
+    buffer=buffers[id];
     j=(long) image->columns+2;
     for (y=0; y < (long) image->rows; y++)
     {
@@ -1544,7 +1547,6 @@ MagickExport Image *DespeckleImage(const Image *image,ExceptionInfo *exception)
       }
       j++;
     }
-    buffer=buffers[GetOpenMPThreadId()];
     (void) ResetMagickMemory(buffer,0,length*sizeof(*buffer));
     for (i=0; i < 4; i++)
     {
