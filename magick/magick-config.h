@@ -320,6 +320,11 @@
 #define MAGICKCORE_HAVE_GETPID  1 
 #endif
 
+/* Define to 1 if you have the `getrlimit' function. */
+#ifndef MAGICKCORE_HAVE_GETRLIMIT 
+#define MAGICKCORE_HAVE_GETRLIMIT  1 
+#endif
+
 /* Define to 1 if you have the `getrusage' function. */
 #ifndef MAGICKCORE_HAVE_GETRUSAGE 
 #define MAGICKCORE_HAVE_GETRUSAGE  1 
