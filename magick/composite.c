@@ -2369,3 +2369,182 @@ MagickExport MagickBooleanType CompositeImageChannel(Image *image,
     destination_image=DestroyImage(destination_image);
   return(status);
 }
+
+/*
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                                             %
+%                                                                             %
+%                                                                             %
+%     T e x t u r e I m a g e                                                 %
+%                                                                             %
+%                                                                             %
+%                                                                             %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%  TextureImage() repeatedly tiles the texture image across and down the image
+%  canvas.
+%
+%  The format of the TextureImage method is:
+%
+%      MagickBooleanType TextureImage(Image *image,const Image *texture)
+%
+%  A description of each parameter follows:
+%
+%    o image: the image.
+%
+%    o texture: This image is the texture to layer on the background.
+%
+*/
+MagickExport MagickBooleanType TextureImage(Image *image,const Image *texture)
+{
+#define TextureImageTag  "Texture/Image"
+
+  CacheView
+    *image_view,
+    *texture_view;
+
+  ExceptionInfo
+    *exception;
+
+  long
+    y;
+
+  MagickBooleanType
+    status;
+
+  assert(image != (Image *) NULL);
+  if (image->debug != MagickFalse)
+    (void) LogMagickEvent(TraceEvent,GetMagickModule(),"...");
+  assert(image->signature == MagickSignature);
+  if (texture == (const Image *) NULL)
+    return(MagickFalse);
+  if (SetImageStorageClass(image,DirectClass) == MagickFalse)
+    return(MagickFalse);
+  status=MagickTrue;
+  if ((image->compose != CopyCompositeOp) &&
+      ((image->compose != OverCompositeOp) || (image->matte != MagickFalse)))
+    {
+      /*
+        Tile texture onto the image background.
+      */
+#if defined(_OPENMP) && (_OPENMP >= 200203)
+  #pragma omp parallel for schedule(static,1) shared(status)
+#endif
+      for (y=0; y < (long) image->rows; y+=texture->rows)
+      {
+        register long
+          x;
+    
+        if (status == MagickFalse)
+          continue;
+        for (x=0; x < (long) image->columns; x+=texture->columns)
+        {
+          MagickBooleanType
+            thread_status;
+    
+          thread_status=CompositeImage(image,image->compose,texture,x+
+            texture->tile_offset.x,y+texture->tile_offset.y);
+          if (thread_status == MagickFalse)
+            {
+              status=thread_status;
+              break;
+            }
+        }
+        if (image->progress_monitor != (MagickProgressMonitor) NULL)
+          {
+            MagickBooleanType
+              proceed;
+    
+#if defined(_OPENMP) && (_OPENMP >= 200203)
+  #pragma omp critical (MagickCore_TextureImage)
+#endif
+            proceed=SetImageProgress(image,TextureImageTag,y,image->rows);
+            if (proceed == MagickFalse)
+              status=MagickFalse;
+          }
+      }
+      (void) SetImageProgress(image,TextureImageTag,(MagickOffsetType)
+        image->rows,image->rows);
+      return(status);
+    }
+  /*
+    Tile texture onto the image background (optimized).
+  */
+  status=MagickTrue;
+  exception=(&image->exception);
+  image_view=AcquireCacheView(image);
+  texture_view=AcquireCacheView(texture);
+#if defined(_OPENMP) && (_OPENMP >= 200203)
+#pragma omp parallel for schedule(static,1) shared(status)
+#endif
+  for (y=0; y < (long) image->rows; y++)
+  {
+    MagickBooleanType
+      sync;
+
+    register const IndexPacket
+      *texture_indexes;
+
+    register const PixelPacket
+      *p;
+
+    register IndexPacket
+      *indexes;
+
+    register long
+      x;
+
+    register PixelPacket
+      *q;
+
+    unsigned long
+      width;
+
+    if (status == MagickFalse)
+      continue;
+    p=GetCacheViewVirtualPixels(texture_view,0,y % texture->rows,
+      texture->columns,1,exception);
+    q=QueueCacheViewAuthenticPixels(image_view,0,y,image->columns,1,
+      exception);
+    if ((p == (const PixelPacket *) NULL) || (q == (PixelPacket *) NULL))
+      {
+        status=MagickFalse;
+        continue;
+      }
+    texture_indexes=GetCacheViewVirtualIndexQueue(texture_view);
+    indexes=GetCacheViewAuthenticIndexQueue(image_view);
+    for (x=0; x < (long) image->columns; x+=texture->columns)
+    {
+      width=texture->columns;
+      if ((x+width) > (long) image->columns)
+        width=image->columns-x;
+      (void) CopyMagickMemory(q,p,width*sizeof(*p));
+      if ((indexes != (IndexPacket *) NULL) &&
+          (texture_indexes != (const IndexPacket *) NULL))
+        {
+          (void) CopyMagickMemory(indexes,texture_indexes,width*
+            sizeof(*indexes));
+          indexes+=width;
+        }
+      q+=width;
+    }
+    sync=SyncCacheViewAuthenticPixels(image_view,exception);
+    if (sync == MagickFalse)
+      status=MagickFalse;
+    if (image->progress_monitor != (MagickProgressMonitor) NULL)
+      {
+        MagickBooleanType
+          proceed;
+
+#if defined(_OPENMP) && (_OPENMP >= 200203)
+#pragma omp critical (MagickCore_TextureImage)
+#endif
+        proceed=SetImageProgress(image,TextureImageTag,y,image->rows);
+        if (proceed == MagickFalse)
+          status=MagickFalse;
+      }
+  }
+  texture_view=DestroyCacheView(texture_view);
+  image_view=DestroyCacheView(image_view);
+  return(status);
+}
