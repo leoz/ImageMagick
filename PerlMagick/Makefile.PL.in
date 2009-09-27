@@ -59,7 +59,7 @@ WriteMakefile
    'DEFINE'	=> '@LFS_CPPFLAGS@ @DEFS@',     # e.g., '-DHAVE_SOMETHING' 
 
    # Header search specfication and preprocessor flags
-   'INC'	=> '-I../ -I@top_srcdir@ @CPPFLAGS@',
+   'INC'	=> '-I../ -I@top_srcdir@ @CPPFLAGS@ -I"' . $Config{'usrinc'} . '/ImageMagick"',
 
    # C compiler
    #'CC' => '@CC@',

@@ -24,6 +24,7 @@
   <coder magick="BRG" name="RGB"/>
   <coder magick="CMYKA" name="CMYK"/>
   <coder magick="C" name="RAW"/>
+  <coder magick="CAL" name="CALS"/>
   <coder magick="CR2" name="DNG"/>
   <coder magick="CRW" name="DNG"/>
   <coder magick="CUR" name="ICON"/>
@@ -50,6 +51,7 @@
   <coder magick="GBR" name="RGB"/>
   <coder magick="GRB" name="RGB"/>
   <coder magick="GRANITE" name="MAGICK"/>
+  <coder magick="GROUP4" name="TIFF"/>
   <coder magick="H" name="MAGICK"/>
   <coder magick="HTM" name="HTML"/>
   <coder magick="HTTP" name="URL"/>

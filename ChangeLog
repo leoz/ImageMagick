@@ -1,6 +1,16 @@
+2009-09-25  6.5.6-5 Cristy  <quetzlzacatenango@image...>
+  * Support -clamp option.
+  * Patch for IsMagickColorEqual() for HDRI.
+  * Permit non-percentage HSL colors (e.g. hsl(12.6316,134.58339,219.00012)).
+
+2009-09-25  6.5.6-5 Elf  <elf@ephem...>
+  * Patch to fix configure's framework's undefinedness (only if the gslib
+    tests are run).
+
 2009-09-22  6.5.6-4 Cristy  <quetzlzacatenango@image...>
   * Don't compile Huffman2DEncodeImage() unless the TIFF delegate library
     is enabled.
+  * Hue in hsl() format is 0-359 and does not use %.
 
 2009-09-21  6.5.6-3 Cristy  <quetzlzacatenango@image...>
   * Deprecate LevelImageColors(), replace with LevelColorsImage().
@@ -82,7 +92,8 @@
   * OpenMP-enable GetSimilarityMetric().
 
 2009-07-30  6.5.4-7 Bernhard Rosenkraenzer <bero@arkli...>
-  * Structure trans_values was renamed to trans_color. in PNG version 1.4.
+  * Structure trans_values was renamed to trans_color and trans was
+    renamed to trans_alpha in PNG version 1.4.
 
 2009-07-29  6.5.4-7 Cristy  <quetzlzacatenango@image...>
   * Replace color blending in DrawGradientImage() to use Composite Blend.
@@ -122,17 +133,17 @@
     normal 'Over' alpha blending behaviour, for the purposes of mask handling.
 
 2009-07-12  6.5.4-3 Anthony Thyssen <A.Thyssen@griffith...>
-  * Addition of user diffinable 'Mathematics' compose method
+  * Addition of user definable 'Mathematics' compose method
       -compose Mathematics -set option:compose:args A,B,C,D -composite
     Will implement the formula    f(Sc,Dc) = A*Sc*Dc + B*Sc + C*Dc + D
-    this lets you implement most smooth polynomal compose methods.
+    this lets you implement most smooth polynomial compose methods.
     (requested by Fred WienHaus)
 
 2009-07-11  6.5.4-3 Anthony Thyssen <A.Thyssen@griffith...>
   * Finished the recoding of Composite methods to allow easier debugging
     and faster access.
-  * Added PegtopLight compose method as an alturnative simplier Softlight
-    alturnative.  See notes and comparision to SoftLight in...
+  * Added PegtopLight compose method as an alternative simpler Softlight
+    alternative.  See notes and comparision to SoftLight in...
        http://www.pegtop.net/delphi/articles/blendmodes/softlight.htm
   * From the notes on Photoshop blend modes at
        http://www.simplefilter.de/en/basics/mixmods.html
@@ -141,7 +152,7 @@
     NOTE: 'LinearBurn' the same as 'Plus' but with the normal 'Over' blending.
 
 2009-07-10  6.5.4-3 Anthony Thyssen <A.Thyssen@griffith...>
-  * Re-coding of Composte methods HardLight, SoftLight, Overlay, LinearLight,
+  * Re-coding of Composite methods HardLight, SoftLight, Overlay, LinearLight,
     ColorBurn, ColorDodge, Multiply, Screen  to make it more readable, easier
     to debug, and directly comparable to SVG specifications.
   * Specifications changed for  SoftLight, ColorBurn, ColorDodge
