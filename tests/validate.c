@@ -1208,7 +1208,6 @@ int main(int argc,char **argv)
 {
 #define DestroyValidate() \
 { \
-  timer=DestroyTimerInfo(timer); \
   image_info=DestroyImageInfo(image_info); \
   exception=DestroyExceptionInfo(exception); \
 }
@@ -1268,8 +1267,6 @@ int main(int argc,char **argv)
   exception=AcquireExceptionInfo();
   image_info=AcquireImageInfo();
   (void) CopyMagickString(image_info->filename,ReferenceFilename,MaxTextExtent);
-  timer=AcquireTimerInfo();
-  GetTimerInfo(timer);
   for (i=1; i < (long) argc; i++)
   {
     option=argv[i];
@@ -1360,6 +1357,9 @@ int main(int argc,char **argv)
         ThrowValidateException(OptionError,"UnrecognizedOption",option)
     }
   }
+  timer=(TimerInfo *) NULL;
+  if (iterations > 1)
+    timer=AcquireTimerInfo();
   reference_image=ReadImage(image_info,exception);
   tests=0;
   fail=0;
@@ -1426,9 +1426,11 @@ int main(int argc,char **argv)
     {
       elapsed_time=GetElapsedTime(timer);
       user_time=GetUserTime(timer);
-      (void) fprintf(stderr,"Performance: %lui %gips %0.3fu %ld:%02ld\n",
+      (void) fprintf(stderr,"Performance: %lui %gips %0.3fu %ld:%02ld.%03ld\n",
         iterations,1.0*iterations/elapsed_time,user_time,(long)
-        (elapsed_time/60.0+0.5),(long) ceil(fmod(elapsed_time,60.0)));
+        (elapsed_time/60.0),(long) ceil(fmod(elapsed_time,60.0)),
+        (long) (1000.0*(elapsed_time-floor(elapsed_time))));
+      timer=DestroyTimerInfo(timer);
     }
   DestroyValidate();
   MagickCoreTerminus();
