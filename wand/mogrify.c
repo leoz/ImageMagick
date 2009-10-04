@@ -1431,23 +1431,6 @@ WandExport MagickBooleanType MogrifyImage(ImageInfo *image_info,const int argc,
             (void) CloneString(&draw_info->family,argv[i+1]);
             break;
           }
-        if (LocaleCompare("fft",option+1) == 0)
-          {
-            Image
-              *fourier_image;
-
-            /*
-              Implements the discrete Fourier transform (DFT).
-            */
-            (void) SyncImageSettings(image_info,*image);
-            fourier_image=ForwardFourierTransformImage(*image,*option == '-' ?
-              MagickTrue : MagickFalse,exception);
-            if (fourier_image == (Image *) NULL)
-              break;
-            *image=DestroyImage(*image);
-            *image=fourier_image;
-            break;
-          }
         if (LocaleCompare("fill",option+1) == 0)
           {
             ExceptionInfo
@@ -1890,8 +1873,8 @@ WandExport MagickBooleanType MogrifyImage(ImageInfo *image_info,const int argc,
                 else
                   (void) QueryMagickColor("#ffffff",&white_point,exception);
               }
-            (void) LevelColorsImageChannel(*image,channel,&black_point,&white_point,
-              *option == '+' ? MagickTrue : MagickFalse);
+            (void) LevelColorsImageChannel(*image,channel,&black_point,
+              &white_point,*option == '+' ? MagickTrue : MagickFalse);
             break;
           }
         if (LocaleCompare("linear-stretch",option+1) == 0)
@@ -7219,8 +7202,8 @@ WandExport MagickBooleanType MogrifyImageList(ImageInfo *image_info,
   status=MagickTrue;
   for (i=0; i < (long) argc; i++)
   {
-if (*images == (Image *) NULL)
-  break;
+    if (*images == (Image *) NULL)
+      break;
     option=argv[i];
     if (IsMagickOption(option) == MagickFalse)
       continue;
@@ -7462,6 +7445,23 @@ if (*images == (Image *) NULL)
       }
       case 'f':
       {
+        if (LocaleCompare("fft",option+1) == 0)
+          {
+            Image
+              *fourier_image;
+
+            /*
+              Implements the discrete Fourier transform (DFT).
+            */
+            (void) SyncImageSettings(image_info,*images);
+            fourier_image=ForwardFourierTransformImage(*images,*option == '-' ?
+              MagickTrue : MagickFalse,exception);
+            if (fourier_image == (Image *) NULL)
+              break;
+            *images=DestroyImage(*images);
+            *images=fourier_image;
+            break;
+          }
         if (LocaleCompare("flatten",option+1) == 0)
           {
             Image

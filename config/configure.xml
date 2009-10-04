@@ -8,8 +8,8 @@
 <configuremap>
   <configure name="NAME" value="ImageMagick"/>
   <configure name="LIB_VERSION" value="0x656"/>
-  <configure name="LIB_VERSION_NUMBER" value="6,5,6,7"/>
-  <configure name="RELEASE_DATE" value="2009-10-02"/>
+  <configure name="LIB_VERSION_NUMBER" value="6,5,6,8"/>
+  <configure name="RELEASE_DATE" value="2009-10-03"/>
   <configure name="CONFIGURE" value="./configure "/>
   <configure name="PREFIX" value="/usr/local"/>
   <configure name="EXEC-PREFIX" value="/usr/local"/>
@@ -19,7 +19,7 @@
   <configure name="CPPFLAGS" value="-I/usr/local/include/ImageMagick"/>
   <configure name="PCFLAGS" value="-fopenmp"/>
   <configure name="DEFS" value="-DHAVE_CONFIG_H"/>
-  <configure name="LDFLAGS" value="-L/usr/local/lib -lfreetype"/>
+  <configure name="LDFLAGS" value="-L/usr/local/lib "/>
   <configure name="LIBS" value="-lMagickCore -llcms -ltiff -lfreetype -ljpeg -lfftw3 -lfontconfig -lXext -lSM -lICE -lX11 -lXt -lbz2 -lz -lm -lgomp -lpthread -lltdl"/>
   <configure name="CXX" value="g++"/>
   <configure name="CXXFLAGS" value="-g -O2 -Wall -W -pthread"/>
