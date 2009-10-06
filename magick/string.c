@@ -1144,7 +1144,7 @@ MagickExport long FormatMagickTime(const time_t time,const size_t length,
   (void) localtime_r(&time,&local_time);
 #else
   {
-    struct tm 
+    struct tm
       *my_time;
 
     my_time=localtime(&time);
@@ -1156,7 +1156,7 @@ MagickExport long FormatMagickTime(const time_t time,const size_t length,
   (void) gmtime_r(&time,&gm_time);
 #else
   {
-    struct tm 
+    struct tm
       *my_time;
 
     my_time=gmtime(&time);
@@ -2372,123 +2372,79 @@ MagickExport void StripString(char *message)
 %                                                                             %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-%  SubstituteString() performs string substitution on a buffer, replacing the
-%  buffer with the substituted version. Buffer must be allocate from the heap.
+%  SubstituteString() performs string substitution on a string, replacing the
+%  string with the substituted version. Buffer must be allocated from the heap.
+%  If the string is matched and status, MagickTrue is returned otherwise
+%  MagickFalse.
 %
 %  The format of the SubstituteString method is:
 %
-%      MagickBooleanType SubstituteString(char **buffer,const char *search,
+%      MagickBooleanType SubstituteString(char **string,const char *search,
 %        const char *replace)
 %
 %  A description of each parameter follows:
 %
-%    o buffer: the buffer to perform replacements on. Replaced with new
+%    o string: the string to perform replacements on;  replaced with new
 %      allocation if a replacement is made.
 %
-%    o search: String to search for.
+%    o search: search for this string.
 %
-%    o replace: Replacement string.
+%    o replace: replace any matches with this string.
 %
 */
-MagickExport MagickBooleanType SubstituteString(char **buffer,
+MagickExport MagickBooleanType SubstituteString(char **string,
   const char *search,const char *replace)
 {
-  char
-    *result;
+  MagickBooleanType
+    status;
 
-  const char
-    *match,
-    *source;
-
-  MagickOffsetType
-    destination_offset;
+  register char
+    *p;
 
   size_t
-    copy_length,
-    length,
-    replace_length,
-    result_length,
-    search_length;
+    extent,
+    replace_extent,
+    search_extent;
 
-  (void) LogMagickEvent(TraceEvent,GetMagickModule(),"...");
-  assert(buffer != (char **) NULL);
-  assert(*buffer != (char *) NULL);
-  assert(search != (const char *) NULL);
-  assert(replace != (const char *) NULL);
-  if (strcmp(search,replace) == 0)
-    return(MagickTrue);
-  source=(*buffer);
-  match=strstr(source,search);
-  if (match == (char *) NULL)
-    return(MagickFalse);
-  result=(char *) NULL;
-  length=strlen(source);
-  if (~length >= MaxTextExtent)
-    result=(char *) AcquireQuantumMemory(length+MaxTextExtent,sizeof(*result));
-  if (result == (char *) NULL)
-    ThrowFatalException(ResourceLimitFatalError,"UnableToAcquireString");
-  *result='\0';
-  result_length=0;
-  destination_offset=0;
-  replace_length=strlen(replace);
-  for (search_length=strlen(search); match != (char *) NULL; )
+  ssize_t
+    offset;
+
+  status=MagickFalse;
+  search_extent=0,
+  replace_extent=0;
+  for (p=strchr(*string,*search); p != (char *) NULL; p=strchr(p+1,*search))
   {
+    if (search_extent == 0)
+      search_extent=strlen(search);
+    if (strncmp(p,search,search_extent) != 0)
+      continue;
     /*
-      Copy portion before match.
+      We found a match.
     */
-    copy_length=(size_t) (match-source);
-    if (copy_length != 0)
+    status=MagickTrue;
+    if (replace_extent == 0)
+      replace_extent=strlen(replace);
+    if (replace_extent > search_extent)
       {
-        result_length+=copy_length;
-        if ((result_length+MaxTextExtent) >= length)
-          {
-            length+=copy_length;
-            result=(char *) ResizeQuantumMemory(result,length+MaxTextExtent,
-              sizeof(*result));
-            if (result == (char *) NULL)
-              ThrowFatalException(ResourceLimitFatalError,
-                "UnableToAcquireString");
-          }
-        (void) CopyMagickString(result+destination_offset,source,copy_length+1);
-        destination_offset+=copy_length;
-      }
-    /*
-      Copy replacement.
-    */
-    result_length+=replace_length;
-    if ((result_length+MaxTextExtent) >= length)
-      {
-        length+=replace_length;
-        result=(char *) ResizeQuantumMemory(result,length+MaxTextExtent,
-          sizeof(*result));
-        if (result == (char *) NULL)
+        /*
+          Make room for the replacement string.
+        */
+        offset=p-(*string);
+        extent=strlen(*string)+replace_extent-search_extent;
+        *string=(char *) ResizeQuantumMemory(*string,extent+MaxTextExtent,
+          sizeof(*p));
+        if (*string == (char *) NULL)
           ThrowFatalException(ResourceLimitFatalError,"UnableToAcquireString");
+        p=(*string)+offset;
       }
-    (void) ConcatenateMagickString(result+destination_offset,replace,length);
-    destination_offset+=replace_length;
     /*
-      Find next match.
+      Replace string.
     */
-    source=match;
-    source+=search_length;
-    match=strstr(source,search);
+    if (search_extent != replace_extent)
+      (void) CopyMagickMemory(p+replace_extent,p+search_extent,
+        strlen(p+search_extent)+1);
+    (void) CopyMagickMemory(p,replace,replace_extent);
+    p+=replace_extent-1;
   }
-  /*
-    Copy remaining string.
-  */
-  copy_length=strlen(source);
-  result_length+=copy_length;
-  if ((result_length+MaxTextExtent) >= length)
-    {
-      length+=copy_length;
-      result=(char *) ResizeQuantumMemory(result,length+MaxTextExtent,
-        sizeof(*result));
-      if (result == (char *) NULL)
-        ThrowFatalException(ResourceLimitFatalError,"UnableToAcquireString");
-    }
-  (void) ConcatenateMagickString(result+destination_offset,source,(size_t)
-    (length+MaxTextExtent-destination_offset));
-  (void) RelinquishMagickMemory(*buffer);
-  *buffer=result;
-  return(MagickTrue);
+  return(status);
 }
