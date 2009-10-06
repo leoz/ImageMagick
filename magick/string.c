@@ -1337,18 +1337,17 @@ MagickExport long LocaleCompare(const char *p,const char *q)
   return((long) strcasecmp(p,q));
 #else
   {
-    register unsigned char
+    register int
       c,
-      d;
+      d,
+      i;
 
-    for ( ; ; )
+    for (i=0; ; i++)
     {
-      c=(unsigned char) *p;
-      d=(unsigned char) *q;
+      c=(int) p[i];
+      d=(int) q[i];
       if ((c == '\0') || (AsciiMap[c] != AsciiMap[d]))
         break;
-      p++;
-      q++;
     }
     return((long) AsciiMap[c]-AsciiMap[d]);
   }
@@ -1434,17 +1433,17 @@ MagickExport long LocaleNCompare(const char *p,const char *q,
   return((long) strncasecmp(p,q,length));
 #else
   {
-    register size_t
-      n;
-
-    register unsigned char
+    register int
       c,
       d;
 
+    register size_t
+      n;
+
     for (n=length; n != 0; n--)
     {
-      c=(unsigned char) *p;
-      d=(unsigned char) *q;
+      c=(int) *p;
+      d=(int) *q;
       if (AsciiMap[c] != AsciiMap[d])
         return(AsciiMap[c]-AsciiMap[d]);
       if (c == '\0')
@@ -2430,7 +2429,7 @@ MagickExport MagickBooleanType SubstituteString(char **string,
           Make room for the replacement string.
         */
         offset=p-(*string);
-        extent=strlen(*string)+replace_extent-search_extent;
+        extent=strlen(*string)+replace_extent-search_extent+1;
         *string=(char *) ResizeQuantumMemory(*string,extent+MaxTextExtent,
           sizeof(*p));
         if (*string == (char *) NULL)
