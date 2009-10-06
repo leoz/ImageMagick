@@ -1358,11 +1358,9 @@ MagickExport MagickBooleanType CompositeImageChannel(Image *image,
     }
     case CopyCompositeOp:
     {
-      if ((x_offset+(long) composite_image->columns) < 0)
+      if ((x_offset < 0) || (y_offset < 0))
         break;
       if ((x_offset+(long) composite_image->columns) >= (long) image->columns)
-        break;
-      if ((y_offset+(long) composite_image->rows) < 0)
         break;
       if ((y_offset+(long) composite_image->rows) >= (long) image->rows)
         break;
@@ -2514,14 +2512,14 @@ MagickExport MagickBooleanType TextureImage(Image *image,const Image *texture)
       {
         register long
           x;
-    
+
         if (status == MagickFalse)
           continue;
         for (x=0; x < (long) image->columns; x+=texture->columns)
         {
           MagickBooleanType
             thread_status;
-    
+
           thread_status=CompositeImage(image,image->compose,texture,x+
             texture->tile_offset.x,y+texture->tile_offset.y);
           if (thread_status == MagickFalse)
@@ -2534,7 +2532,7 @@ MagickExport MagickBooleanType TextureImage(Image *image,const Image *texture)
           {
             MagickBooleanType
               proceed;
-    
+
 #if defined(_OPENMP) && (_OPENMP >= 200203)
   #pragma omp critical (MagickCore_TextureImage)
 #endif
