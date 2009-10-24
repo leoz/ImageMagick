@@ -62,22 +62,12 @@
 #define PolicyFilename  "policy.xml"
 
 /*
-  Declare policy map.
-*/
-static const char
-  *PolicyMap = (const char *)
-    "<?xml version=\"1.0\"?>"
-    "<policymap>"
-    "</policymap>";
-
-/*
-  Domaindef declarations.
+  Typedef declarations.
 */
 struct _PolicyInfo
 {
   char
-    *path,
-    *name;
+    *path;
 
   PolicyDomain
     domain;
@@ -86,10 +76,12 @@ struct _PolicyInfo
     rights;
 
   char
+    *name,
     *pattern,
     *value;
 
   MagickBooleanType
+    exempt,
     stealth,
     debug;
 
@@ -99,10 +91,31 @@ struct _PolicyInfo
   unsigned long
     signature;
 };
+
+typedef struct _PolicyMapInfo
+{
+  const PolicyDomain
+    domain;
+
+  const PolicyRights
+    rights;
+
+  const char
+    *name,
+    *pattern,
+    *value;
+} PolicyMapInfo;
 
 /*
   Static declarations.
 */
+static const PolicyMapInfo
+  PolicyMap[] =
+  {
+    { UndefinedPolicyDomain, UndefinedPolicyRights, (const char *) NULL,
+      (const char *) NULL, (const char *) NULL }
+  };
+
 static LinkedListInfo
   *policy_list = (LinkedListInfo *) NULL;
 
@@ -124,17 +137,17 @@ static MagickBooleanType
 %                                                                             %
 %                                                                             %
 %                                                                             %
-+   D e s t r o y P o l i c y L i s t                                         %
++   D e s t r o y P o l i c y C o m p o n e n t                               %
 %                                                                             %
 %                                                                             %
 %                                                                             %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-%  DestroyPolicyList() deallocates memory associated with the policy list.
+%  DestroyPolicyComponent() destroys the policy component.
 %
-%  The format of the DestroyPolicyList method is:
+%  The format of the DestroyPolicyComponent method is:
 %
-%      DestroyPolicyList(void)
+%      DestroyPolicyComponent(void)
 %
 */
 
@@ -144,19 +157,22 @@ static void *DestroyPolicyElement(void *policy_info)
     *p;
 
   p=(PolicyInfo *) policy_info;
-  if (p->value != (char *) NULL)
-    p->value=DestroyString(p->value);
-  if (p->pattern != (char *) NULL)
-    p->pattern=DestroyString(p->pattern);
-  if (p->name != (char *) NULL)
-    p->name=DestroyString(p->name);
-  if (p->path != (char *) NULL)
-    p->path=DestroyString(p->path);
+  if (p->exempt == MagickFalse)
+    {
+      if (p->value != (char *) NULL)
+        p->value=DestroyString(p->value);
+      if (p->pattern != (char *) NULL)
+        p->pattern=DestroyString(p->pattern);
+      if (p->name != (char *) NULL)
+        p->name=DestroyString(p->name);
+      if (p->path != (char *) NULL)
+        p->path=DestroyString(p->path);
+    }
   p=(PolicyInfo *) RelinquishMagickMemory(p);
   return((void *) NULL);
 }
 
-MagickExport void DestroyPolicyList(void)
+MagickExport void DestroyPolicyComponent(void)
 {
   AcquireSemaphoreInfo(&policy_semaphore);
   if (policy_list != (LinkedListInfo *) NULL)
@@ -479,6 +495,31 @@ static MagickBooleanType InitializePolicyList(ExceptionInfo *exception)
 %                                                                             %
 %                                                                             %
 %                                                                             %
++   I n s t a n t i a t e P o l i c y C o m p o n e n t                       %
+%                                                                             %
+%                                                                             %
+%                                                                             %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%  InstantiatePolicyComponent() instantiates the policy component.
+%
+%  The format of the InstantiatePolicyComponent method is:
+%
+%      MagickBooleanType InstantiatePolicyComponent(void)
+%
+*/
+MagickExport MagickBooleanType InstantiatePolicyComponent(void)
+{
+  AcquireSemaphoreInfo(&policy_semaphore);
+  RelinquishSemaphoreInfo(policy_semaphore);
+  return(MagickTrue);
+}
+
+/*
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                                             %
+%                                                                             %
+%                                                                             %
 %   I s R i g h t s A u t h o r i z e d                                       %
 %                                                                             %
 %                                                                             %
@@ -786,6 +827,7 @@ static MagickBooleanType LoadPolicyList(const char *xml,const char *filename,
           ThrowFatalException(ResourceLimitFatalError,"MemoryAllocationFailed");
         (void) ResetMagickMemory(policy_info,0,sizeof(*policy_info));
         policy_info->path=ConstantString(filename);
+        policy_info->exempt=MagickFalse;
         policy_info->signature=MagickSignature;
         continue;
       }
@@ -906,9 +948,6 @@ static MagickBooleanType LoadPolicyList(const char *xml,const char *filename,
 static MagickBooleanType LoadPolicyLists(const char *filename,
   ExceptionInfo *exception)
 {
-#if defined(MAGICKCORE_EMBEDDABLE_SUPPORT)
-  return(LoadPolicyList(PolicyMap,"built-in",0,exception));
-#else
   const StringInfo
     *option;
 
@@ -918,7 +957,56 @@ static MagickBooleanType LoadPolicyLists(const char *filename,
   MagickStatusType
     status;
 
+  register long
+    i;
+
+  /*
+    Load built-in policy map.
+  */
   status=MagickFalse;
+  if (policy_list == (LinkedListInfo *) NULL)
+    {
+      policy_list=NewLinkedList(0);
+      if (policy_list == (LinkedListInfo *) NULL)
+        {
+          ThrowFileException(exception,ResourceLimitError,
+            "MemoryAllocationFailed",filename);
+          return(MagickFalse);
+        }
+    }
+  for (i=0; i < (long) (sizeof(PolicyMap)/sizeof(*PolicyMap)); i++)
+  {
+    PolicyInfo
+      *policy_info;
+
+    register const PolicyMapInfo
+      *p;
+
+    p=PolicyMap+i;
+    policy_info=(PolicyInfo *) AcquireMagickMemory(sizeof(*policy_info));
+    if (policy_info == (PolicyInfo *) NULL)
+      {
+        (void) ThrowMagickException(exception,GetMagickModule(),
+          ResourceLimitError,"MemoryAllocationFailed","`%s'",policy_info->name);
+        continue;
+      }
+    (void) ResetMagickMemory(policy_info,0,sizeof(*policy_info));
+    policy_info->path=(char *) "[built-in]";
+    policy_info->domain=p->domain;
+    policy_info->rights=p->rights;
+    policy_info->name=(char *) p->name;
+    policy_info->pattern=(char *) p->pattern;
+    policy_info->value=(char *) p->value;
+    policy_info->exempt=MagickTrue;
+    policy_info->signature=MagickSignature;
+    status=AppendValueToLinkedList(policy_list,policy_info);
+    if (status == MagickFalse)
+      (void) ThrowMagickException(exception,GetMagickModule(),
+        ResourceLimitError,"MemoryAllocationFailed","`%s'",policy_info->name);
+  }
+  /*
+    Load external policy map.
+  */
   options=GetConfigureOptions(filename,exception);
   option=(const StringInfo *) GetNextValueInLinkedList(options);
   while (option != (const StringInfo *) NULL)
@@ -928,9 +1016,5 @@ static MagickBooleanType LoadPolicyLists(const char *filename,
     option=(const StringInfo *) GetNextValueInLinkedList(options);
   }
   options=DestroyConfigureOptions(options);
-  if ((policy_list == (LinkedListInfo *) NULL) ||
-      (IsLinkedListEmpty(policy_list) != MagickFalse))
-    status|=LoadPolicyList(PolicyMap,"built-in",0,exception);
   return(status != 0 ? MagickTrue : MagickFalse);
-#endif
 }

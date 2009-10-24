@@ -184,6 +184,29 @@ MagickExport void DestroyModuleList(void)
 #endif
   instantiate_module=MagickFalse;
   RelinquishSemaphoreInfo(module_semaphore);
+}
+
+/*
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                                             %
+%                                                                             %
+%                                                                             %
++   D e s t r o y M o d u l e C o m p o n e n t                               %
+%                                                                             %
+%                                                                             %
+%                                                                             %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%  DestroyModuleComponent() destroys the module component.
+%
+%  The format of the DestroyModuleComponent method is:
+%
+%      DestroyModuleComponent(void)
+%
+*/
+MagickExport void DestroyModuleComponent(void)
+{
+  DestroyModuleList();
   DestroySemaphoreInfo(&module_semaphore);
 }
 
@@ -877,6 +900,35 @@ MagickExport MagickBooleanType InitializeModuleList(
       RelinquishSemaphoreInfo(module_semaphore);
     }
   return(module_list != (SplayTreeInfo *) NULL ? MagickTrue : MagickFalse);
+}
+
+/*
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                                             %
+%                                                                             %
+%                                                                             %
++   I n s t a n t i a t e M o d u l e C o m p o n e n t                       %
+%                                                                             %
+%                                                                             %
+%                                                                             %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%  InstantiateModuleComponent() instantiates the module component.
+%
+%  The format of the InstantiateModuleComponent method is:
+%
+%      MagickBooleanType InstantiateModuleComponent(void)
+%
+*/
+MagickExport MagickBooleanType InstantiateModuleComponent(void)
+{
+  ExceptionInfo
+    *exception;
+
+  exception=AcquireExceptionInfo();
+  InitializeModuleList(exception);
+  exception=DestroyExceptionInfo(exception);
+  return(MagickTrue);
 }
 
 /*

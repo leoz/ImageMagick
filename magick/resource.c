@@ -265,22 +265,22 @@ MagickExport MagickBooleanType AcquireMagickResource(const ResourceType type,
 %                                                                             %
 %                                                                             %
 %                                                                             %
-+   A s y n c h r o n o u s D e s t r o y M a g i c k R e s o u r c e s       %
++   A s y n c h r o n o u s D e s t r o y R e s o u r c e C o m p o n e n t   %
 %                                                                             %
 %                                                                             %
 %                                                                             %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-%  AsynchronousDestroyMagickResources() destroys the resource environment.
-%  It differs from DestroyMagickResources() in that it can be called from a
+%  AsynchronousDestroyResourceComponent() destroys the resource environment.
+%  It differs from DestroyResourceComponent() in that it can be called from a
 %  asynchronous signal handler.
 %
-%  The format of the DestroyMagickResources() method is:
+%  The format of the DestroyResourceComponent() method is:
 %
-%      DestroyMagickResources(void)
+%      DestroyResourceComponent(void)
 %
 */
-MagickExport void AsynchronousDestroyMagickResources(void)
+MagickExport void AsynchronousDestroyResourceComponent(void)
 {
   const char
     *path;
@@ -482,20 +482,20 @@ MagickExport int AcquireUniqueFileResource(char *path)
 %                                                                             %
 %                                                                             %
 %                                                                             %
-+   D e s t r o y M a g i c k R e s o u r c e s                               %
++   D e s t r o y R e s o u r c e C o m p o n e n t                           %
 %                                                                             %
 %                                                                             %
 %                                                                             %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-%  DestroyMagickResources() destroys the resource environment.
+%  DestroyResourceComponent() destroys the resource component.
 %
-%  The format of the DestroyMagickResources() method is:
+%  The format of the DestroyResourceComponent() method is:
 %
-%      DestroyMagickResources(void)
+%      DestroyResourceComponent(void)
 %
 */
-MagickExport void DestroyMagickResources(void)
+MagickExport void DestroyResourceComponent(void)
 {
   AcquireSemaphoreInfo(&resource_semaphore);
   if (temporary_resources != (SplayTreeInfo *) NULL)
@@ -657,17 +657,17 @@ MagickExport MagickSizeType GetMagickResourceLimit(const ResourceType type)
 %                                                                             %
 %                                                                             %
 %                                                                             %
-+   I n i t i a l i z e M a g i c k R e s o u r c e s                         %
++   I n s t a n t i a t e R e s o u r c e C o m p o n e n t                   %
 %                                                                             %
 %                                                                             %
 %                                                                             %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-%  InitializeMagickResources() initializes the resource environment.
+%  InstantiateResourcesComponent() instantiates the resource component.
 %
-%  The format of the InitializeMagickResources() method is:
+%  The format of the InstantiateResourcesComponent method is:
 %
-%      InitializeMagickResources(void)
+%      MagickBooleanType InstantiateResourcesComponent(void)
 %
 */
 
@@ -691,7 +691,7 @@ static inline MagickSizeType StringToSizeType(const char *string,
   return((MagickSizeType) value);
 }
 
-MagickExport void InitializeMagickResources(void)
+MagickExport MagickBooleanType InstantiateResourcesComponent(void)
 {
   char
     *limit;
@@ -707,6 +707,8 @@ MagickExport void InitializeMagickResources(void)
   /*
     Set Magick resource limits.
   */
+  AcquireSemaphoreInfo(&resource_semaphore);
+  RelinquishSemaphoreInfo(resource_semaphore);
   pagesize=GetMagickPageSize();
   pages=(-1);
 #if defined(MAGICKCORE_HAVE_SYSCONF) && defined(_SC_PHYS_PAGES)
@@ -803,6 +805,7 @@ MagickExport void InitializeMagickResources(void)
       (void) SetMagickResourceLimit(TimeResource,StringToSizeType(limit,100.0));
       limit=DestroyString(limit);
     }
+  return(MagickTrue);
 }
 
 /*

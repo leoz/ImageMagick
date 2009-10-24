@@ -72,7 +72,7 @@
 #define ColorFilename  "colors.xml"
 
 /*
-  Static declarations.
+  Typedef declarations.
 */
 typedef struct _ColorMapInfo
 {
@@ -88,7 +88,10 @@ typedef struct _ColorMapInfo
   const long
     compliance;
 } ColorMapInfo;
-
+
+/*
+  Static declarations.
+*/
 static const ColorMapInfo
   ColorMap[] =
   {
@@ -771,8 +774,7 @@ static const ColorMapInfo
     { "yellow2", 238, 238, 0, 1, X11Compliance },
     { "yellow3", 205, 205, 0, 1, X11Compliance },
     { "yellow4", 139, 139, 0, 1, X11Compliance },
-    { "YellowGreen", 154, 205, 50, 1, SVGCompliance | X11Compliance | XPMCompliance },
-    { (const char *) NULL, 0, 0, 0, 0, UndefinedCompliance }
+    { "YellowGreen", 154, 205, 50, 1, SVGCompliance | X11Compliance | XPMCompliance }
   };
 
 /*
@@ -908,17 +910,17 @@ MagickExport void ConcatenateColorComponent(const MagickPixelPacket *pixel,
 %                                                                             %
 %                                                                             %
 %                                                                             %
-+   D e s t r o y C o l o r L i s t                                           %
++   D e s t r o y C o l o r C o m p o n e n t                                 %
 %                                                                             %
 %                                                                             %
 %                                                                             %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-%  DestroyColorList() deallocates memory associated with the color list.
+%  DestroyColorComponent() destroys the color component.
 %
-%  The format of the DestroyColorList method is:
+%  The format of the DestroyColorComponent method is:
 %
-%      DestroyColorList(void)
+%      DestroyColorComponent(void)
 %
 */
 
@@ -939,7 +941,7 @@ static void *DestroyColorElement(void *color_info)
   return((void *) NULL);
 }
 
-MagickExport void DestroyColorList(void)
+MagickExport void DestroyColorComponent(void)
 {
   AcquireSemaphoreInfo(&color_semaphore);
   if (color_list != (LinkedListInfo *) NULL)
@@ -1429,6 +1431,31 @@ static MagickBooleanType InitializeColorList(ExceptionInfo *exception)
       RelinquishSemaphoreInfo(color_semaphore);
     }
   return(color_list != (LinkedListInfo *) NULL ? MagickTrue : MagickFalse);
+}
+
+/*
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                                             %
+%                                                                             %
+%                                                                             %
++   I n s t a n t i a t e C o l o r C o m p o n e n t                         %
+%                                                                             %
+%                                                                             %
+%                                                                             %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%  InstantiateColorComponent() instantiates the color component.
+%
+%  The format of the InstantiateColorComponent method is:
+%
+%      MagickBooleanType InstantiateColorComponent(void)
+%
+*/
+MagickExport MagickBooleanType InstantiateColorComponent(void)
+{
+  AcquireSemaphoreInfo(&color_semaphore);
+  RelinquishSemaphoreInfo(color_semaphore);
+  return(MagickTrue);
 }
 
 /*
@@ -2118,8 +2145,8 @@ static MagickBooleanType LoadColorLists(const char *filename,
   MagickStatusType
     status;
 
-  register const ColorMapInfo
-    *p;
+  register long
+    i;
 
   /*
     Load built-in color map.
@@ -2136,11 +2163,15 @@ static MagickBooleanType LoadColorLists(const char *filename,
         }
     }
   scale=(MagickRealType) ScaleCharToQuantum(1);
-  for (p=ColorMap; p->name != (const char *) NULL; p++)
+  for (i=0; i < (long) (sizeof(ColorMap)/sizeof(*ColorMap)); i++)
   {
     ColorInfo
       *color_info;
 
+    register const ColorMapInfo
+      *p;
+
+    p=ColorMap+i;
     color_info=(ColorInfo *) AcquireMagickMemory(sizeof(*color_info));
     if (color_info == (ColorInfo *) NULL)
       {

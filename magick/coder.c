@@ -64,7 +64,7 @@
 #define MagickCoderFilename  "coder.xml"
 
 /*
-  Static declarations.
+  Typedef declarations.
 */
 typedef struct _CoderMapInfo
 {
@@ -72,7 +72,10 @@ typedef struct _CoderMapInfo
     *magick,
     *name;
 } CoderMapInfo;
-
+
+/*
+  Static declarations.
+*/
 static const CoderMapInfo
   CoderMap[] =
   {
@@ -213,8 +216,7 @@ static const CoderMapInfo
     { "XTRNSTREAM", "XTRN" },
     { "XV", "VIFF" },
     { "Y", "RAW" },
-    { "YCbCrA", "YCbCr" },
-    { (const char *) NULL, (const char *) NULL }
+    { "YCbCrA", "YCbCr" }
  };
 
 static SemaphoreInfo
@@ -238,20 +240,20 @@ static MagickBooleanType
 %                                                                             %
 %                                                                             %
 %                                                                             %
-+   D e s t r o y C o d e r L i s t                                           %
++   D e s t r o y C o d e r C o m p o n e n t                                 %
 %                                                                             %
 %                                                                             %
 %                                                                             %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-%  DestroyCoderList() deallocates memory associated with the font list.
+%  DestroyCoderComponent() destroys the coder component.
 %
-%  The format of the DestroyCoderList method is:
+%  The format of the DestroyCoderComponent method is:
 %
-%      DestroyCoderList(void)
+%      DestroyCoderComponent(void)
 %
 */
-MagickExport void DestroyCoderList(void)
+MagickExport void DestroyCoderComponent(void)
 {
   AcquireSemaphoreInfo(&coder_semaphore);
   if (coder_list != (SplayTreeInfo *) NULL)
@@ -513,6 +515,31 @@ static MagickBooleanType InitializeCoderList(ExceptionInfo *exception)
       RelinquishSemaphoreInfo(coder_semaphore);
     }
   return(coder_list != (SplayTreeInfo *) NULL ? MagickTrue : MagickFalse);
+}
+
+/*
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                                             %
+%                                                                             %
+%                                                                             %
++   I n s t a n t i a t e C o d e r C o m p o n e n t                         %
+%                                                                             %
+%                                                                             %
+%                                                                             %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%  InstantiateCoderComponent() instantiates the coder component.
+%
+%  The format of the InstantiateCoderComponent method is:
+%
+%      MagickBooleanType InstantiateCoderComponent(void)
+%
+*/
+MagickExport MagickBooleanType InstantiateCoderComponent(void)
+{
+  AcquireSemaphoreInfo(&coder_semaphore);
+  RelinquishSemaphoreInfo(coder_semaphore);
+  return(MagickTrue);
 }
 
 /*
@@ -853,8 +880,8 @@ static MagickBooleanType LoadCoderLists(const char *filename,
   MagickStatusType
     status;
 
-  register const CoderMapInfo
-    *p;
+  register long
+    i;
 
   /*
     Load built-in coder map.
@@ -871,11 +898,15 @@ static MagickBooleanType LoadCoderLists(const char *filename,
           return(MagickFalse);
         }
     }
-  for (p=CoderMap; p->magick != (const char *) NULL; p++)
+  for (i=0; i < (long) (sizeof(CoderMap)/sizeof(*CoderMap)); i++)
   {
     CoderInfo
       *coder_info;
 
+    register const CoderMapInfo
+      *p;
+
+    p=CoderMap+i;
     coder_info=(CoderInfo *) AcquireMagickMemory(sizeof(*coder_info));
     if (coder_info == (CoderInfo *) NULL)
       {

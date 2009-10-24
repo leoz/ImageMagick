@@ -1337,6 +1337,34 @@ MagickExport void ClonePixelCacheMethods(Cache clone,const Cache cache)
 %                                                                             %
 %                                                                             %
 %                                                                             %
++   D e s t r o y C a c h e C o m p o n e n t                                 %
+%                                                                             %
+%                                                                             %
+%                                                                             %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%  DestroyCacheFaclity() destroys the cache component.
+%
+%  The format of the DestroyCacheFaclity() method is:
+%
+%      DestroyCacheFaclity(void)
+%
+*/
+MagickExport void DestroyCacheFaclity(void)
+{
+  AcquireSemaphoreInfo(&cache_semaphore);
+  if (cache_resources != (SplayTreeInfo *) NULL)
+    cache_resources=DestroySplayTree(cache_resources);
+  instantiate_cache=MagickFalse;
+  RelinquishSemaphoreInfo(cache_semaphore);
+  DestroySemaphoreInfo(&cache_semaphore);
+}
+
+/*
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                                             %
+%                                                                             %
+%                                                                             %
 +   D e s t r o y I m a g e P i x e l C a c h e                               %
 %                                                                             %
 %                                                                             %
@@ -1572,34 +1600,6 @@ MagickExport NexusInfo **DestroyPixelCacheNexus(NexusInfo **nexus_info,
   }
   nexus_info=(NexusInfo **) RelinquishAlignedMemory(nexus_info);
   return(nexus_info);
-}
-
-/*
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%                                                                             %
-%                                                                             %
-%                                                                             %
-+   D e s t r o y P i x e l C a c h e R e s o u r c e s                       %
-%                                                                             %
-%                                                                             %
-%                                                                             %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%
-%  DestroyPixelCacheResources() destroys the cache resources.
-%
-%  The format of the DestroyPixelCacheResources() method is:
-%
-%      DestroyPixelCacheResources(void)
-%
-*/
-MagickExport void DestroyPixelCacheResources(void)
-{
-  AcquireSemaphoreInfo(&cache_semaphore);
-  if (cache_resources != (SplayTreeInfo *) NULL)
-    cache_resources=DestroySplayTree(cache_resources);
-  instantiate_cache=MagickFalse;
-  RelinquishSemaphoreInfo(cache_semaphore);
-  DestroySemaphoreInfo(&cache_semaphore);
 }
 
 /*
@@ -3667,6 +3667,31 @@ MagickExport const PixelPacket *GetVirtualPixelsNexus(const Cache cache,
   if (cache_info->storage_class == UndefinedClass)
     return((PixelPacket *) NULL);
   return((const PixelPacket *) nexus_info->pixels);
+}
+
+/*
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                                             %
+%                                                                             %
+%                                                                             %
++   I n s t a n t i a t e C a c h e C o m p o n e n t                         %
+%                                                                             %
+%                                                                             %
+%                                                                             %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%  InstantiateCacheComponent() instantiates the cache component.
+%
+%  The format of the InstantiateCacheComponent method is:
+%
+%      MagickBooleanType InstantiateCacheComponent(void)
+%
+*/
+MagickExport MagickBooleanType InstantiateCacheComponent(void)
+{
+  AcquireSemaphoreInfo(&cache_semaphore);
+  RelinquishSemaphoreInfo(cache_semaphore);
+  return(MagickTrue);
 }
 
 /*

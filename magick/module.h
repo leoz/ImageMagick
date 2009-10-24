@@ -74,6 +74,7 @@ extern MagickExport const ModuleInfo
 
 extern MagickExport MagickBooleanType
   InitializeModuleList(ExceptionInfo *),
+  InstantiateModuleComponent(void),
   InvokeDynamicImageFilter(const char *,Image **,const int,const char **,
     ExceptionInfo *),
   ListModuleInfo(FILE *,ExceptionInfo *),
@@ -85,6 +86,7 @@ extern MagickExport ModuleInfo
 
 extern MagickExport void
   DestroyModuleList(void),
+  DestroyModuleComponent(void),
   RegisterStaticModules(void),
   UnregisterStaticModules(void);
 

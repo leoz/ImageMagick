@@ -149,17 +149,17 @@ static MagickBooleanType
 %                                                                             %
 %                                                                             %
 %                                                                             %
-%   D e s t r o y D e l e g a t e L i s t                                     %
+%   D e s t r o y D e l e g a t e C o m p o n e n t                           %
 %                                                                             %
 %                                                                             %
 %                                                                             %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-%  DestroyDelegateList() deallocates memory associated with the delegates list.
+%  DestroyDelegateComponent() destroys the delegate component.
 %
-%  The format of the DestroyDelegateList method is:
+%  The format of the DestroyDelegateComponent method is:
 %
-%      DestroyDelegateList(void)
+%      DestroyDelegateComponent(void)
 %
 */
 
@@ -182,7 +182,7 @@ static void *DestroyDelegate(void *delegate_info)
 }
 
 
-MagickExport void DestroyDelegateList(void)
+MagickExport void DestroyDelegateComponent(void)
 {
   AcquireSemaphoreInfo(&delegate_semaphore);
   if (delegate_list != (LinkedListInfo *) NULL)
@@ -691,6 +691,31 @@ static MagickBooleanType InitializeDelegateList(ExceptionInfo *exception)
       RelinquishSemaphoreInfo(delegate_semaphore);
     }
   return(delegate_list != (LinkedListInfo *) NULL ? MagickTrue : MagickFalse);
+}
+
+/*
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                                             %
+%                                                                             %
+%                                                                             %
++   I n s t a n t i a t e D e l e g a t e C o m p o n e n t                   %
+%                                                                             %
+%                                                                             %
+%                                                                             %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%  InstantiateDelegateComponent() instantiates the delegate component.
+%
+%  The format of the InstantiateDelegateComponent method is:
+%
+%      MagickBooleanType InstantiateDelegateComponent(void)
+%
+*/
+MagickExport MagickBooleanType InstantiateDelegateComponent(void)
+{
+  AcquireSemaphoreInfo(&delegate_semaphore);
+  RelinquishSemaphoreInfo(delegate_semaphore);
+  return(MagickTrue);
 }
 
 /*

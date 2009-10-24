@@ -36,11 +36,12 @@ extern MagickExport char
 extern MagickExport MagickBooleanType
   DefineImageRegistry(const RegistryType,const char *,ExceptionInfo *),
   DeleteImageRegistry(const char *),
+  InstantiateRegistryComponent(void),
   SetImageRegistry(const RegistryType,const char *,const void *,
     ExceptionInfo *);
 
 extern MagickExport void
-  DestroyImageRegistry(void),
+  DestroyRegistryComponent(void),
   *GetImageRegistry(const RegistryType,const char *,ExceptionInfo *),
   *RemoveImageRegistry(const char *),
   ResetImageRegistryIterator(void);

@@ -71,6 +71,12 @@ typedef struct _RegistryInfo
 */
 static SplayTreeInfo
   *registry = (SplayTreeInfo *) NULL;
+
+static SemaphoreInfo
+  *registry_semaphore = (SemaphoreInfo *) NULL;
+
+static volatile MagickBooleanType
+  instantiate_registry = MagickFalse;
 
 /*
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -157,25 +163,29 @@ MagickExport MagickBooleanType DeleteImageRegistry(const char *key)
 %                                                                             %
 %                                                                             %
 %                                                                             %
-%   D e s t r o y I m a g e R e g i s t r y                                   %
+%   D e s t r o y R e g i s t r y C o m p o n e n t                           %
 %                                                                             %
 %                                                                             %
 %                                                                             %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-%  DestroyImageRegistry() releases memory associated with the image registry.
+%  DestroyRegistryComponent() destroys the registry component.
 %
 %  The format of the DestroyDefines method is:
 %
-%      void DestroyImageRegistry(void)
+%      void DestroyRegistryComponent(void)
 %
 */
-MagickExport void DestroyImageRegistry(void)
+MagickExport void DestroyRegistryComponent(void)
 {
+  AcquireSemaphoreInfo(&registry_semaphore);
   if (IsEventLogging() != MagickFalse)
     (void) LogMagickEvent(TraceEvent,GetMagickModule(),"...");
   if (registry != (void *) NULL)
     registry=DestroySplayTree(registry);
+  instantiate_registry=MagickFalse;
+  RelinquishSemaphoreInfo(registry_semaphore);
+  DestroySemaphoreInfo(&registry_semaphore);
 }
 
 /*
@@ -297,6 +307,31 @@ MagickExport char *GetNextImageRegistry(void)
   if (registry == (void *) NULL)
     return((char *) NULL);
   return((char *) GetNextKeyInSplayTree(registry));
+}
+
+/*
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                                             %
+%                                                                             %
+%                                                                             %
++   I n s t a n t i a t e R e g i s t r y C o m p o n e n t                   %
+%                                                                             %
+%                                                                             %
+%                                                                             %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%  InstantiateRegistryComponent() instantiates the registry component.
+%
+%  The format of the InstantiateRegistryComponent method is:
+%
+%      MagickBooleanType InstantiateRegistryComponent(void)
+%
+*/
+MagickExport MagickBooleanType InstantiateRegistryComponent(void)
+{
+  AcquireSemaphoreInfo(&registry_semaphore);
+  RelinquishSemaphoreInfo(registry_semaphore);
+  return(MagickTrue);
 }
 
 /*
@@ -485,9 +520,19 @@ MagickExport MagickBooleanType SetImageRegistry(const RegistryType type,
   registry_info->type=type;
   registry_info->value=clone_value;
   registry_info->signature=MagickSignature;
-  if (registry == (void *) NULL)
-    registry=NewSplayTree(CompareSplayTreeString,RelinquishMagickMemory,
-      DestroyRegistryNode);
+  if ((registry == (SplayTreeInfo *) NULL) &&
+      (instantiate_registry == MagickFalse))
+    {
+      AcquireSemaphoreInfo(&registry_semaphore);
+      if ((registry == (SplayTreeInfo *) NULL) &&
+          (instantiate_registry == MagickFalse))
+        {
+          registry=NewSplayTree(CompareSplayTreeString,RelinquishMagickMemory,
+            DestroyRegistryNode);
+          instantiate_registry=MagickTrue;
+        }
+      RelinquishSemaphoreInfo(registry_semaphore);
+    }
   status=AddValueToSplayTree(registry,ConstantString(key),registry_info);
   return(status);
 }

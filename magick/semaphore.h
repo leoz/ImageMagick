@@ -26,6 +26,7 @@ typedef struct SemaphoreInfo
   SemaphoreInfo;
 
 extern MagickExport MagickBooleanType
+  InstantiateSemaphoreComponent(void),
   LockSemaphoreInfo(SemaphoreInfo *),
   UnlockSemaphoreInfo(SemaphoreInfo *);
 
@@ -34,9 +35,8 @@ extern MagickExport SemaphoreInfo
 
 extern MagickExport void
   AcquireSemaphoreInfo(SemaphoreInfo **),
-  DestroySemaphore(void),
+  DestroySemaphoreComponent(void),
   DestroySemaphoreInfo(SemaphoreInfo **),
-  InitializeSemaphore(void),
   RelinquishSemaphoreInfo(SemaphoreInfo *);
 
 #if defined(__cplusplus) || defined(c_plusplus)

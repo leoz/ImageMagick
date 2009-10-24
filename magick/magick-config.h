@@ -905,7 +905,7 @@
 /* Define to 1 if you have the <windows.h> header file. */
 /* #undef HAVE_WINDOWS_H */
 
-/* This value is set to 1 to indicate that the system argz facility works */
+/* This value is set to 1 to indicate that the system argz component works */
 #ifndef MAGICKCORE_HAVE_WORKING_ARGZ 
 #define MAGICKCORE_HAVE_WORKING_ARGZ  1 
 #endif
@@ -998,7 +998,7 @@
 
 /* Define to the system default library search path. */
 #ifndef MAGICKCORE_LT_DLSEARCH_PATH 
-#define MAGICKCORE_LT_DLSEARCH_PATH  "/lib64:/usr/lib64:/lib:/usr/lib:/usr/lib64/atlas:/usr/lib64/mysql:/usr/lib64/qt-3.3/lib:/usr/lib64/xulrunner-1.9.1" 
+#define MAGICKCORE_LT_DLSEARCH_PATH  "/lib64:/usr/lib64:/lib:/usr/lib:/usr/lib64/atlas:/usr/lib64/mysql:/usr/lib64/openmotif:/usr/lib64/qt-3.3/lib:/usr/lib64/xulrunner-1.9.1" 
 #endif
 
 /* The archive extension */

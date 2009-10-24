@@ -133,20 +133,20 @@ static MagickBooleanType
 %                                                                             %
 %                                                                             %
 %                                                                             %
-+   D e s t r o y T y p e L i s t                                             %
++   D e s t r o y T y p e C o m p o n e n t                                   %
 %                                                                             %
 %                                                                             %
 %                                                                             %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-%  DestroyTypeList() deallocates memory associated with the font list.
+%  DestroyTypeComponent() destroy type component.
 %
-%  The format of the DestroyTypeList method is:
+%  The format of the DestroyTypeComponent method is:
 %
-%      void DestroyTypeList(void)
+%      void DestroyTypeComponent(void)
 %
 */
-MagickExport void DestroyTypeList(void)
+MagickExport void DestroyTypeComponent(void)
 {
   AcquireSemaphoreInfo(&type_semaphore);
   if (type_list != (SplayTreeInfo *) NULL)
@@ -815,6 +815,31 @@ static MagickBooleanType InitializeTypeList(ExceptionInfo *exception)
       RelinquishSemaphoreInfo(type_semaphore);
     }
   return(type_list != (SplayTreeInfo *) NULL ? MagickTrue : MagickFalse);
+}
+
+/*
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                                             %
+%                                                                             %
+%                                                                             %
++   I n s t a n t i a t e T y p e C o m p o n e n t                           %
+%                                                                             %
+%                                                                             %
+%                                                                             %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%  InstantiateTypeComponent() instantiates the type component.
+%
+%  The format of the InstantiateTypeComponent method is:
+%
+%      MagickBooleanType InstantiateTypeComponent(void)
+%
+*/
+MagickExport MagickBooleanType InstantiateTypeComponent(void)
+{
+  AcquireSemaphoreInfo(&type_semaphore);
+  RelinquishSemaphoreInfo(type_semaphore);
+  return(MagickTrue);
 }
 
 /*

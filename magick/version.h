@@ -30,9 +30,9 @@ extern "C" {
 #define MagickLibVersion  0x657
 #define MagickLibVersionText  "6.5.7"
 #define MagickLibVersionNumber  2,0,0
-#define MagickLibSubversion  "-0"
-#define MagickReleaseDate  "2009-10-15"
-#define MagickChangeDate   "20091014"
+#define MagickLibSubversion  "-1"
+#define MagickReleaseDate  "2009-10-18"
+#define MagickChangeDate   "20091018"
 #define MagickAuthoritativeURL  "http://www.imagemagick.org"
 #define MagickHomeURL  "file:///usr/local/share/doc/ImageMagick-6.5.7/index.html"
 #if (MAGICKCORE_QUANTUM_DEPTH == 8)
@@ -52,25 +52,32 @@ extern "C" {
 #define MagickQuantumRange  "?"
 #endif
 #if !defined(MAGICKCORE_HDRI_SUPPORT)
-#define MagickHDRISupport ""
+#define MagickHDRIFeature ""
 #else
-#define MagickHDRISupport "HDRI "
+#define MagickHDRIFeature "HDRI "
 #endif
-#if !defined(_OPENMP)
-#define MagickOPENMPSupport ""
+#if !defined(MAGICKCORE_OPENMP_SUPPORT)
+#define MagickOPENMPFeature ""
 #else
-#define MagickOPENMPSupport "OpenMP "
+#define MagickOPENMPFeature "OpenMP "
 #endif
-#define MagickSupport MagickHDRISupport MagickOPENMPSupport
-#define MagickVersion MagickPackageName " " MagickLibVersionText \
-  MagickLibSubversion " " MagickReleaseDate " " MagickQuantumDepth " " \
-  MagickSupport MagickAuthoritativeURL
+#if !defined(MAGICKCORE_OPENCL_SUPPORT)
+#define MagickOPENCLFeature ""
+#else
+#define MagickOPENCLFeature "OpenCL "
+#endif
+#define MagickFeatures \
+  MagickHDRIFeature MagickOPENMPFeature MagickOPENCLFeature
+#define MagickVersion  \
+  MagickPackageName " " MagickLibVersionText MagickLibSubversion " " \
+  MagickReleaseDate " " MagickQuantumDepth " " MagickAuthoritativeURL
 
 extern MagickExport char
   *GetMagickHomeURL(void);
 
 extern MagickExport const char
   *GetMagickCopyright(void),
+  *GetMagickFeatures(void),
   *GetMagickPackageName(void),
   *GetMagickQuantumDepth(unsigned long *),
   *GetMagickQuantumRange(unsigned long *),

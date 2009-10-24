@@ -163,23 +163,48 @@ MagickExport Image *ConstituteImage(const unsigned long columns,
 %                                                                             %
 %                                                                             %
 %                                                                             %
-+   D e s t r o y C o n s t i t u t e                                         %
++   D e s t r o y C o n s t i t u t e C o m p o n e n t                       %
 %                                                                             %
 %                                                                             %
 %                                                                             %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-%  DestroyConstitute() destroys the constitute environment.
+%  DestroyConstituteComponent() destroys the constitute component.
 %
-%  The format of the DestroyConstitute method is:
+%  The format of the DestroyConstituteComponent method is:
 %
-%      DestroyConstitute(void)
+%      DestroyConstituteComponent(void)
 %
 */
-MagickExport void DestroyConstitute(void)
+MagickExport void DestroyConstituteComponent(void)
 {
   if (constitute_semaphore != (SemaphoreInfo *) NULL)
     DestroySemaphoreInfo(&constitute_semaphore);
+}
+
+/*
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                                             %
+%                                                                             %
+%                                                                             %
++   I n s t a n t i a t e C o n s t i t u t e C o m p o n e n t               %
+%                                                                             %
+%                                                                             %
+%                                                                             %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%  InstantiateConstituteComponent() instantiates the constitute component.
+%
+%  The format of the InstantiateConstituteComponent method is:
+%
+%      MagickBooleanType InstantiateConstituteComponent(void)
+%
+*/
+MagickExport MagickBooleanType InstantiateConstituteComponent(void)
+{
+  AcquireSemaphoreInfo(&constitute_semaphore);
+  RelinquishSemaphoreInfo(constitute_semaphore);
+  return(MagickTrue);
 }
 
 /*

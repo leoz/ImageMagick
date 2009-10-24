@@ -201,7 +201,7 @@ static MagickBooleanType ConvertUsage(void)
       "-gamma value         level of gamma correction",
       "-gaussian-blur geometry",
       "                     reduce image noise and reduce detail levels",
-      "-geometry geometry   perferred size or location of the image",
+      "-geometry geometry   preferred size or location of the image",
       "-identify            identify the format and characteristics of the image",
       "-ift                 implements the inverse discrete Fourier transform (DFT)",
       "-implode amount      implode image pixels about the center",
@@ -410,7 +410,8 @@ static MagickBooleanType ConvertUsage(void)
     **p;
 
   (void) printf("Version: %s\n",GetMagickVersion((unsigned long *) NULL));
-  (void) printf("Copyright: %s\n\n",GetMagickCopyright());
+  (void) printf("Copyright: %s\n",GetMagickCopyright());
+  (void) printf("Features: %s\n\n",GetMagickFeatures());
   (void) printf("Usage: %s [options ...] file [ [options ...] "
     "file ...] [options ...] file\n",GetClientName());
   (void) printf("\nImage Settings:\n");

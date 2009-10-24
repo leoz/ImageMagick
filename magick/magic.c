@@ -57,9 +57,10 @@
   Define declarations.
 */
 #define MagicFilename  "magic.xml"
+#define MagickString(magic)  (const unsigned char *) (magic), sizeof(magic)-1
 
 /*
-  Static declarations.
+  Typedef declarations.
 */
 typedef struct _MagicMapInfo
 {
@@ -75,9 +76,10 @@ typedef struct _MagicMapInfo
   const size_t
     length;
 } MagicMapInfo;
-
-#define MagickString(magic)  (const unsigned char *) (magic), sizeof(magic)-1
-
+
+/*
+  Static declarations.
+*/
 static const MagicMapInfo
   MagicMap[] =
   {
@@ -188,8 +190,7 @@ static const MagicMapInfo
     { "XEF", 0, MagickString("FOVb") },
     { "XPM", 1, MagickString("* XPM *") },
     { "XWD", 4, MagickString("\007\000\000") },
-    { "XWD", 5, MagickString("\000\000\007") },
-    { (const char *) NULL, 0, MagickString((const char *) NULL) }
+    { "XWD", 5, MagickString("\000\000\007") }
  };
 
 static LinkedListInfo
@@ -213,17 +214,17 @@ static MagickBooleanType
 %                                                                             %
 %                                                                             %
 %                                                                             %
-+   D e s t r o y M a g i c L i s t                                           %
++   D e s t r o y M a g i c C o m p o n e n t                                 %
 %                                                                             %
 %                                                                             %
 %                                                                             %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-%  DestroyMagicList() deallocates memory associated with the magic list.
+%  DestroyMagicComponent() destroys the magic component.
 %
-%  The format of the DestroyMagicList method is:
+%  The format of the DestroyMagicComponent method is:
 %
-%      DestroyMagicList(void)
+%      DestroyMagicComponent(void)
 %
 */
 
@@ -248,7 +249,7 @@ static void *DestroyMagicElement(void *magic_info)
   return((void *) NULL);
 }
 
-MagickExport void DestroyMagicList(void)
+MagickExport void DestroyMagicComponent(void)
 {
   AcquireSemaphoreInfo(&magic_semaphore);
   if (magic_list != (LinkedListInfo *) NULL)
@@ -349,8 +350,7 @@ MagickExport const MagicInfo *GetMagicInfo(const unsigned char *magic,
 %
 %    o pattern: Specifies a pointer to a text string containing a pattern.
 %
-%    o number_aliases:  This integer returns the number of aliases in the
-%      list.
+%    o number_aliases:  This integer returns the number of aliases in the list.
 %
 %    o exception: return any errors or warnings in this structure.
 %
@@ -582,6 +582,31 @@ static MagickBooleanType InitializeMagicList(ExceptionInfo *exception)
       RelinquishSemaphoreInfo(magic_semaphore);
     }
   return(magic_list != (LinkedListInfo *) NULL ? MagickTrue : MagickFalse);
+}
+
+/*
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                                             %
+%                                                                             %
+%                                                                             %
++   I n s t a n t i a t e M a g i c C o m p o n e n t                         %
+%                                                                             %
+%                                                                             %
+%                                                                             %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%  InstantiateMagicComponent() instantiates the magic component.
+%
+%  The format of the InstantiateMagicComponent method is:
+%
+%      MagickBooleanType InstantiateMagicComponent(void)
+%
+*/
+MagickExport MagickBooleanType InstantiateMagicComponent(void)
+{
+  AcquireSemaphoreInfo(&magic_semaphore);
+  RelinquishSemaphoreInfo(magic_semaphore);
+  return(MagickTrue);
 }
 
 /*
@@ -976,8 +1001,8 @@ static MagickBooleanType LoadMagicLists(const char *filename,
   MagickStatusType
     status;
 
-  register const MagicMapInfo
-    *p;
+  register long
+    i;
 
   /*
     Load built-in magic map.
@@ -993,11 +1018,15 @@ static MagickBooleanType LoadMagicLists(const char *filename,
           return(MagickFalse);
         }
     }
-  for (p=MagicMap; p->name != (const char *) NULL; p++)
+  for (i=0; i < (long) (sizeof(MagicMap)/sizeof(*MagicMap)); i++)
   {
     MagicInfo
       *magic_info;
 
+    register const MagicMapInfo
+      *p;
+
+    p=MagicMap+i;
     magic_info=(MagicInfo *) AcquireMagickMemory(sizeof(*magic_info));
     if (magic_info == (MagicInfo *) NULL)
       {

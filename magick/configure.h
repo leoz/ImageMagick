@@ -32,6 +32,7 @@ typedef struct _ConfigureInfo
     *value;
                                                                                 
   MagickBooleanType
+    exempt,
     stealth;
                                                                                 
   struct _ConfigureInfo
@@ -59,10 +60,11 @@ extern MagickExport LinkedListInfo
   *GetConfigureOptions(const char *,ExceptionInfo *);
 
 extern MagickExport MagickBooleanType
+  InstantiateConfigureComponent(void),
   ListConfigureInfo(FILE *,ExceptionInfo *);
 
 extern MagickExport void
-  DestroyConfigureList(void);
+  DestroyConfigureComponent(void);
 
 #if defined(__cplusplus) || defined(c_plusplus)
 }

@@ -112,7 +112,7 @@ static MagickBooleanType ImportUsage(void)
       "-colors value        preferred number of colors in the image",
       "-crop geometry       preferred size and location of the cropped image",
       "-encipher filename   convert plain pixels to cipher pixels",
-      "-geometry geometry   perferred size or location of the image",
+      "-geometry geometry   preferred size or location of the image",
       "-help                print program options",
       "-monochrome          transform image to black and white",
       "-negate              replace every pixel with its complementary color ",
@@ -182,7 +182,8 @@ static MagickBooleanType ImportUsage(void)
     };
 
   (void) printf("Version: %s\n",GetMagickVersion((unsigned long *) NULL));
-  (void) printf("Copyright: %s\n\n",GetMagickCopyright());
+  (void) printf("Copyright: %s\n",GetMagickCopyright());
+  (void) printf("Features: %s\n\n",GetMagickFeatures());
   (void) printf("Usage: %s [options ...] [ file ]\n",
     GetClientName());
   (void) printf("\nImage Settings:\n");
