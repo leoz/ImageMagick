@@ -240,26 +240,52 @@ static MagickBooleanType
 %                                                                             %
 %                                                                             %
 %                                                                             %
-+   D e s t r o y C o d e r C o m p o n e n t                                 %
++   C o d e r C o m p o n e n t G e n e s i s                                 %
 %                                                                             %
 %                                                                             %
 %                                                                             %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-%  DestroyCoderComponent() destroys the coder component.
+%  CoderComponentGenesis() instantiates the coder component.
 %
-%  The format of the DestroyCoderComponent method is:
+%  The format of the CoderComponentGenesis method is:
 %
-%      DestroyCoderComponent(void)
+%      MagickBooleanType CoderComponentGenesis(void)
 %
 */
-MagickExport void DestroyCoderComponent(void)
+MagickExport MagickBooleanType CoderComponentGenesis(void)
 {
   AcquireSemaphoreInfo(&coder_semaphore);
+  return(MagickTrue);
+}
+
+/*
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                                             %
+%                                                                             %
+%                                                                             %
++   C o d e r C o m p o n e n t T e r m i n u s                               %
+%                                                                             %
+%                                                                             %
+%                                                                             %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%  CoderComponentTerminus() destroys the coder component.
+%
+%  The format of the CoderComponentTerminus method is:
+%
+%      CoderComponentTerminus(void)
+%
+*/
+MagickExport void CoderComponentTerminus(void)
+{
+  if (coder_semaphore == (SemaphoreInfo *) NULL)
+    AcquireSemaphoreInfo(&coder_semaphore);
+  (void) LockSemaphoreInfo(coder_semaphore);
   if (coder_list != (SplayTreeInfo *) NULL)
     coder_list=DestroySplayTree(coder_list);
   instantiate_coder=MagickFalse;
-  RelinquishSemaphoreInfo(coder_semaphore);
+  (void) UnlockSemaphoreInfo(coder_semaphore);
   DestroySemaphoreInfo(&coder_semaphore);
 }
 
@@ -376,7 +402,7 @@ MagickExport const CoderInfo **GetCoderInfoList(const char *pattern,
   /*
     Generate coder list.
   */
-  AcquireSemaphoreInfo(&coder_semaphore);
+  (void) LockSemaphoreInfo(coder_semaphore);
   ResetSplayTreeIterator(coder_list);
   p=(const CoderInfo *) GetNextValueInSplayTree(coder_list);
   for (i=0; p != (const CoderInfo *) NULL; )
@@ -386,7 +412,7 @@ MagickExport const CoderInfo **GetCoderInfoList(const char *pattern,
       coder_map[i++]=p;
     p=(const CoderInfo *) GetNextValueInSplayTree(coder_list);
   }
-  RelinquishSemaphoreInfo(coder_semaphore);
+  (void) UnlockSemaphoreInfo(coder_semaphore);
   qsort((void *) coder_map,(size_t) i,sizeof(*coder_map),CoderInfoCompare);
   coder_map[i]=(CoderInfo *) NULL;
   *number_coders=(unsigned long) i;
@@ -461,7 +487,7 @@ MagickExport char **GetCoderList(const char *pattern,
   /*
     Generate coder list.
   */
-  AcquireSemaphoreInfo(&coder_semaphore);
+  (void) LockSemaphoreInfo(coder_semaphore);
   ResetSplayTreeIterator(coder_list);
   p=(const CoderInfo *) GetNextValueInSplayTree(coder_list);
   for (i=0; p != (const CoderInfo *) NULL; )
@@ -471,7 +497,7 @@ MagickExport char **GetCoderList(const char *pattern,
       coder_map[i++]=ConstantString(p->name);
     p=(const CoderInfo *) GetNextValueInSplayTree(coder_list);
   }
-  RelinquishSemaphoreInfo(coder_semaphore);
+  (void) UnlockSemaphoreInfo(coder_semaphore);
   qsort((void *) coder_map,(size_t) i,sizeof(*coder_map),CoderCompare);
   coder_map[i]=(char *) NULL;
   *number_coders=(unsigned long) i;
@@ -505,41 +531,18 @@ static MagickBooleanType InitializeCoderList(ExceptionInfo *exception)
   if ((coder_list == (SplayTreeInfo *) NULL) &&
       (instantiate_coder == MagickFalse))
     {
-      AcquireSemaphoreInfo(&coder_semaphore);
+      if (coder_semaphore == (SemaphoreInfo *) NULL)
+        AcquireSemaphoreInfo(&coder_semaphore);
+      (void) LockSemaphoreInfo(coder_semaphore);
       if ((coder_list == (SplayTreeInfo *) NULL) &&
           (instantiate_coder == MagickFalse))
         {
           (void) LoadCoderLists(MagickCoderFilename,exception);
           instantiate_coder=MagickTrue;
         }
-      RelinquishSemaphoreInfo(coder_semaphore);
+      (void) UnlockSemaphoreInfo(coder_semaphore);
     }
   return(coder_list != (SplayTreeInfo *) NULL ? MagickTrue : MagickFalse);
-}
-
-/*
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%                                                                             %
-%                                                                             %
-%                                                                             %
-+   I n s t a n t i a t e C o d e r C o m p o n e n t                         %
-%                                                                             %
-%                                                                             %
-%                                                                             %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%
-%  InstantiateCoderComponent() instantiates the coder component.
-%
-%  The format of the InstantiateCoderComponent method is:
-%
-%      MagickBooleanType InstantiateCoderComponent(void)
-%
-*/
-MagickExport MagickBooleanType InstantiateCoderComponent(void)
-{
-  AcquireSemaphoreInfo(&coder_semaphore);
-  RelinquishSemaphoreInfo(coder_semaphore);
-  return(MagickTrue);
 }
 
 /*

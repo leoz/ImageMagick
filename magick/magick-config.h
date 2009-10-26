@@ -12,9 +12,7 @@
 /* #undef AUTOTRACE_DELEGATE */
 
 /* Define if coders and filters are to be built as modules. */
-#ifndef MAGICKCORE_BUILD_MODULES 
-#define MAGICKCORE_BUILD_MODULES  1 
-#endif
+/* #undef BUILD_MODULES */
 
 /* Define if you have the bzip2 library */
 #ifndef MAGICKCORE_BZLIB_DELEGATE 
@@ -905,7 +903,7 @@
 /* Define to 1 if you have the <windows.h> header file. */
 /* #undef HAVE_WINDOWS_H */
 
-/* This value is set to 1 to indicate that the system argz component works */
+/* This value is set to 1 to indicate that the system argz facility works */
 #ifndef MAGICKCORE_HAVE_WORKING_ARGZ 
 #define MAGICKCORE_HAVE_WORKING_ARGZ  1 
 #endif
@@ -989,9 +987,7 @@
 /* #undef LQR_DELEGATE */
 
 /* Define if using libltdl to support dynamically loadable modules */
-#ifndef MAGICKCORE_LTDL_DELEGATE 
-#define MAGICKCORE_LTDL_DELEGATE  1 
-#endif
+/* #undef LTDL_DELEGATE */
 
 /* Define if the OS needs help to load dependent libraries for dlopen(). */
 /* #undef LTDL_DLOPEN_DEPLIBS */
@@ -1229,9 +1225,7 @@
 /* #undef WITH_DMALLOC */
 
 /* Define if you have wmflite library */
-#ifndef MAGICKCORE_WMFLITE_DELEGATE 
-#define MAGICKCORE_WMFLITE_DELEGATE  1 
-#endif
+/* #undef WMFLITE_DELEGATE */
 
 /* Define if you have wmf library */
 /* #undef WMF_DELEGATE */

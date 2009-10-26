@@ -260,7 +260,8 @@ WandExport MagickBooleanType CompareImageCommand(ImageInfo *image_info,
         {
           (void) fprintf(stdout,"Version: %s\n",
             GetMagickVersion((unsigned long *) NULL));
-          (void) fprintf(stdout,"Copyright: %s\n\n",GetMagickCopyright());
+          (void) fprintf(stdout,"Copyright: %s\n",GetMagickCopyright());
+          (void) fprintf(stdout,"Features: %s\n\n",GetMagickFeatures());
           return(MagickFalse);
         }
     }
@@ -445,6 +446,8 @@ WandExport MagickBooleanType CompareImageCommand(ImageInfo *image_info,
                 argv[i]);
             break;
           }
+        if (LocaleCompare("concurrent",option+1) == 0)
+          break;
         ThrowCompareException(OptionError,"UnrecognizedOption",option)
       }
       case 'd':
@@ -526,6 +529,17 @@ WandExport MagickBooleanType CompareImageCommand(ImageInfo *image_info,
               dissimilarity_threshold=DefaultDissimilarityThreshold;
             else
               dissimilarity_threshold=atof(argv[i]);
+            break;
+          }
+        if (LocaleCompare("duration",option+1) == 0)
+          {
+            if (*option == '+')
+              break;
+            i++;
+            if (i == (long) (argc-1))
+              ThrowCompareException(OptionError,"MissingArgument",option);
+            if (IsGeometry(argv[i]) == MagickFalse)
+              ThrowCompareInvalidArgumentException(option,argv[i]);
             break;
           }
         ThrowCompareException(OptionError,"UnrecognizedOption",option)
@@ -864,7 +878,8 @@ WandExport MagickBooleanType CompareImageCommand(ImageInfo *image_info,
           {
             (void) fprintf(stdout,"Version: %s\n",
               GetMagickVersion((unsigned long *) NULL));
-            (void) fprintf(stdout,"Copyright: %s\n\n",GetMagickCopyright());
+            (void) fprintf(stdout,"Copyright: %s\n",GetMagickCopyright());
+            (void) fprintf(stdout,"Features: %s\n\n",GetMagickFeatures());
             break;
           }
         if (LocaleCompare("virtual-pixel",option+1) == 0)

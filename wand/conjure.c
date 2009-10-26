@@ -199,6 +199,8 @@ WandExport MagickBooleanType ConjureImageCommand(ImageInfo *image_info,
     option=argv[i];
     if (IsMagickOption(option) != MagickFalse)
       {
+        if (LocaleCompare("concurrent",option+1) == 0)
+          break;
         if (LocaleCompare("debug",option+1) == 0)
           {
             long
@@ -214,6 +216,17 @@ WandExport MagickBooleanType ConjureImageCommand(ImageInfo *image_info,
               ThrowConjureException(OptionError,"UnrecognizedEventType",
                 argv[i]);
             (void) SetLogEventMask(argv[i]);
+            continue;
+          }
+        if (LocaleCompare("duration",option+1) == 0)
+          {
+            if (*option == '+')
+              break;
+            i++;
+            if (i == (long) (argc-1))
+              ThrowConjureException(OptionError,"MissingArgument",option);
+            if (IsGeometry(argv[i]) == MagickFalse)
+              ThrowConjureInvalidArgumentException(option,argv[i]);
             continue;
           }
         if ((LocaleCompare("help",option+1) == 0) ||
@@ -261,7 +274,8 @@ WandExport MagickBooleanType ConjureImageCommand(ImageInfo *image_info,
           {
             (void) fprintf(stdout,"Version: %s\n",
               GetMagickVersion((unsigned long *) NULL));
-            (void) fprintf(stdout,"Copyright: %s\n\n",GetMagickCopyright());
+            (void) fprintf(stdout,"Copyright: %s\n",GetMagickCopyright());
+            (void) fprintf(stdout,"Features: %s\n\n",GetMagickFeatures());
             return(MagickFalse);
           }
         /*

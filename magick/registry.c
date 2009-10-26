@@ -163,36 +163,6 @@ MagickExport MagickBooleanType DeleteImageRegistry(const char *key)
 %                                                                             %
 %                                                                             %
 %                                                                             %
-%   D e s t r o y R e g i s t r y C o m p o n e n t                           %
-%                                                                             %
-%                                                                             %
-%                                                                             %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%
-%  DestroyRegistryComponent() destroys the registry component.
-%
-%  The format of the DestroyDefines method is:
-%
-%      void DestroyRegistryComponent(void)
-%
-*/
-MagickExport void DestroyRegistryComponent(void)
-{
-  AcquireSemaphoreInfo(&registry_semaphore);
-  if (IsEventLogging() != MagickFalse)
-    (void) LogMagickEvent(TraceEvent,GetMagickModule(),"...");
-  if (registry != (void *) NULL)
-    registry=DestroySplayTree(registry);
-  instantiate_registry=MagickFalse;
-  RelinquishSemaphoreInfo(registry_semaphore);
-  DestroySemaphoreInfo(&registry_semaphore);
-}
-
-/*
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%                                                                             %
-%                                                                             %
-%                                                                             %
 %   G e t I m a g e R e g i s t r y                                           %
 %                                                                             %
 %                                                                             %
@@ -314,24 +284,55 @@ MagickExport char *GetNextImageRegistry(void)
 %                                                                             %
 %                                                                             %
 %                                                                             %
-+   I n s t a n t i a t e R e g i s t r y C o m p o n e n t                   %
++   R e g i s t r y C o m p o n e n t G e n e s i s                           %
 %                                                                             %
 %                                                                             %
 %                                                                             %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-%  InstantiateRegistryComponent() instantiates the registry component.
+%  RegistryComponentGenesis() instantiates the registry component.
 %
-%  The format of the InstantiateRegistryComponent method is:
+%  The format of the RegistryComponentGenesis method is:
 %
-%      MagickBooleanType InstantiateRegistryComponent(void)
+%      MagickBooleanType RegistryComponentGenesis(void)
 %
 */
-MagickExport MagickBooleanType InstantiateRegistryComponent(void)
+MagickExport MagickBooleanType RegistryComponentGenesis(void)
 {
   AcquireSemaphoreInfo(&registry_semaphore);
-  RelinquishSemaphoreInfo(registry_semaphore);
   return(MagickTrue);
+}
+
+/*
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                                             %
+%                                                                             %
+%                                                                             %
+%   R e g i s t r y C o m p o n e n t T e r m i n u s                         %
+%                                                                             %
+%                                                                             %
+%                                                                             %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%  RegistryComponentTerminus() destroys the registry component.
+%
+%  The format of the DestroyDefines method is:
+%
+%      void RegistryComponentTerminus(void)
+%
+*/
+MagickExport void RegistryComponentTerminus(void)
+{
+  if (registry_semaphore == (SemaphoreInfo *) NULL)
+    AcquireSemaphoreInfo(&registry_semaphore);
+  (void) LockSemaphoreInfo(registry_semaphore);
+  if (IsEventLogging() != MagickFalse)
+    (void) LogMagickEvent(TraceEvent,GetMagickModule(),"...");
+  if (registry != (void *) NULL)
+    registry=DestroySplayTree(registry);
+  instantiate_registry=MagickFalse;
+  (void) UnlockSemaphoreInfo(registry_semaphore);
+  DestroySemaphoreInfo(&registry_semaphore);
 }
 
 /*
@@ -523,7 +524,9 @@ MagickExport MagickBooleanType SetImageRegistry(const RegistryType type,
   if ((registry == (SplayTreeInfo *) NULL) &&
       (instantiate_registry == MagickFalse))
     {
-      AcquireSemaphoreInfo(&registry_semaphore);
+      if (registry_semaphore == (SemaphoreInfo *) NULL)
+        AcquireSemaphoreInfo(&registry_semaphore);
+      (void) LockSemaphoreInfo(registry_semaphore);
       if ((registry == (SplayTreeInfo *) NULL) &&
           (instantiate_registry == MagickFalse))
         {
@@ -531,7 +534,7 @@ MagickExport MagickBooleanType SetImageRegistry(const RegistryType type,
             DestroyRegistryNode);
           instantiate_registry=MagickTrue;
         }
-      RelinquishSemaphoreInfo(registry_semaphore);
+      (void) UnlockSemaphoreInfo(registry_semaphore);
     }
   status=AddValueToSplayTree(registry,ConstantString(key),registry_info);
   return(status);

@@ -311,7 +311,8 @@ WandExport MagickBooleanType AnimateImageCommand(ImageInfo *image_info,
         {
           (void) fprintf(stdout,"Version: %s\n",
             GetMagickVersion((unsigned long *) NULL));
-          (void) fprintf(stdout,"Copyright: %s\n\n",GetMagickCopyright());
+          (void) fprintf(stdout,"Copyright: %s\n",GetMagickCopyright());
+          (void) fprintf(stdout,"Features: %s\n\n",GetMagickFeatures());
           return(MagickFalse);
         }
     }
@@ -633,6 +634,8 @@ WandExport MagickBooleanType AnimateImageCommand(ImageInfo *image_info,
                 argv[i]);
             break;
           }
+        if (LocaleCompare("concurrent",option+1) == 0)
+          break;
         if (LocaleCompare("crop",option+1) == 0)
           {
             if (*option == '+')
@@ -766,6 +769,17 @@ WandExport MagickBooleanType AnimateImageCommand(ImageInfo *image_info,
                 argv[i]);
             quantize_info->dither=MagickTrue;
             quantize_info->dither_method=(DitherMethod) method;
+            break;
+          }
+        if (LocaleCompare("duration",option+1) == 0)
+          {
+            if (*option == '+')
+              break;
+            i++;
+            if (i == (long) (argc-1))
+              ThrowAnimateException(OptionError,"MissingArgument",option);
+            if (IsGeometry(argv[i]) == MagickFalse)
+              ThrowAnimateInvalidArgumentException(option,argv[i]);
             break;
           }
         ThrowAnimateException(OptionError,"UnrecognizedOption",option);
@@ -1349,7 +1363,8 @@ WandExport MagickBooleanType AnimateImageCommand(ImageInfo *image_info,
           {
             (void) fprintf(stdout,"Version: %s\n",
               GetMagickVersion((unsigned long *) NULL));
-            (void) fprintf(stdout,"Copyright: %s\n\n",GetMagickCopyright());
+            (void) fprintf(stdout,"Copyright: %s\n",GetMagickCopyright());
+            (void) fprintf(stdout,"Features: %s\n\n",GetMagickFeatures());
             break;
           }
         if (LocaleCompare("virtual-pixel",option+1) == 0)

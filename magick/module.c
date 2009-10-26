@@ -175,7 +175,7 @@ MagickExport void DestroyModuleList(void)
   /*
     Destroy magick modules.
   */
-  AcquireSemaphoreInfo(&module_semaphore);
+  (void) LockSemaphoreInfo(module_semaphore);
 #if defined(MAGICKCORE_MODULES_SUPPORT)
   if (module_list != (SplayTreeInfo *) NULL)
     module_list=DestroySplayTree(module_list);
@@ -183,31 +183,7 @@ MagickExport void DestroyModuleList(void)
     (void) lt_dlexit();
 #endif
   instantiate_module=MagickFalse;
-  RelinquishSemaphoreInfo(module_semaphore);
-}
-
-/*
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%                                                                             %
-%                                                                             %
-%                                                                             %
-+   D e s t r o y M o d u l e C o m p o n e n t                               %
-%                                                                             %
-%                                                                             %
-%                                                                             %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%
-%  DestroyModuleComponent() destroys the module component.
-%
-%  The format of the DestroyModuleComponent method is:
-%
-%      DestroyModuleComponent(void)
-%
-*/
-MagickExport void DestroyModuleComponent(void)
-{
-  DestroyModuleList();
-  DestroySemaphoreInfo(&module_semaphore);
+  (void) UnlockSemaphoreInfo(module_semaphore);
 }
 
 /*
@@ -256,10 +232,10 @@ MagickExport ModuleInfo *GetModuleInfo(const char *tag,ExceptionInfo *exception)
       if (LocaleCompare(tag,"*") == 0)
         (void) OpenModules(exception);
 #endif
-      AcquireSemaphoreInfo(&module_semaphore);
+      (void) LockSemaphoreInfo(module_semaphore);
       ResetSplayTreeIterator(module_list);
       p=(ModuleInfo *) GetNextValueInSplayTree(module_list);
-      RelinquishSemaphoreInfo(module_semaphore);
+      (void) UnlockSemaphoreInfo(module_semaphore);
       return(p);
     }
   return((ModuleInfo *) GetValueFromSplayTree(module_list,tag));
@@ -343,7 +319,7 @@ MagickExport const ModuleInfo **GetModuleInfoList(const char *pattern,
   /*
     Generate module list.
   */
-  AcquireSemaphoreInfo(&module_semaphore);
+  (void) LockSemaphoreInfo(module_semaphore);
   ResetSplayTreeIterator(module_list);
   p=(const ModuleInfo *) GetNextValueInSplayTree(module_list);
   for (i=0; p != (const ModuleInfo *) NULL; )
@@ -353,7 +329,7 @@ MagickExport const ModuleInfo **GetModuleInfoList(const char *pattern,
       modules[i++]=p;
     p=(const ModuleInfo *) GetNextValueInSplayTree(module_list);
   }
-  RelinquishSemaphoreInfo(module_semaphore);
+  (void) UnlockSemaphoreInfo(module_semaphore);
   qsort((void *) modules,(size_t) i,sizeof(*modules),ModuleInfoCompare);
   modules[i]=(ModuleInfo *) NULL;
   *number_modules=(unsigned long) i;
@@ -871,7 +847,9 @@ MagickExport MagickBooleanType InitializeModuleList(
   if ((module_list == (SplayTreeInfo *) NULL) &&
       (instantiate_module == MagickFalse))
     {
-      AcquireSemaphoreInfo(&module_semaphore);
+      if (module_semaphore == (SemaphoreInfo *) NULL)
+        AcquireSemaphoreInfo(&module_semaphore);
+      (void) LockSemaphoreInfo(module_semaphore);
       if ((module_list == (SplayTreeInfo *) NULL) &&
           (instantiate_module == MagickFalse))
         {
@@ -897,38 +875,9 @@ MagickExport MagickBooleanType InitializeModuleList(
               "UnableToInitializeModuleLoader");
           instantiate_module=MagickTrue;
         }
-      RelinquishSemaphoreInfo(module_semaphore);
+      (void) UnlockSemaphoreInfo(module_semaphore);
     }
   return(module_list != (SplayTreeInfo *) NULL ? MagickTrue : MagickFalse);
-}
-
-/*
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%                                                                             %
-%                                                                             %
-%                                                                             %
-+   I n s t a n t i a t e M o d u l e C o m p o n e n t                       %
-%                                                                             %
-%                                                                             %
-%                                                                             %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%
-%  InstantiateModuleComponent() instantiates the module component.
-%
-%  The format of the InstantiateModuleComponent method is:
-%
-%      MagickBooleanType InstantiateModuleComponent(void)
-%
-*/
-MagickExport MagickBooleanType InstantiateModuleComponent(void)
-{
-  ExceptionInfo
-    *exception;
-
-  exception=AcquireExceptionInfo();
-  InitializeModuleList(exception);
-  exception=DestroyExceptionInfo(exception);
-  return(MagickTrue);
 }
 
 /*
@@ -1133,6 +1082,62 @@ MagickExport MagickBooleanType ListModuleInfo(FILE *file,
   module_info=(const ModuleInfo **)
     RelinquishMagickMemory((void *) module_info);
   return(MagickTrue);
+}
+
+/*
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                                             %
+%                                                                             %
+%                                                                             %
++   M o d u l e C o m p o n e n t G e n e s i s                               %
+%                                                                             %
+%                                                                             %
+%                                                                             %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%  ModuleComponentGenesis() instantiates the module component.
+%
+%  The format of the ModuleComponentGenesis method is:
+%
+%      MagickBooleanType ModuleComponentGenesis(void)
+%
+*/
+MagickExport MagickBooleanType ModuleComponentGenesis(void)
+{
+  ExceptionInfo
+    *exception;
+
+  AcquireSemaphoreInfo(&module_semaphore);
+  exception=AcquireExceptionInfo();
+  InitializeModuleList(exception);
+  exception=DestroyExceptionInfo(exception);
+  return(MagickTrue);
+}
+
+/*
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                                             %
+%                                                                             %
+%                                                                             %
++   M o d u l e C o m p o n e n t T e r m i n u s                             %
+%                                                                             %
+%                                                                             %
+%                                                                             %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%  ModuleComponentTerminus() destroys the module component.
+%
+%  The format of the ModuleComponentTerminus method is:
+%
+%      ModuleComponentTerminus(void)
+%
+*/
+MagickExport void ModuleComponentTerminus(void)
+{
+  if (module_semaphore == (SemaphoreInfo *) NULL)
+    AcquireSemaphoreInfo(&module_semaphore);
+  DestroyModuleList();
+  DestroySemaphoreInfo(&module_semaphore);
 }
 
 /*

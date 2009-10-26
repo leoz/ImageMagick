@@ -1577,7 +1577,6 @@ MagickExport void XClientMessage(Display *display,const Window window,
 %
 %    o target_window: Specifies the window to find a WM_STATE property.
 %
-%
 */
 static Window XClientWindow(Display *display,Window target_window)
 {
@@ -1615,6 +1614,29 @@ static Window XClientWindow(Display *display,Window target_window)
   if (client_window == (Window) NULL)
     return(target_window);
   return(client_window);
+}
+
+/*
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                                             %
+%                                                                             %
+%                                                                             %
++   X C o m p o n e n t T e r m i n u s                                       %
+%                                                                             %
+%                                                                             %
+%                                                                             %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%  XComponentTerminus() destroys the module component.
+%
+%  The format of the XComponentTerminus method is:
+%
+%      XComponentTerminus(void)
+%
+*/
+MagickExport void XComponentTerminus(void)
+{
+  DestroyXResources();
 }
 
 /*
@@ -1783,29 +1805,6 @@ MagickExport void XDelay(Display *display,const unsigned long milliseconds)
 #else
 # error "Time delay method not defined."
 #endif
-}
-
-/*
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%                                                                             %
-%                                                                             %
-%                                                                             %
-+   D e s t r o y X C o m p o n e n t                                         %
-%                                                                             %
-%                                                                             %
-%                                                                             %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%
-%  DestroyXComponent() destroys the module component.
-%
-%  The format of the DestroyXComponent method is:
-%
-%      DestroyXComponent(void)
-%
-*/
-MagickExport void DestroyXComponent(void)
-{
-  DestroyXResources();
 }
 
 /*
@@ -5254,29 +5253,6 @@ MagickExport XWindows *XInitializeWindows(Display *display,
           XWindowByName(display,root_window,resource_info->window_group);
     }
   return(windows);
-}
-
-/*
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%                                                                             %
-%                                                                             %
-%                                                                             %
-+   I n s t a n t i a t e X C o m p o n e n t                                 %
-%                                                                             %
-%                                                                             %
-%                                                                             %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%
-%  InstantiateXComponent() instantiates the X component.
-%
-%  The format of the InstantiateXComponent method is:
-%
-%      MagickBooleanType InstantiateXComponent(void)
-%
-*/
-MagickExport MagickBooleanType InstantiateXComponent(void)
-{
-  return(MagickTrue);
 }
 
 /*
@@ -9236,6 +9212,7 @@ MagickExport void XUserPreferences(XResourceInfo *resource_info)
     specifier[MaxTextExtent];
 
   const char
+    *client_name,
     *value;
 
   XrmDatabase
@@ -9245,46 +9222,42 @@ MagickExport void XUserPreferences(XResourceInfo *resource_info)
     Save user preferences to the client configuration file.
   */
   assert(resource_info != (XResourceInfo *) NULL);
+  client_name=GetClientName();
   preferences_database=XrmGetStringDatabase("");
-  (void) FormatMagickString(specifier,MaxTextExtent,"%s.backdrop",
-    GetClientName());
+  (void) FormatMagickString(specifier,MaxTextExtent,"%s.backdrop",client_name);
   value=resource_info->backdrop ? "True" : "False";
   XrmPutStringResource(&preferences_database,specifier,(char *) value);
-  (void) FormatMagickString(specifier,MaxTextExtent,"%s.colormap",
-    GetClientName());
+  (void) FormatMagickString(specifier,MaxTextExtent,"%s.colormap",client_name);
   value=resource_info->colormap == SharedColormap ? "Shared" : "Private";
   XrmPutStringResource(&preferences_database,specifier,(char *) value);
   (void) FormatMagickString(specifier,MaxTextExtent,"%s.confirmExit",
-    GetClientName());
+    client_name);
   value=resource_info->confirm_exit ? "True" : "False";
   XrmPutStringResource(&preferences_database,specifier,(char *) value);
   (void) FormatMagickString(specifier,MaxTextExtent,"%s.confirmEdit",
-    GetClientName());
+    client_name);
   value=resource_info->confirm_edit ? "True" : "False";
   XrmPutStringResource(&preferences_database,specifier,(char *) value);
   (void) FormatMagickString(specifier,MaxTextExtent,"%s.displayWarnings",
-    GetClientName());
+    client_name);
   value=resource_info->display_warnings ? "True" : "False";
   XrmPutStringResource(&preferences_database,specifier,(char *) value);
-  (void) FormatMagickString(specifier,MaxTextExtent,"%s.dither",
-    GetClientName());
+  (void) FormatMagickString(specifier,MaxTextExtent,"%s.dither",client_name);
   value=resource_info->quantize_info->dither ? "True" : "False";
   XrmPutStringResource(&preferences_database,specifier,(char *) value);
   (void) FormatMagickString(specifier,MaxTextExtent,"%s.gammaCorrect",
-    GetClientName());
+    client_name);
   value=resource_info->gamma_correct ? "True" : "False";
   XrmPutStringResource(&preferences_database,specifier,(char *) value);
-  (void) FormatMagickString(specifier,MaxTextExtent,"%s.undoCache",
-    GetClientName());
+  (void) FormatMagickString(specifier,MaxTextExtent,"%s.undoCache",client_name);
   (void) FormatMagickString(cache,MaxTextExtent,"%lu",
     resource_info->undo_cache);
   XrmPutStringResource(&preferences_database,specifier,cache);
-  (void) FormatMagickString(specifier,MaxTextExtent,"%s.usePixmap",
-    GetClientName());
+  (void) FormatMagickString(specifier,MaxTextExtent,"%s.usePixmap",client_name);
   value=resource_info->use_pixmap ? "True" : "False";
   XrmPutStringResource(&preferences_database,specifier,(char *) value);
   (void) FormatMagickString(filename,MaxTextExtent,"%s%src",
-    X11_PREFERENCES_PATH,GetClientName());
+    X11_PREFERENCES_PATH,client_name);
   ExpandFilename(filename);
   XrmPutFileDatabase(preferences_database,filename);
 #endif
@@ -9651,6 +9624,29 @@ MagickExport Image *XImportImage(const ImageInfo *image_info,
   return((Image *) NULL);
 }
 #endif
+
+/*
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                                             %
+%                                                                             %
+%                                                                             %
++   X C o m p o n e n t G e n e s i s                                         %
+%                                                                             %
+%                                                                             %
+%                                                                             %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%  XComponentGenesis() instantiates the X component.
+%
+%  The format of the XComponentGenesis method is:
+%
+%      MagickBooleanType XComponentGenesis(void)
+%
+*/
+MagickExport MagickBooleanType XComponentGenesis(void)
+{
+  return(MagickTrue);
+}
 
 /*
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

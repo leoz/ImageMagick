@@ -117,18 +117,17 @@ EOF
    
   my $inc = join ' ', map "-I\"$_\"", @incdir;
   my $lib = join ' ', map "-L\"$_\"", @libdir;
-  $lib .= " -lMagickCore";
 
-  return ($inc, $lib, '-O2');
+  return ($inc, $lib);
 }
 
 
 # Compute test specification
 my $delegate_tests='t/*.t';
 my $delegate;
-foreach $delegate (qw/bzlib djvu fftw fontconfig freetype jpeg jng jp2 lcms mpeg png rsvg tiff x11 xml wmf zlib/) {
+foreach $delegate (qw/bzlib djvu fftw fontconfig freetype jpeg jng jp2 lcms mpeg png rsvg tiff x11 xml zlib/) {
   if ( -d "t/$delegate" ) {
-    if ($delegate =~ /x11/) {
+    if ( defined($ENV{'DISPLAY'}) && ($^O ne 'MSWin32') ) {
       if ( defined $ENV{'DISPLAY'} ) {
         $delegate_tests .= " t/$delegate/*.t";
       }
@@ -139,13 +138,23 @@ foreach $delegate (qw/bzlib djvu fftw fontconfig freetype jpeg jng jp2 lcms mpeg
 }
 
 # defaults for LIBS & INC & CCFLAGS params that we later pass to Writemakefile
-my $INC_magick = '-I../ -I.. -I/usr/include/freetype2 -I/usr/include/libxml2 -I"' . $Config{'usrinc'} . '/ImageMagick"';
+my $INC_magick = '-I../ -I.. -I/usr/include/cairo -I/usr/include/pixman-1 -I/usr/include/freetype2 -I/usr/include/libpng12 -I/usr/include/librsvg-2 -I/usr/include/glib-2.0 -I/usr/lib64/glib-2.0/include -I/usr/include/gtk-2.0 -I/usr/include/cairo -I/usr/include/pixman-1 -I/usr/include/freetype2 -I/usr/include/libpng12 -I/usr/include/freetype2 -I/usr/include/libxml2 -I"' . $Config{'usrinc'} . '/ImageMagick"';
 my $LIBS_magick = '-L../magick/.libs -lMagickCore -lperl -lm';
 my $CCFLAGS_magick = "$Config{'ccflags'} -fopenmp -g -O2 -Wall -W -pthread";
+my $LDFLAGS_magick   = "-L../magick/.libs -lMagickCore $Config{'ldflags'} ";
+my $LDDLFLAGS_magick = "-L../magick/.libs -lMagickCore $Config{'lddlflags'} ";
 
 if (($^O eq 'MSWin32') && ($Config{cc} =~ /gcc/)) {
-  # a special setup for strawberry perl
-  ($INC_magick, $LIBS_magick, $CCFLAGS_magick) = AutodetectWin32gcc();
+  my($Ipaths, $Lpaths) = AutodetectWin32gcc();
+
+  #
+  # Setup for strawberry perl.
+  #
+  $INC_magick       = "$Ipaths";
+  $LIBS_magick      = "-lMagickCore";
+  $CCFLAGS_magick   = "$Config{'ccflags'}";
+  $LDFLAGS_magick   = "$Config{'ldflags'} $Lpaths ";
+  $LDDLFLAGS_magick = "$Config{'lddlflags'} $Lpaths ";
 }
 
 # See lib/ExtUtils/MakeMaker.pm for details of how to influence
@@ -174,7 +183,7 @@ WriteMakefile
    #'CC' => 'gcc -std=gnu99',
 
    # C pre-processor flags (e.g. -I & -D options)
-   # 'CPPFLAGS' => "$Config{'cppflags'} -I/usr/include/freetype2 -I/usr/include/libxml2",
+   # 'CPPFLAGS' => "$Config{'cppflags'} -I/usr/include/cairo -I/usr/include/pixman-1 -I/usr/include/freetype2 -I/usr/include/libpng12 -I/usr/include/librsvg-2 -I/usr/include/glib-2.0 -I/usr/lib64/glib-2.0/include -I/usr/include/gtk-2.0 -I/usr/include/cairo -I/usr/include/pixman-1 -I/usr/include/freetype2 -I/usr/include/libpng12 -I/usr/include/freetype2 -I/usr/include/libxml2",
 
    # C compiler flags (e.g. -O -g)
    'CCFLAGS' => $CCFLAGS_magick,
@@ -183,10 +192,10 @@ WriteMakefile
    #'LD' => $Config{'ld'} == $Config{'cc'} ? 'gcc -std=gnu99' : $Config{'ld'},
 
    # Linker flags for building an executable
-   'LDFLAGS' =>  "-L../magick/.libs -lMagickCore $Config{'ldflags'} ",
+   'LDFLAGS' =>  $LDFLAGS_magick,
 
    # Linker flags for building a dynamically loadable module
-   'LDDLFLAGS' => "-L../magick/.libs -lMagickCore $Config{'lddlflags'} ",
+   'LDDLFLAGS' => $LDDLFLAGS_magick,
 
    # Install PerlMagick binary into ImageMagick bin directory
    'INSTALLBIN'	=> '/usr/local/bin',

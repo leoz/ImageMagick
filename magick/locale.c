@@ -98,34 +98,6 @@ static MagickBooleanType
 %                                                                             %
 %                                                                             %
 %                                                                             %
-+   D e s t r o y L o c a l e C o m p o n e n t                               %
-%                                                                             %
-%                                                                             %
-%                                                                             %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%
-%  DestroyLocaleComponent() destroys the locale component.
-%
-%  The format of the DestroyLocaleComponent method is:
-%
-%      DestroyLocaleComponent(void)
-%
-*/
-MagickExport void DestroyLocaleComponent(void)
-{
-  AcquireSemaphoreInfo(&locale_semaphore);
-  if (locale_list != (SplayTreeInfo *) NULL)
-    locale_list=DestroySplayTree(locale_list);
-  instantiate_locale=MagickFalse;
-  RelinquishSemaphoreInfo(locale_semaphore);
-  DestroySemaphoreInfo(&locale_semaphore);
-}
-
-/*
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%                                                                             %
-%                                                                             %
-%                                                                             %
 %   D e s t r o y L o c a l e O p t i o n s                                   %
 %                                                                             %
 %                                                                             %
@@ -282,7 +254,7 @@ MagickExport const LocaleInfo **GetLocaleInfoList(const char *pattern,
   /*
     Generate locale list.
   */
-  AcquireSemaphoreInfo(&locale_semaphore);
+  (void) LockSemaphoreInfo(locale_semaphore);
   ResetSplayTreeIterator(locale_list);
   p=(const LocaleInfo *) GetNextValueInSplayTree(locale_list);
   for (i=0; p != (const LocaleInfo *) NULL; )
@@ -292,7 +264,7 @@ MagickExport const LocaleInfo **GetLocaleInfoList(const char *pattern,
       messages[i++]=p;
     p=(const LocaleInfo *) GetNextValueInSplayTree(locale_list);
   }
-  RelinquishSemaphoreInfo(locale_semaphore);
+  (void) UnlockSemaphoreInfo(locale_semaphore);
   qsort((void *) messages,(size_t) i,sizeof(*messages),LocaleInfoCompare);
   messages[i]=(LocaleInfo *) NULL;
   *number_messages=(unsigned long) i;
@@ -370,13 +342,11 @@ MagickExport char **GetLocaleList(const char *pattern,
   p=GetLocaleInfo_("*",exception);
   if (p == (const LocaleInfo *) NULL)
     return((char **) NULL);
-  AcquireSemaphoreInfo(&locale_semaphore);
-  RelinquishSemaphoreInfo(locale_semaphore);
   messages=(char **) AcquireQuantumMemory((size_t)
     GetNumberOfNodesInSplayTree(locale_list)+1UL,sizeof(*messages));
   if (messages == (char **) NULL)
     return((char **) NULL);
-  AcquireSemaphoreInfo(&locale_semaphore);
+  (void) LockSemaphoreInfo(locale_semaphore);
   p=(const LocaleInfo *) GetNextValueInSplayTree(locale_list);
   for (i=0; p != (const LocaleInfo *) NULL; )
   {
@@ -385,7 +355,7 @@ MagickExport char **GetLocaleList(const char *pattern,
       messages[i++]=ConstantString(p->tag);
     p=(const LocaleInfo *) GetNextValueInSplayTree(locale_list);
   }
-  RelinquishSemaphoreInfo(locale_semaphore);
+  (void) UnlockSemaphoreInfo(locale_semaphore);
   qsort((void *) messages,(size_t) i,sizeof(*messages),LocaleTagCompare);
   messages[i]=(char *) NULL;
   *number_messages=(unsigned long) i;
@@ -579,7 +549,9 @@ static MagickBooleanType InitializeLocaleList(ExceptionInfo *exception)
   if ((locale_list == (SplayTreeInfo *) NULL) &&
       (instantiate_locale == MagickFalse))
     {
-      AcquireSemaphoreInfo(&locale_semaphore);
+      if (locale_semaphore == (SemaphoreInfo *) NULL)
+        AcquireSemaphoreInfo(&locale_semaphore);
+      (void) LockSemaphoreInfo(locale_semaphore);
       if ((locale_list == (SplayTreeInfo *) NULL) &&
           (instantiate_locale == MagickFalse))
         {
@@ -607,34 +579,9 @@ static MagickBooleanType InitializeLocaleList(ExceptionInfo *exception)
           locale=DestroyString(locale);
           instantiate_locale=MagickTrue;
         }
-      RelinquishSemaphoreInfo(locale_semaphore);
+      (void) UnlockSemaphoreInfo(locale_semaphore);
     }
   return(locale_list != (SplayTreeInfo *) NULL ? MagickTrue : MagickFalse);
-}
-
-/*
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%                                                                             %
-%                                                                             %
-%                                                                             %
-+   I n s t a n t i a t e L o c a l e C o m p o n e n t                       %
-%                                                                             %
-%                                                                             %
-%                                                                             %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%
-%  InstantiateLocaleComponent() instantiates the locale component.
-%
-%  The format of the InstantiateLocaleComponent method is:
-%
-%      MagickBooleanType InstantiateLocaleComponent(void)
-%
-*/
-MagickExport MagickBooleanType InstantiateLocaleComponent(void)
-{
-  AcquireSemaphoreInfo(&locale_semaphore);
-  RelinquishSemaphoreInfo(locale_semaphore);
-  return(MagickTrue);
 }
 
 /*
@@ -1079,4 +1026,58 @@ static MagickBooleanType LoadLocaleLists(const char *filename,
     status|=LoadLocaleList(LocaleMap,"built-in",locale,0,exception);
   return(status != 0 ? MagickTrue : MagickFalse);
 #endif
+}
+
+/*
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                                             %
+%                                                                             %
+%                                                                             %
++   L o c a l e C o m p o n e n t G e n e s i s                               %
+%                                                                             %
+%                                                                             %
+%                                                                             %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%  LocaleComponentGenesis() instantiates the locale component.
+%
+%  The format of the LocaleComponentGenesis method is:
+%
+%      MagickBooleanType LocaleComponentGenesis(void)
+%
+*/
+MagickExport MagickBooleanType LocaleComponentGenesis(void)
+{
+  AcquireSemaphoreInfo(&locale_semaphore);
+  return(MagickTrue);
+}
+
+/*
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                                             %
+%                                                                             %
+%                                                                             %
++   L o c a l e C o m p o n e n t T e r m i n u s                             %
+%                                                                             %
+%                                                                             %
+%                                                                             %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%  LocaleComponentTerminus() destroys the locale component.
+%
+%  The format of the LocaleComponentTerminus method is:
+%
+%      LocaleComponentTerminus(void)
+%
+*/
+MagickExport void LocaleComponentTerminus(void)
+{
+  if (locale_semaphore == (SemaphoreInfo *) NULL)
+    AcquireSemaphoreInfo(&locale_semaphore);
+  (void) LockSemaphoreInfo(locale_semaphore);
+  if (locale_list != (SplayTreeInfo *) NULL)
+    locale_list=DestroySplayTree(locale_list);
+  instantiate_locale=MagickFalse;
+  (void) UnlockSemaphoreInfo(locale_semaphore);
+  DestroySemaphoreInfo(&locale_semaphore);
 }

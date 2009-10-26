@@ -149,17 +149,41 @@ static MagickBooleanType
 %                                                                             %
 %                                                                             %
 %                                                                             %
-%   D e s t r o y D e l e g a t e C o m p o n e n t                           %
++   D e l e g a t e C o m p o n e n t T e r m i n u s                         %
 %                                                                             %
 %                                                                             %
 %                                                                             %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-%  DestroyDelegateComponent() destroys the delegate component.
+%  DelegateComponentGenesis() instantiates the delegate component.
 %
-%  The format of the DestroyDelegateComponent method is:
+%  The format of the DelegateComponentGenesis method is:
 %
-%      DestroyDelegateComponent(void)
+%      MagickBooleanType DelegateComponentGenesis(void)
+%
+*/
+MagickExport MagickBooleanType DelegateComponentGenesis(void)
+{
+  AcquireSemaphoreInfo(&delegate_semaphore);
+  return(MagickTrue);
+}
+
+/*
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                                             %
+%                                                                             %
+%                                                                             %
+%   D e l e g a t e C o m p o n e n t T e r m i n u s                         %
+%                                                                             %
+%                                                                             %
+%                                                                             %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%  DelegateComponentTerminus() destroys the delegate component.
+%
+%  The format of the DelegateComponentTerminus method is:
+%
+%      DelegateComponentTerminus(void)
 %
 */
 
@@ -182,13 +206,15 @@ static void *DestroyDelegate(void *delegate_info)
 }
 
 
-MagickExport void DestroyDelegateComponent(void)
+MagickExport void DelegateComponentTerminus(void)
 {
-  AcquireSemaphoreInfo(&delegate_semaphore);
+  if (delegate_semaphore == (SemaphoreInfo *) NULL)
+    AcquireSemaphoreInfo(&delegate_semaphore);
+  (void) LockSemaphoreInfo(delegate_semaphore);
   if (delegate_list != (LinkedListInfo *) NULL)
     delegate_list=DestroyLinkedList(delegate_list,DestroyDelegate);
   instantiate_delegate=MagickFalse;
-  RelinquishSemaphoreInfo(delegate_semaphore);
+  (void) UnlockSemaphoreInfo(delegate_semaphore);
   DestroySemaphoreInfo(&delegate_semaphore);
 }
 
@@ -354,7 +380,7 @@ MagickExport const DelegateInfo *GetDelegateInfo(const char *decode,
   /*
     Search for named delegate.
   */
-  AcquireSemaphoreInfo(&delegate_semaphore);
+  (void) LockSemaphoreInfo(delegate_semaphore);
   ResetLinkedListIterator(delegate_list);
   p=(const DelegateInfo *) GetNextValueInLinkedList(delegate_list);
   while (p != (const DelegateInfo *) NULL)
@@ -387,7 +413,7 @@ MagickExport const DelegateInfo *GetDelegateInfo(const char *decode,
   if (p != (const DelegateInfo *) NULL)
     (void) InsertValueInLinkedList(delegate_list,0,
       RemoveElementByValueFromLinkedList(delegate_list,p));
-  RelinquishSemaphoreInfo(delegate_semaphore);
+  (void) UnlockSemaphoreInfo(delegate_semaphore);
   return(p);
 }
 
@@ -478,7 +504,7 @@ MagickExport const DelegateInfo **GetDelegateInfoList(const char *pattern,
   /*
     Generate delegate list.
   */
-  AcquireSemaphoreInfo(&delegate_semaphore);
+  (void) LockSemaphoreInfo(delegate_semaphore);
   ResetLinkedListIterator(delegate_list);
   p=(const DelegateInfo *) GetNextValueInLinkedList(delegate_list);
   for (i=0; p != (const DelegateInfo *) NULL; )
@@ -489,7 +515,7 @@ MagickExport const DelegateInfo **GetDelegateInfoList(const char *pattern,
       delegates[i++]=p;
     p=(const DelegateInfo *) GetNextValueInLinkedList(delegate_list);
   }
-  RelinquishSemaphoreInfo(delegate_semaphore);
+  (void) UnlockSemaphoreInfo(delegate_semaphore);
   qsort((void *) delegates,(size_t) i,sizeof(*delegates),DelegateInfoCompare);
   delegates[i]=(DelegateInfo *) NULL;
   *number_delegates=(unsigned long) i;
@@ -571,7 +597,7 @@ MagickExport char **GetDelegateList(const char *pattern,
     GetNumberOfElementsInLinkedList(delegate_list)+1UL,sizeof(*delegates));
   if (delegates == (char **) NULL)
     return((char **) NULL);
-  AcquireSemaphoreInfo(&delegate_semaphore);
+  (void) LockSemaphoreInfo(delegate_semaphore);
   ResetLinkedListIterator(delegate_list);
   p=(const DelegateInfo *) GetNextValueInLinkedList(delegate_list);
   for (i=0; p != (const DelegateInfo *) NULL; )
@@ -584,7 +610,7 @@ MagickExport char **GetDelegateList(const char *pattern,
       delegates[i++]=ConstantString(p->encode);
     p=(const DelegateInfo *) GetNextValueInLinkedList(delegate_list);
   }
-  RelinquishSemaphoreInfo(delegate_semaphore);
+  (void) UnlockSemaphoreInfo(delegate_semaphore);
   qsort((void *) delegates,(size_t) i,sizeof(*delegates),DelegateCompare);
   delegates[i]=(char *) NULL;
   *number_delegates=(unsigned long) i;
@@ -681,41 +707,18 @@ static MagickBooleanType InitializeDelegateList(ExceptionInfo *exception)
   if ((delegate_list == (LinkedListInfo *) NULL) &&
       (instantiate_delegate == MagickFalse))
     {
-      AcquireSemaphoreInfo(&delegate_semaphore);
+      if (delegate_semaphore == (SemaphoreInfo *) NULL)
+        AcquireSemaphoreInfo(&delegate_semaphore);
+      (void) LockSemaphoreInfo(delegate_semaphore);
       if ((delegate_list == (LinkedListInfo *) NULL) &&
           (instantiate_delegate == MagickFalse))
         {
           (void) LoadDelegateLists(DelegateFilename,exception);
           instantiate_delegate=MagickTrue;
         }
-      RelinquishSemaphoreInfo(delegate_semaphore);
+      (void) UnlockSemaphoreInfo(delegate_semaphore);
     }
   return(delegate_list != (LinkedListInfo *) NULL ? MagickTrue : MagickFalse);
-}
-
-/*
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%                                                                             %
-%                                                                             %
-%                                                                             %
-+   I n s t a n t i a t e D e l e g a t e C o m p o n e n t                   %
-%                                                                             %
-%                                                                             %
-%                                                                             %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%
-%  InstantiateDelegateComponent() instantiates the delegate component.
-%
-%  The format of the InstantiateDelegateComponent method is:
-%
-%      MagickBooleanType InstantiateDelegateComponent(void)
-%
-*/
-MagickExport MagickBooleanType InstantiateDelegateComponent(void)
-{
-  AcquireSemaphoreInfo(&delegate_semaphore);
-  RelinquishSemaphoreInfo(delegate_semaphore);
-  return(MagickTrue);
 }
 
 /*

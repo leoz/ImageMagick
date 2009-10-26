@@ -79,6 +79,55 @@ static SemaphoreInfo
 %                                                                             %
 %                                                                             %
 %                                                                             %
++   C o n s t i t u t e C o m p o n e n t G e n e s i s                       %
+%                                                                             %
+%                                                                             %
+%                                                                             %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%  ConstituteComponentGenesis() instantiates the constitute component.
+%
+%  The format of the ConstituteComponentGenesis method is:
+%
+%      MagickBooleanType ConstituteComponentGenesis(void)
+%
+*/
+MagickExport MagickBooleanType ConstituteComponentGenesis(void)
+{
+  AcquireSemaphoreInfo(&constitute_semaphore);
+  return(MagickTrue);
+}
+
+/*
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                                             %
+%                                                                             %
+%                                                                             %
++   C o n s t i t u t e C o m p o n e n t T e r m i n u s                     %
+%                                                                             %
+%                                                                             %
+%                                                                             %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%  ConstituteComponentTerminus() destroys the constitute component.
+%
+%  The format of the ConstituteComponentTerminus method is:
+%
+%      ConstituteComponentTerminus(void)
+%
+*/
+MagickExport void ConstituteComponentTerminus(void)
+{
+  if (constitute_semaphore == (SemaphoreInfo *) NULL)
+    AcquireSemaphoreInfo(&constitute_semaphore);
+  DestroySemaphoreInfo(&constitute_semaphore);
+}
+
+/*
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                                             %
+%                                                                             %
+%                                                                             %
 %   C o n s t i t u t e I m a g e                                             %
 %                                                                             %
 %                                                                             %
@@ -156,55 +205,6 @@ MagickExport Image *ConstituteImage(const unsigned long columns,
       image=DestroyImage(image);
     }
   return(image);
-}
-
-/*
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%                                                                             %
-%                                                                             %
-%                                                                             %
-+   D e s t r o y C o n s t i t u t e C o m p o n e n t                       %
-%                                                                             %
-%                                                                             %
-%                                                                             %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%
-%  DestroyConstituteComponent() destroys the constitute component.
-%
-%  The format of the DestroyConstituteComponent method is:
-%
-%      DestroyConstituteComponent(void)
-%
-*/
-MagickExport void DestroyConstituteComponent(void)
-{
-  if (constitute_semaphore != (SemaphoreInfo *) NULL)
-    DestroySemaphoreInfo(&constitute_semaphore);
-}
-
-/*
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%                                                                             %
-%                                                                             %
-%                                                                             %
-+   I n s t a n t i a t e C o n s t i t u t e C o m p o n e n t               %
-%                                                                             %
-%                                                                             %
-%                                                                             %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%
-%  InstantiateConstituteComponent() instantiates the constitute component.
-%
-%  The format of the InstantiateConstituteComponent method is:
-%
-%      MagickBooleanType InstantiateConstituteComponent(void)
-%
-*/
-MagickExport MagickBooleanType InstantiateConstituteComponent(void)
-{
-  AcquireSemaphoreInfo(&constitute_semaphore);
-  RelinquishSemaphoreInfo(constitute_semaphore);
-  return(MagickTrue);
 }
 
 /*
@@ -509,15 +509,17 @@ MagickExport Image *ReadImage(const ImageInfo *image_info,
       image=DestroyImage(image);
     }
   image=NewImageList();
+  if (constitute_semaphore == (SemaphoreInfo *) NULL)
+    AcquireSemaphoreInfo(&constitute_semaphore);
   if ((magick_info != (const MagickInfo *) NULL) &&
       (GetImageDecoder(magick_info) != (DecodeImageHandler *) NULL))
     {
       thread_support=GetMagickThreadSupport(magick_info);
       if ((thread_support & DecoderThreadSupport) == 0)
-        AcquireSemaphoreInfo(&constitute_semaphore);
+        (void) LockSemaphoreInfo(constitute_semaphore);
       image=GetImageDecoder(magick_info)(read_info,exception);
       if ((thread_support & DecoderThreadSupport) == 0)
-        RelinquishSemaphoreInfo(constitute_semaphore);
+        (void) UnlockSemaphoreInfo(constitute_semaphore);
     }
   else
     {
@@ -546,11 +548,11 @@ MagickExport Image *ReadImage(const ImageInfo *image_info,
         MaxTextExtent);
       *read_info->filename='\0';
       if (GetDelegateThreadSupport(delegate_info) == MagickFalse)
-        AcquireSemaphoreInfo(&constitute_semaphore);
+        (void) LockSemaphoreInfo(constitute_semaphore);
       (void) InvokeDelegate(read_info,image,read_info->magick,(char *) NULL,
         exception);
       if (GetDelegateThreadSupport(delegate_info) == MagickFalse)
-        RelinquishSemaphoreInfo(constitute_semaphore);
+        (void) UnlockSemaphoreInfo(constitute_semaphore);
       image=DestroyImageList(image);
       read_info->temporary=MagickTrue;
       (void) SetImageInfo(read_info,MagickFalse,exception);
@@ -570,10 +572,10 @@ MagickExport Image *ReadImage(const ImageInfo *image_info,
         }
       thread_support=GetMagickThreadSupport(magick_info);
       if ((thread_support & DecoderThreadSupport) == 0)
-        AcquireSemaphoreInfo(&constitute_semaphore);
+        (void) LockSemaphoreInfo(constitute_semaphore);
       image=(Image *) (GetImageDecoder(magick_info))(read_info,exception);
       if ((thread_support & DecoderThreadSupport) == 0)
-        RelinquishSemaphoreInfo(constitute_semaphore);
+        (void) UnlockSemaphoreInfo(constitute_semaphore);
     }
   if (read_info->temporary != MagickFalse)
     {
@@ -1091,6 +1093,8 @@ MagickExport MagickBooleanType WriteImage(const ImageInfo *image_info,
           (void) CloseBlob(image);
         }
     }
+  if (constitute_semaphore == (SemaphoreInfo *) NULL)
+    AcquireSemaphoreInfo(&constitute_semaphore);
   if ((magick_info != (const MagickInfo *) NULL) &&
       (GetImageEncoder(magick_info) != (EncodeImageHandler *) NULL))
     {
@@ -1099,10 +1103,10 @@ MagickExport MagickBooleanType WriteImage(const ImageInfo *image_info,
       */
       thread_support=GetMagickThreadSupport(magick_info);
       if ((thread_support & EncoderThreadSupport) == 0)
-        AcquireSemaphoreInfo(&constitute_semaphore);
+        (void) LockSemaphoreInfo(constitute_semaphore);
       status=GetImageEncoder(magick_info)(write_info,image);
       if ((thread_support & EncoderThreadSupport) == 0)
-        RelinquishSemaphoreInfo(constitute_semaphore);
+        (void) UnlockSemaphoreInfo(constitute_semaphore);
     }
   else
     {
@@ -1115,11 +1119,11 @@ MagickExport MagickBooleanType WriteImage(const ImageInfo *image_info,
           */
           *write_info->filename='\0';
           if (GetDelegateThreadSupport(delegate_info) == MagickFalse)
-            AcquireSemaphoreInfo(&constitute_semaphore);
+            (void) LockSemaphoreInfo(constitute_semaphore);
           status=InvokeDelegate(write_info,image,(char *) NULL,
             write_info->magick,&image->exception);
           if (GetDelegateThreadSupport(delegate_info) == MagickFalse)
-            RelinquishSemaphoreInfo(constitute_semaphore);
+            (void) UnlockSemaphoreInfo(constitute_semaphore);
           (void) CopyMagickString(image->filename,filename,MaxTextExtent);
         }
       else
@@ -1146,10 +1150,10 @@ MagickExport MagickBooleanType WriteImage(const ImageInfo *image_info,
               */
               thread_support=GetMagickThreadSupport(magick_info);
               if ((thread_support & EncoderThreadSupport) == 0)
-                AcquireSemaphoreInfo(&constitute_semaphore);
+                (void) LockSemaphoreInfo(constitute_semaphore);
               status=GetImageEncoder(magick_info)(write_info,image);
               if ((thread_support & EncoderThreadSupport) == 0)
-                RelinquishSemaphoreInfo(constitute_semaphore);
+                (void) UnlockSemaphoreInfo(constitute_semaphore);
             }
         }
     }

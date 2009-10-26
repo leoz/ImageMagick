@@ -137,56 +137,6 @@ static MagickBooleanType
 %                                                                             %
 %                                                                             %
 %                                                                             %
-+   D e s t r o y P o l i c y C o m p o n e n t                               %
-%                                                                             %
-%                                                                             %
-%                                                                             %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%
-%  DestroyPolicyComponent() destroys the policy component.
-%
-%  The format of the DestroyPolicyComponent method is:
-%
-%      DestroyPolicyComponent(void)
-%
-*/
-
-static void *DestroyPolicyElement(void *policy_info)
-{
-  register PolicyInfo
-    *p;
-
-  p=(PolicyInfo *) policy_info;
-  if (p->exempt == MagickFalse)
-    {
-      if (p->value != (char *) NULL)
-        p->value=DestroyString(p->value);
-      if (p->pattern != (char *) NULL)
-        p->pattern=DestroyString(p->pattern);
-      if (p->name != (char *) NULL)
-        p->name=DestroyString(p->name);
-      if (p->path != (char *) NULL)
-        p->path=DestroyString(p->path);
-    }
-  p=(PolicyInfo *) RelinquishMagickMemory(p);
-  return((void *) NULL);
-}
-
-MagickExport void DestroyPolicyComponent(void)
-{
-  AcquireSemaphoreInfo(&policy_semaphore);
-  if (policy_list != (LinkedListInfo *) NULL)
-    policy_list=DestroyLinkedList(policy_list,DestroyPolicyElement);
-  instantiate_policy=MagickFalse;
-  RelinquishSemaphoreInfo(policy_semaphore);
-  DestroySemaphoreInfo(&policy_semaphore);
-}
-
-/*
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%                                                                             %
-%                                                                             %
-%                                                                             %
 +   G e t P o l i c y I n f o                                                 %
 %                                                                             %
 %                                                                             %
@@ -242,7 +192,7 @@ static PolicyInfo *GetPolicyInfo(const char *name,ExceptionInfo *exception)
   /*
     Search for policy tag.
   */
-  AcquireSemaphoreInfo(&policy_semaphore);
+  (void) LockSemaphoreInfo(policy_semaphore);
   ResetLinkedListIterator(policy_list);
   p=(PolicyInfo *) GetNextValueInLinkedList(policy_list);
   while (p != (PolicyInfo *) NULL)
@@ -257,7 +207,7 @@ static PolicyInfo *GetPolicyInfo(const char *name,ExceptionInfo *exception)
   else
     (void) InsertValueInLinkedList(policy_list,0,
       RemoveElementByValueFromLinkedList(policy_list,p));
-  RelinquishSemaphoreInfo(policy_semaphore);
+  (void) UnlockSemaphoreInfo(policy_semaphore);
   return(p);
 }
 
@@ -317,7 +267,7 @@ MagickExport const PolicyInfo **GetPolicyInfoList(const char *pattern,
   /*
     Generate policy list.
   */
-  AcquireSemaphoreInfo(&policy_semaphore);
+  (void) LockSemaphoreInfo(policy_semaphore);
   ResetLinkedListIterator(policy_list);
   p=(const PolicyInfo *) GetNextValueInLinkedList(policy_list);
   for (i=0; p != (const PolicyInfo *) NULL; )
@@ -327,7 +277,7 @@ MagickExport const PolicyInfo **GetPolicyInfoList(const char *pattern,
       policies[i++]=p;
     p=(const PolicyInfo *) GetNextValueInLinkedList(policy_list);
   }
-  RelinquishSemaphoreInfo(policy_semaphore);
+  (void) UnlockSemaphoreInfo(policy_semaphore);
   policies[i]=(PolicyInfo *) NULL;
   *number_policies=(unsigned long) i;
   return(policies);
@@ -389,7 +339,7 @@ MagickExport char **GetPolicyList(const char *pattern,
   /*
     Generate policy list.
   */
-  AcquireSemaphoreInfo(&policy_semaphore);
+  (void) LockSemaphoreInfo(policy_semaphore);
   ResetLinkedListIterator(policy_list);
   p=(const PolicyInfo *) GetNextValueInLinkedList(policy_list);
   for (i=0; p != (const PolicyInfo *) NULL; )
@@ -399,7 +349,7 @@ MagickExport char **GetPolicyList(const char *pattern,
       policies[i++]=ConstantString(p->name);
     p=(const PolicyInfo *) GetNextValueInLinkedList(policy_list);
   }
-  RelinquishSemaphoreInfo(policy_semaphore);
+  (void) UnlockSemaphoreInfo(policy_semaphore);
   policies[i]=(char *) NULL;
   *number_policies=(unsigned long) i;
   return(policies);
@@ -478,41 +428,18 @@ static MagickBooleanType InitializePolicyList(ExceptionInfo *exception)
   if ((policy_list == (LinkedListInfo *) NULL) &&
       (instantiate_policy == MagickFalse))
     {
-      AcquireSemaphoreInfo(&policy_semaphore);
+      if (policy_semaphore == (SemaphoreInfo *) NULL)
+        AcquireSemaphoreInfo(&policy_semaphore);
+      (void) LockSemaphoreInfo(policy_semaphore);
       if ((policy_list == (LinkedListInfo *) NULL) &&
           (instantiate_policy == MagickFalse))
         {
           (void) LoadPolicyLists(PolicyFilename,exception);
           instantiate_policy=MagickTrue;
         }
-      RelinquishSemaphoreInfo(policy_semaphore);
+      (void) UnlockSemaphoreInfo(policy_semaphore);
     }
   return(policy_list != (LinkedListInfo *) NULL ? MagickTrue : MagickFalse);
-}
-
-/*
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%                                                                             %
-%                                                                             %
-%                                                                             %
-+   I n s t a n t i a t e P o l i c y C o m p o n e n t                       %
-%                                                                             %
-%                                                                             %
-%                                                                             %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%
-%  InstantiatePolicyComponent() instantiates the policy component.
-%
-%  The format of the InstantiatePolicyComponent method is:
-%
-%      MagickBooleanType InstantiatePolicyComponent(void)
-%
-*/
-MagickExport MagickBooleanType InstantiatePolicyComponent(void)
-{
-  AcquireSemaphoreInfo(&policy_semaphore);
-  RelinquishSemaphoreInfo(policy_semaphore);
-  return(MagickTrue);
 }
 
 /*
@@ -568,7 +495,7 @@ MagickExport MagickBooleanType IsRightsAuthorized(const PolicyDomain domain,
   if (policy_info == (PolicyInfo *) NULL)
     return(MagickTrue);
   authorized=MagickTrue;
-  AcquireSemaphoreInfo(&policy_semaphore);
+  (void) LockSemaphoreInfo(policy_semaphore);
   ResetLinkedListIterator(policy_list);
   p=(PolicyInfo *) GetNextValueInLinkedList(policy_list);
   while ((p != (PolicyInfo *) NULL) && (authorized != MagickFalse))
@@ -588,7 +515,7 @@ MagickExport MagickBooleanType IsRightsAuthorized(const PolicyDomain domain,
       }
     p=(PolicyInfo *) GetNextValueInLinkedList(policy_list);
   }
-  RelinquishSemaphoreInfo(policy_semaphore);
+  (void) UnlockSemaphoreInfo(policy_semaphore);
   return(authorized);
 }
 
@@ -1017,4 +944,80 @@ static MagickBooleanType LoadPolicyLists(const char *filename,
   }
   options=DestroyConfigureOptions(options);
   return(status != 0 ? MagickTrue : MagickFalse);
+}
+
+/*
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                                             %
+%                                                                             %
+%                                                                             %
++   P o l i c y C o m p o n e n t G e n e s i s                               %
+%                                                                             %
+%                                                                             %
+%                                                                             %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%  PolicyComponentGenesis() instantiates the policy component.
+%
+%  The format of the PolicyComponentGenesis method is:
+%
+%      MagickBooleanType PolicyComponentGenesis(void)
+%
+*/
+MagickExport MagickBooleanType PolicyComponentGenesis(void)
+{
+  AcquireSemaphoreInfo(&policy_semaphore);
+  return(MagickTrue);
+}
+
+/*
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                                             %
+%                                                                             %
+%                                                                             %
++   P o l i c y C o m p o n e n t T e r m i n u s                             %
+%                                                                             %
+%                                                                             %
+%                                                                             %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%  PolicyComponentTerminus() destroys the policy component.
+%
+%  The format of the PolicyComponentTerminus method is:
+%
+%      PolicyComponentTerminus(void)
+%
+*/
+
+static void *DestroyPolicyElement(void *policy_info)
+{
+  register PolicyInfo
+    *p;
+
+  p=(PolicyInfo *) policy_info;
+  if (p->exempt == MagickFalse)
+    {
+      if (p->value != (char *) NULL)
+        p->value=DestroyString(p->value);
+      if (p->pattern != (char *) NULL)
+        p->pattern=DestroyString(p->pattern);
+      if (p->name != (char *) NULL)
+        p->name=DestroyString(p->name);
+      if (p->path != (char *) NULL)
+        p->path=DestroyString(p->path);
+    }
+  p=(PolicyInfo *) RelinquishMagickMemory(p);
+  return((void *) NULL);
+}
+
+MagickExport void PolicyComponentTerminus(void)
+{
+  if (policy_semaphore == (SemaphoreInfo *) NULL)
+    AcquireSemaphoreInfo(&policy_semaphore);
+  (void) LockSemaphoreInfo(policy_semaphore);
+  if (policy_list != (LinkedListInfo *) NULL)
+    policy_list=DestroyLinkedList(policy_list,DestroyPolicyElement);
+  instantiate_policy=MagickFalse;
+  (void) UnlockSemaphoreInfo(policy_semaphore);
+  DestroySemaphoreInfo(&policy_semaphore);
 }

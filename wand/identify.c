@@ -234,7 +234,8 @@ WandExport MagickBooleanType IdentifyImageCommand(ImageInfo *image_info,
         {
           (void) fprintf(stdout,"Version: %s\n",
             GetMagickVersion((unsigned long *) NULL));
-          (void) fprintf(stdout,"Copyright: %s\n\n",GetMagickCopyright());
+          (void) fprintf(stdout,"Copyright: %s\n",GetMagickCopyright());
+          (void) fprintf(stdout,"Features: %s\n\n",GetMagickFeatures());
           return(MagickFalse);
         }
     }
@@ -431,6 +432,8 @@ WandExport MagickBooleanType IdentifyImageCommand(ImageInfo *image_info,
             image_info->ping=MagickFalse;
             break;
           }
+        if (LocaleCompare("concurrent",option+1) == 0)
+          break;
         ThrowIdentifyException(OptionError,"UnrecognizedOption",option)
       }
       case 'd':
@@ -486,6 +489,17 @@ WandExport MagickBooleanType IdentifyImageCommand(ImageInfo *image_info,
               break;
             i++;
             if (i == (long) argc)
+              ThrowIdentifyException(OptionError,"MissingArgument",option);
+            if (IsGeometry(argv[i]) == MagickFalse)
+              ThrowIdentifyInvalidArgumentException(option,argv[i]);
+            break;
+          }
+        if (LocaleCompare("duration",option+1) == 0)
+          {
+            if (*option == '+')
+              break;
+            i++;
+            if (i == (long) (argc-1))
               ThrowIdentifyException(OptionError,"MissingArgument",option);
             if (IsGeometry(argv[i]) == MagickFalse)
               ThrowIdentifyInvalidArgumentException(option,argv[i]);

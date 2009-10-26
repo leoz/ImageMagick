@@ -510,7 +510,8 @@ WandExport MagickBooleanType ConvertImageCommand(ImageInfo *image_info,
         {
           (void) fprintf(stdout,"Version: %s\n",
             GetMagickVersion((unsigned long *) NULL));
-          (void) fprintf(stdout,"Copyright: %s\n\n",GetMagickCopyright());
+          (void) fprintf(stdout,"Copyright: %s\n",GetMagickCopyright());
+          (void) fprintf(stdout,"Features: %s\n\n",GetMagickFeatures());
           return(MagickFalse);
         }
     }
@@ -1005,6 +1006,8 @@ WandExport MagickBooleanType ConvertImageCommand(ImageInfo *image_info,
                 argv[i]);
             break;
           }
+        if (LocaleCompare("concurrent",option+1) == 0)
+          break;
         if (LocaleCompare("contrast",option+1) == 0)
           break;
         if (LocaleCompare("contrast-stretch",option+1) == 0)
@@ -1220,6 +1223,17 @@ WandExport MagickBooleanType ConvertImageCommand(ImageInfo *image_info,
             i++;
             if (i == (long) (argc-1))
               ThrowConvertException(OptionError,"MissingArgument",option);
+            break;
+          }
+        if (LocaleCompare("duration",option+1) == 0)
+          {
+            if (*option == '+')
+              break;
+            i++;
+            if (i == (long) (argc-1))
+              ThrowConvertException(OptionError,"MissingArgument",option);
+            if (IsGeometry(argv[i]) == MagickFalse)
+              ThrowConvertInvalidArgumentException(option,argv[i]);
             break;
           }
         ThrowConvertException(OptionError,"UnrecognizedOption",option)
@@ -2712,7 +2726,8 @@ WandExport MagickBooleanType ConvertImageCommand(ImageInfo *image_info,
           {
             (void) fprintf(stdout,"Version: %s\n",
               GetMagickVersion((unsigned long *) NULL));
-            (void) fprintf(stdout,"Copyright: %s\n\n",GetMagickCopyright());
+            (void) fprintf(stdout,"Copyright: %s\n",GetMagickCopyright());
+            (void) fprintf(stdout,"Features: %s\n\n",GetMagickFeatures());
             break;
           }
         if (LocaleCompare("view",option+1) == 0)

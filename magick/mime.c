@@ -131,55 +131,6 @@ static MagickBooleanType
 %                                                                             %
 %                                                                             %
 %                                                                             %
-+   D e s t r o y M i m e C o m p o n e n t                                   %
-%                                                                             %
-%                                                                             %
-%                                                                             %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%
-%  DestroyMimeComponent() destroys the mime component.
-%
-%  The format of the DestroyMimeComponent method is:
-%
-%      DestroyMimeComponent(void)
-%
-*/
-
-static void *DestroyMimeElement(void *mime_info)
-{
-  register MimeInfo
-    *p;
-
-  p=(MimeInfo *) mime_info;
-  if (p->magic != (unsigned char *) NULL)
-    p->magic=(unsigned char *) RelinquishMagickMemory(p->magic);
-  if (p->pattern != (char *) NULL)
-    p->pattern=DestroyString(p->pattern);
-  if (p->description != (char *) NULL)
-    p->description=DestroyString(p->description);
-  if (p->type != (char *) NULL)
-    p->type=DestroyString(p->type);
-  if (p->path != (char *) NULL)
-    p->path=DestroyString(p->path);
-  p=(MimeInfo *) RelinquishMagickMemory(p);
-  return((void *) NULL);
-}
-
-MagickExport void DestroyMimeComponent(void)
-{
-  AcquireSemaphoreInfo(&mime_semaphore);
-  if (mime_list != (LinkedListInfo *) NULL)
-    mime_list=DestroyLinkedList(mime_list,DestroyMimeElement);
-  instantiate_mime=MagickFalse;
-  RelinquishSemaphoreInfo(mime_semaphore);
-  DestroySemaphoreInfo(&mime_semaphore);
-}
-
-/*
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%                                                                             %
-%                                                                             %
-%                                                                             %
 +   G e t M i m e I n f o                                                     %
 %                                                                             %
 %                                                                             %
@@ -249,7 +200,7 @@ MagickExport const MimeInfo *GetMimeInfo(const char *filename,
   */
   mime_info=(const MimeInfo *) NULL;
   lsb_first=1;
-  AcquireSemaphoreInfo(&mime_semaphore);
+  (void) LockSemaphoreInfo(mime_semaphore);
   ResetLinkedListIterator(mime_list);
   p=(const MimeInfo *) GetNextValueInLinkedList(mime_list);
   while (p != (const MimeInfo *) NULL)
@@ -373,7 +324,7 @@ MagickExport const MimeInfo *GetMimeInfo(const char *filename,
   if (p != (const MimeInfo *) NULL)
     (void) InsertValueInLinkedList(mime_list,0,
       RemoveElementByValueFromLinkedList(mime_list,p));
-  RelinquishSemaphoreInfo(mime_semaphore);
+  (void) UnlockSemaphoreInfo(mime_semaphore);
   return(mime_info);
 }
 
@@ -457,7 +408,7 @@ MagickExport const MimeInfo **GetMimeInfoList(const char *pattern,
   /*
     Generate mime list.
   */
-  AcquireSemaphoreInfo(&mime_semaphore);
+  (void) LockSemaphoreInfo(mime_semaphore);
   ResetLinkedListIterator(mime_list);
   p=(const MimeInfo *) GetNextValueInLinkedList(mime_list);
   for (i=0; p != (const MimeInfo *) NULL; )
@@ -467,7 +418,7 @@ MagickExport const MimeInfo **GetMimeInfoList(const char *pattern,
       aliases[i++]=p;
     p=(const MimeInfo *) GetNextValueInLinkedList(mime_list);
   }
-  RelinquishSemaphoreInfo(mime_semaphore);
+  (void) UnlockSemaphoreInfo(mime_semaphore);
   qsort((void *) aliases,(size_t) i,sizeof(*aliases),MimeInfoCompare);
   aliases[i]=(MimeInfo *) NULL;
   *number_aliases=(unsigned long) i;
@@ -549,7 +500,7 @@ MagickExport char **GetMimeList(const char *pattern,
     GetNumberOfElementsInLinkedList(mime_list)+1UL,sizeof(*aliases));
   if (aliases == (char **) NULL)
     return((char **) NULL);
-  AcquireSemaphoreInfo(&mime_semaphore);
+  (void) LockSemaphoreInfo(mime_semaphore);
   ResetLinkedListIterator(mime_list);
   p=(const MimeInfo *) GetNextValueInLinkedList(mime_list);
   for (i=0; p != (const MimeInfo *) NULL; )
@@ -559,7 +510,7 @@ MagickExport char **GetMimeList(const char *pattern,
       aliases[i++]=ConstantString(p->type);
     p=(const MimeInfo *) GetNextValueInLinkedList(mime_list);
   }
-  RelinquishSemaphoreInfo(mime_semaphore);
+  (void) UnlockSemaphoreInfo(mime_semaphore);
   qsort((void *) aliases,(size_t) i,sizeof(*aliases),MimeCompare);
   aliases[i]=(char *) NULL;
   *number_aliases=(unsigned long) i;
@@ -653,41 +604,18 @@ static MagickBooleanType InitializeMimeList(ExceptionInfo *exception)
   if ((mime_list == (LinkedListInfo *) NULL) &&
       (instantiate_mime == MagickFalse))
     {
-      AcquireSemaphoreInfo(&mime_semaphore);
+      if (mime_semaphore == (SemaphoreInfo *) NULL)
+        AcquireSemaphoreInfo(&mime_semaphore);
+      (void) LockSemaphoreInfo(mime_semaphore);
       if ((mime_list == (LinkedListInfo *) NULL) &&
           (instantiate_mime == MagickFalse))
         {
           (void) LoadMimeLists(MimeFilename,exception);
           instantiate_mime=MagickTrue;
         }
-      RelinquishSemaphoreInfo(mime_semaphore);
+      (void) UnlockSemaphoreInfo(mime_semaphore);
     }
   return(mime_list != (LinkedListInfo *) NULL ? MagickTrue : MagickFalse);
-}
-
-/*
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%                                                                             %
-%                                                                             %
-%                                                                             %
-+   I n s t a n t i a t e M i m e C o m p o n e n t                           %
-%                                                                             %
-%                                                                             %
-%                                                                             %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%
-%  InstantiateMimeComponent() instantiates the mime component.
-%
-%  The format of the InstantiateMimeComponent method is:
-%
-%      MagickBooleanType InstantiateMimeComponent(void)
-%
-*/
-MagickExport MagickBooleanType InstantiateMimeComponent(void)
-{
-  AcquireSemaphoreInfo(&mime_semaphore);
-  RelinquishSemaphoreInfo(mime_semaphore);
-  return(MagickTrue);
 }
 
 /*
@@ -1102,4 +1030,79 @@ MagickExport char *MagickToMime(const char *magick)
   (void) FormatMagickString(media,MaxTextExtent,"image/x-%s",magick);
   LocaleLower(media+8);
   return(ConstantString(media));
+}
+
+/*
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                                             %
+%                                                                             %
+%                                                                             %
++   M i m e C o m p o n e n t G e n e s i s                                   %
+%                                                                             %
+%                                                                             %
+%                                                                             %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%  MimeComponentGenesis() instantiates the mime component.
+%
+%  The format of the MimeComponentGenesis method is:
+%
+%      MagickBooleanType MimeComponentGenesis(void)
+%
+*/
+MagickExport MagickBooleanType MimeComponentGenesis(void)
+{
+  AcquireSemaphoreInfo(&mime_semaphore);
+  return(MagickTrue);
+}
+
+/*
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                                             %
+%                                                                             %
+%                                                                             %
++   M i m e C o m p o n e n t T e r m i n u s                                 %
+%                                                                             %
+%                                                                             %
+%                                                                             %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%  MimeComponentTerminus() destroys the mime component.
+%
+%  The format of the MimeComponentTerminus method is:
+%
+%      MimeComponentTerminus(void)
+%
+*/
+
+static void *DestroyMimeElement(void *mime_info)
+{
+  register MimeInfo
+    *p;
+
+  p=(MimeInfo *) mime_info;
+  if (p->magic != (unsigned char *) NULL)
+    p->magic=(unsigned char *) RelinquishMagickMemory(p->magic);
+  if (p->pattern != (char *) NULL)
+    p->pattern=DestroyString(p->pattern);
+  if (p->description != (char *) NULL)
+    p->description=DestroyString(p->description);
+  if (p->type != (char *) NULL)
+    p->type=DestroyString(p->type);
+  if (p->path != (char *) NULL)
+    p->path=DestroyString(p->path);
+  p=(MimeInfo *) RelinquishMagickMemory(p);
+  return((void *) NULL);
+}
+
+MagickExport void MimeComponentTerminus(void)
+{
+  if (mime_semaphore == (SemaphoreInfo *) NULL)
+    AcquireSemaphoreInfo(&mime_semaphore);
+  (void) LockSemaphoreInfo(mime_semaphore);
+  if (mime_list != (LinkedListInfo *) NULL)
+    mime_list=DestroyLinkedList(mime_list,DestroyMimeElement);
+  instantiate_mime=MagickFalse;
+  (void) UnlockSemaphoreInfo(mime_semaphore);
+  DestroySemaphoreInfo(&mime_semaphore);
 }

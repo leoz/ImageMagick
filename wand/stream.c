@@ -231,7 +231,8 @@ WandExport MagickBooleanType StreamImageCommand(ImageInfo *image_info,
         {
           (void) fprintf(stdout,"Version: %s\n",
             GetMagickVersion((unsigned long *) NULL));
-          (void) fprintf(stdout,"Copyright: %s\n\n",GetMagickCopyright());
+          (void) fprintf(stdout,"Copyright: %s\n",GetMagickCopyright());
+          (void) fprintf(stdout,"Features: %s\n\n",GetMagickFeatures());
           return(MagickFalse);
         }
     }
@@ -381,6 +382,8 @@ WandExport MagickBooleanType StreamImageCommand(ImageInfo *image_info,
                 argv[i]);
             break;
           }
+        if (LocaleCompare("concurrent",option+1) == 0)
+          break;
         ThrowStreamException(OptionError,"UnrecognizedOption",option)
       }
       case 'd':
@@ -399,7 +402,6 @@ WandExport MagickBooleanType StreamImageCommand(ImageInfo *image_info,
             if (event < 0)
               ThrowStreamException(OptionError,"UnrecognizedEventType",argv[i]);
             (void) SetLogEventMask(argv[i]);
-            break;
             break;
           }
         if (LocaleCompare("define",option+1) == 0)
@@ -436,6 +438,17 @@ WandExport MagickBooleanType StreamImageCommand(ImageInfo *image_info,
               break;
             i++;
             if (i == (long) argc)
+              ThrowStreamException(OptionError,"MissingArgument",option);
+            if (IsGeometry(argv[i]) == MagickFalse)
+              ThrowStreamInvalidArgumentException(option,argv[i]);
+            break;
+          }
+        if (LocaleCompare("duration",option+1) == 0)
+          {
+            if (*option == '+')
+              break;
+            i++;
+            if (i == (long) (argc-1))
               ThrowStreamException(OptionError,"MissingArgument",option);
             if (IsGeometry(argv[i]) == MagickFalse)
               ThrowStreamInvalidArgumentException(option,argv[i]);
@@ -702,7 +715,8 @@ WandExport MagickBooleanType StreamImageCommand(ImageInfo *image_info,
           {
             (void) fprintf(stdout,"Version: %s\n",
               GetMagickVersion((unsigned long *) NULL));
-            (void) fprintf(stdout,"Copyright: %s\n\n",GetMagickCopyright());
+            (void) fprintf(stdout,"Copyright: %s\n",GetMagickCopyright());
+            (void) fprintf(stdout,"Features: %s\n\n",GetMagickFeatures());
             break;
           }
         if (LocaleCompare("virtual-pixel",option+1) == 0)
