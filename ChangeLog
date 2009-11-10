@@ -1,3 +1,10 @@
+2009-11-09  6.5.7-7 Glenn Randers-Pehrson <glennrp@image...>
+  * Suppress libpng pedantic warnings.
+
+2009-11-09  6.5.7-7 Cristy  <quetzlzacatenango@image...>
+  * Bump library age.
+  * Restore -tile-offset functionality (bug report from Anthony).
+
 2009-11-06  6.5.7-6 Cristy  <quetzlzacatenango@image...>
   * Animate command line options are no longer ignored.
 
@@ -23,7 +30,7 @@
 
 2009-10-18  6.5.7-1 Cristy  <quetzlzacatenango@image...>
   * Alpha blending is not required for ScaleImage().
-  * Guassian noise operator is not longer discontinuous.
+  * Gaussian noise operator is not longer discontinuous.
 
 2009-10-14  6.5.7-0 Pino Toscano  <pino@kde...>
   * ImageMagick fails to build in GNU/HURD due to absence of PATH_MAX.
