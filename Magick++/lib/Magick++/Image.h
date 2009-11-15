@@ -352,6 +352,11 @@ namespace Magick
     // Flop image (reflect each scanline in the horizontal direction)
     void            flop ( void );
     
+    // Implements the discrete Fourier transform (DFT) of the image either as a
+    // magnitude / phase or real / imaginary image pair.
+    void            forwardFourierTransform ( void );
+    void            forwardFourierTransform ( const bool magnitude );
+    
     // Frame image
     void            frame ( const Geometry &geometry_ = frameGeometryDefault );
     void            frame ( const unsigned int width_,
@@ -360,6 +365,7 @@ namespace Magick
                             const int outerBevel_ = 6 );
 
     // Applies a mathematical expression to the image.
+    void            fx ( const std::string expression );
     void            fx ( const std::string expression,
                          const Magick::ChannelType channel );
     
@@ -385,6 +391,12 @@ namespace Magick
     // Implode image (special effect)
     void            implode ( const double factor_ );
     
+    // implements the inverse discrete Fourier transform (DFT) of the image
+    // either as a magnitude / phase or real / imaginary image pair.
+    //
+    void            inverseFourierTransform ( const Image &phase_ );
+    void            inverseFourierTransform ( const Image &phase_,
+                                              const bool magnitude_ );
     // Label image
     void            label ( const std::string &label_ );
 
