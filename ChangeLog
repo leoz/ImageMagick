@@ -1,5 +1,12 @@
+2009-11-28  6.5.8-2 Glenn Randers-Pehrson <glennrp@image...>
+  * Changed the one remaining ping_info->trans to ping_info->trans_values
+    in coders/png.c
+
 2009-11-26  6.5.8-1 Chris Madison  <madisonblu@gmail...>
   * Eliminate bogus 'skip to sync byte' exception for PCD image format.
+  * -threshold option: threshold to white if the computed intensity of the
+	  color channels exceeds the threshold.
+  * Add -define jpeg:extent option to restrict the maximum JPEG image file size.
 
 2009-11-26  6.5.8-1 Dr. Ingo Bremer <bremer@wias-...>
   * Escape single quote in when writing the UIL format.
