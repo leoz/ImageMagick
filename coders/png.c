@@ -1788,7 +1788,10 @@ static Image *ReadOnePNGImage(MngInfo *mng_info,
         (void) LogMagickEvent(CoderEvent,GetMagickModule(),
           "  exit ReadOnePNGImage() with error.");
       if (image != (Image *) NULL)
-        image->columns=0;
+        {
+          InheritException(exception,&image->exception);
+          image->columns=0;
+        }
       return(GetFirstImageInList(image));
     }
   /*
@@ -2319,7 +2322,10 @@ static Image *ReadOnePNGImage(MngInfo *mng_info,
         (void) LogMagickEvent(CoderEvent,GetMagickModule(),
           "  exit ReadOnePNGImage() with error.");
       if (image != (Image *) NULL)
-        image->columns=0;
+        {
+          InheritException(exception,&image->exception);
+          image->columns=0;
+        }
       return(GetFirstImageInList(image));
     }
   quantum_info=AcquireQuantumInfo(image_info,image);
@@ -6682,7 +6688,7 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
        {
          if (ping_info->color_type == PNG_COLOR_TYPE_GRAY_ALPHA ||
              ping_info->color_type == PNG_COLOR_TYPE_RGB ||
-             ping_info->color_type == PNG_COLOR_TYPE_RGBA)
+             ping_info->color_type == PNG_COLOR_TYPE_RGB_ALPHA)
            ping_info->bit_depth=8;
        }
 

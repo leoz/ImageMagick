@@ -82,6 +82,8 @@ AC_SUBST(CONFIGURE_ARGS)
 . ${srcdir}/version.sh
 
 echo "configuring ${PACKAGE_NAME} ${PACKAGE_VERSION}${PACKAGE_LIB_SUBVERSION}"
+AC_CANONICAL_BUILD
+AC_CANONICAL_HOST
 AC_CANONICAL_TARGET([])
 
 # Substitute library versioning
@@ -139,6 +141,12 @@ MAGICK_CPPFLAGS=$CPPFLAGS_USER
 MAGICK_PCFLAGS=$CPPFLAGS_USER
 MAGICK_LDFLAGS=''
 MAGICK_LIBS=''
+
+#
+# Standards compliance definitions
+#
+AC_DEFINE(_GNU_SOURCE,1,[Enable all API extensions (for GNU Linux libc)])
+AC_DEFINE(_NETBSD_SOURCE,1,[Enable all API extensions (for NetBSD)])
 
 #
 # Evaluate shell variable equivalents to Makefile directory variables
@@ -215,6 +223,7 @@ AC_SUBST(DIRSEP)
 
 # Check for programs
 AC_PROG_CC
+AC_PROG_CXX
 AC_PROG_CC_STDC
 AC_PROG_CPP
 AC_PROG_LD
