@@ -17,7 +17,7 @@
 %                                December 1996                                %
 %                                                                             %
 %                                                                             %
-%  Copyright 1999-2009 ImageMagick Studio LLC, a non-profit organization      %
+%  Copyright 1999-2010 ImageMagick Studio LLC, a non-profit organization      %
 %  dedicated to making software imaging solutions freely available.           %
 %                                                                             %
 %  You may not use this file except in compliance with the License.  You may  %
@@ -1313,7 +1313,7 @@ MagickExport DIR *NTOpenDirectory(const char *path)
     MaxTextExtent);
   if (length >= MaxTextExtent)
     return((DIR *) NULL);
-  entry=(DIR *) AcquireMagickMemory(sizeof(DIR));
+  entry=(DIR *) AcquireAlignedMemory(1,sizeof(DIR));
   if (entry != (DIR *) NULL)
     {
       entry->firsttime=TRUE;

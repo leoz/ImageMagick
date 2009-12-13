@@ -15,7 +15,7 @@
 %                                 July 2000                                   %
 %                                                                             %
 %                                                                             %
-%  Copyright 1999-2009 ImageMagick Studio LLC, a non-profit organization      %
+%  Copyright 1999-2010 ImageMagick Studio LLC, a non-profit organization      %
 %  dedicated to making software imaging solutions freely available.           %
 %                                                                             %
 %  You may not use this file except in compliance with the License.  You may  %
@@ -814,7 +814,7 @@ static MagickBooleanType LoadMimeList(const char *xml,const char *filename,
     /*
       Process mime element.
     */
-    mime_info=(MimeInfo *) AcquireMagickMemory(sizeof(*mime_info));
+    mime_info=(MimeInfo *) AcquireAlignedMemory(1,sizeof(*mime_info));
     if (mime_info == (MimeInfo *) NULL)
       ThrowFatalException(ResourceLimitFatalError,"MemoryAllocationFailed");
     (void) ResetMagickMemory(mime_info,0,sizeof(*mime_info));

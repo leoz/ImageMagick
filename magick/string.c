@@ -17,7 +17,7 @@
 %                               August 2003                                   %
 %                                                                             %
 %                                                                             %
-%  Copyright 1999-2009 ImageMagick Studio LLC, a non-profit organization      %
+%  Copyright 1999-2010 ImageMagick Studio LLC, a non-profit organization      %
 %  dedicated to making software imaging solutions freely available.           %
 %                                                                             %
 %  You may not use this file except in compliance with the License.  You may  %
@@ -157,7 +157,7 @@ MagickExport StringInfo *AcquireStringInfo(const size_t length)
   StringInfo
     *string_info;
 
-  string_info=(StringInfo *) AcquireMagickMemory(sizeof(*string_info));
+  string_info=(StringInfo *) AcquireAlignedMemory(1,sizeof(*string_info));
   if (string_info == (StringInfo *) NULL)
     ThrowFatalException(ResourceLimitFatalError,"MemoryAllocationFailed");
   (void) ResetMagickMemory(string_info,0,sizeof(*string_info));

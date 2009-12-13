@@ -17,7 +17,7 @@
 %                                October 2002                                 %
 %                                                                             %
 %                                                                             %
-%  Copyright 1999-2009 ImageMagick Studio LLC, a non-profit organization      %
+%  Copyright 1999-2010 ImageMagick Studio LLC, a non-profit organization      %
 %  dedicated to making software imaging solutions freely available.           %
 %                                                                             %
 %  You may not use this file except in compliance with the License.  You may  %
@@ -2339,7 +2339,7 @@ MagickExport const ImageAttribute *GetImageAttribute(const Image *image,
       if (attribute != (const ImageAttribute *) NULL)
         return(attribute);
     }
-  attribute=(ImageAttribute *) AcquireMagickMemory(sizeof(*attribute));
+  attribute=(ImageAttribute *) AcquireAlignedMemory(1,sizeof(*attribute));
   if (attribute == (ImageAttribute *) NULL)
     ThrowFatalException(ResourceLimitFatalError,"MemoryAllocationFailed");
   (void) ResetMagickMemory(attribute,0,sizeof(*attribute));

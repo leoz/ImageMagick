@@ -16,7 +16,7 @@
 %                               March  2003                                   %
 %                                                                             %
 %                                                                             %
-%  Copyright 1999-2009 ImageMagick Studio LLC, a non-profit organization      %
+%  Copyright 1999-2010 ImageMagick Studio LLC, a non-profit organization      %
 %  dedicated to making software imaging solutions freely available.           %
 %                                                                             %
 %  You may not use this file except in compliance with the License.  You may  %
@@ -69,7 +69,7 @@ MagickExport MagickBooleanType MagickCreateThreadKey(MagickThreadKey *key)
   *key=TlsAlloc();
   return(*key != TLS_OUT_OF_INDEXES ? MagickTrue : MagickFalse);
 #else
-  *key=AcquireMagickMemory(sizeof(key));
+  *key=AcquireAlignedMemory(1,sizeof(key));
   return(*key != (void *) NULL ? MagickTrue : MagickFalse);
 #endif
 }

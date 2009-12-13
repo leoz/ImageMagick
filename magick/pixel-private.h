@@ -1,5 +1,5 @@
 /*
-  Copyright 1999-2009 ImageMagick Studio LLC, a non-profit organization
+  Copyright 1999-2010 ImageMagick Studio LLC, a non-profit organization
   dedicated to making software imaging solutions freely available.
   
   You may not use this file except in compliance with the License.
@@ -34,7 +34,7 @@ static inline MagickPixelPacket *CloneMagickPixelPacket(
   MagickPixelPacket
     *clone_pixel;
 
-  clone_pixel=(MagickPixelPacket *) AcquireMagickMemory(sizeof(*clone_pixel));
+  clone_pixel=(MagickPixelPacket *) AcquireAlignedMemory(1,sizeof(*clone_pixel));
   if (clone_pixel == (MagickPixelPacket *) NULL)
     ThrowFatalException(ResourceLimitFatalError,"MemoryAllocationFailed");
   *clone_pixel=(*pixel);

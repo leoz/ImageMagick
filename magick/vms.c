@@ -17,7 +17,7 @@
 %                                October 1994                                 %
 %                                                                             %
 %                                                                             %
-%  Copyright 1999-2009 ImageMagick Studio LLC, a non-profit organization      %
+%  Copyright 1999-2010 ImageMagick Studio LLC, a non-profit organization      %
 %  dedicated to making software imaging solutions freely available.           %
 %                                                                             %
 %  You may not use this file except in compliance with the License.  You may  %
@@ -111,7 +111,7 @@ DIR *opendir(char *name)
   /*
     Allocate memory for handle and the pattern.
   */
-  directory=(DIR *) AcquireMagickMemory(sizeof(DIR));
+  directory=(DIR *) AcquireAlignedMemory(1,sizeof(DIR));
   if (directory == (DIR *) NULL)
     {
       errno=ENOMEM;

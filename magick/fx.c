@@ -17,7 +17,7 @@
 %                                 October 1996                                %
 %                                                                             %
 %                                                                             %
-%  Copyright 1999-2009 ImageMagick Studio LLC, a non-profit organization      %
+%  Copyright 1999-2010 ImageMagick Studio LLC, a non-profit organization      %
 %  dedicated to making software imaging solutions freely available.           %
 %                                                                             %
 %  You may not use this file except in compliance with the License.  You may  %
@@ -158,7 +158,7 @@ MagickExport FxInfo *AcquireFxInfo(const Image *image,const char *expression)
   register long
     i;
 
-  fx_info=(FxInfo *) AcquireMagickMemory(sizeof(*fx_info));
+  fx_info=(FxInfo *) AcquireAlignedMemory(1,sizeof(*fx_info));
   if (fx_info == (FxInfo *) NULL)
     ThrowFatalException(ResourceLimitFatalError,"MemoryAllocationFailed");
   (void) ResetMagickMemory(fx_info,0,sizeof(*fx_info));

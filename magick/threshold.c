@@ -17,7 +17,7 @@
 %                                 October 1996                                %
 %                                                                             %
 %                                                                             %
-%  Copyright 1999-2009 ImageMagick Studio LLC, a non-profit organization      %
+%  Copyright 1999-2010 ImageMagick Studio LLC, a non-profit organization      %
 %  dedicated to making software imaging solutions freely available.           %
 %                                                                             %
 %  You may not use this file except in compliance with the License.  You may  %
@@ -923,7 +923,7 @@ MagickExport ThresholdMap *GetThresholdMapFile(const char *xml,
   }
 
   /* The map has been found -- Allocate a Threshold Map to return */
-  map = (ThresholdMap *)AcquireMagickMemory(sizeof(ThresholdMap));
+  map = (ThresholdMap *)AcquireAlignedMemory(1,sizeof(ThresholdMap));
   if ( map == (ThresholdMap *)NULL )
     ThrowFatalException(ResourceLimitFatalError,"UnableToAcquireThresholdMap");
   map->map_id = (char *)NULL;

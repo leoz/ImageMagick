@@ -18,7 +18,7 @@
 %                                March 2000                                   %
 %                                                                             %
 %                                                                             %
-%  Copyright 1999-2009 ImageMagick Studio LLC, a non-profit organization      %
+%  Copyright 1999-2010 ImageMagick Studio LLC, a non-profit organization      %
 %  dedicated to making software imaging solutions freely available.           %
 %                                                                             %
 %  You may not use this file except in compliance with the License.  You may  %
@@ -259,12 +259,12 @@ static SVGInfo *AcquireSVGInfo(void)
   SVGInfo
     *svg_info;
 
-  svg_info=(SVGInfo *) AcquireMagickMemory(sizeof(*svg_info));
+  svg_info=(SVGInfo *) AcquireAlignedMemory(1,sizeof(*svg_info));
   if (svg_info == (SVGInfo *) NULL)
     return((SVGInfo *) NULL);
   (void) ResetMagickMemory(svg_info,0,sizeof(*svg_info));
   svg_info->text=AcquireString("");
-  svg_info->scale=(double *) AcquireMagickMemory(sizeof(*svg_info->scale));
+  svg_info->scale=(double *) AcquireAlignedMemory(1,sizeof(*svg_info->scale));
   if (svg_info->scale == (double *) NULL)
     ThrowFatalException(ResourceLimitFatalError,"MemoryAllocationFailed");
   GetAffineMatrix(&svg_info->affine);

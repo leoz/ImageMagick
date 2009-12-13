@@ -17,7 +17,7 @@
 %                                July 1993                                    %
 %                                                                             %
 %                                                                             %
-%  Copyright 1999-2009 ImageMagick Studio LLC, a non-profit organization      %
+%  Copyright 1999-2010 ImageMagick Studio LLC, a non-profit organization      %
 %  dedicated to making software imaging solutions freely available.           %
 %                                                                             %
 %  You may not use this file except in compliance with the License.  You may  %
@@ -103,7 +103,7 @@ MagickExport ExceptionInfo *AcquireExceptionInfo(void)
   ExceptionInfo
     *exception;
 
-  exception=(ExceptionInfo *) AcquireMagickMemory(sizeof(*exception));
+  exception=(ExceptionInfo *) AcquireAlignedMemory(1,sizeof(*exception));
   if (exception == (ExceptionInfo *) NULL)
     ThrowFatalException(ResourceLimitFatalError,"MemoryAllocationFailed");
   GetExceptionInfo(exception);
@@ -875,7 +875,7 @@ MagickExport MagickBooleanType ThrowException(ExceptionInfo *exception,
       (LocaleCompare(exception->reason,reason) == 0) &&
       (LocaleCompare(exception->description,description) == 0))
     return(MagickTrue);
-  p=(ExceptionInfo *) AcquireMagickMemory(sizeof(*p));
+  p=(ExceptionInfo *) AcquireAlignedMemory(1,sizeof(*p));
   if (p == (ExceptionInfo *) NULL)
     ThrowFatalException(ResourceLimitFatalError,"MemoryAllocationFailed");
   (void) ResetMagickMemory(p,0,sizeof(*p));

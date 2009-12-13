@@ -23,7 +23,7 @@
 %                                March 2003                                   %
 %                                                                             %
 %                                                                             %
-%  Copyright 1999-2009 ImageMagick Studio LLC, a non-profit organization      %
+%  Copyright 1999-2010 ImageMagick Studio LLC, a non-profit organization      %
 %  dedicated to making software imaging solutions freely available.           %
 %                                                                             %
 %  You may not use this file except in compliance with the License.  You may  %
@@ -148,7 +148,7 @@ WandExport PixelWand *ClonePixelWand(const PixelWand *wand)
   assert(wand->signature == WandSignature);
   if (wand->debug != MagickFalse)
     (void) LogMagickEvent(WandEvent,GetMagickModule(),"%s",wand->name);
-  clone_wand=(PixelWand *) AcquireMagickMemory(sizeof(*clone_wand));
+  clone_wand=(PixelWand *) AcquireAlignedMemory(1,sizeof(*clone_wand));
   if (clone_wand == (PixelWand *) NULL)
     ThrowWandFatalException(ResourceLimitFatalError,"MemoryAllocationFailed",
       wand->name);
@@ -400,7 +400,7 @@ WandExport PixelWand *NewPixelWand(void)
   quantum=GetMagickQuantumDepth(&depth);
   if (depth != MAGICKCORE_QUANTUM_DEPTH)
     ThrowWandFatalException(WandError,"QuantumDepthMismatch",quantum);
-  wand=(PixelWand *) AcquireMagickMemory(sizeof(*wand));
+  wand=(PixelWand *) AcquireAlignedMemory(1,sizeof(*wand));
   if (wand == (PixelWand *) NULL)
     ThrowWandFatalException(ResourceLimitFatalError,"MemoryAllocationFailed",
       GetExceptionMessage(errno));

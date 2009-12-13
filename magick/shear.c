@@ -17,7 +17,7 @@
 %                                  July 1992                                  %
 %                                                                             %
 %                                                                             %
-%  Copyright 1999-2009 ImageMagick Studio LLC, a non-profit organization      %
+%  Copyright 1999-2010 ImageMagick Studio LLC, a non-profit organization      %
 %  dedicated to making software imaging solutions freely available.           %
 %                                                                             %
 %  You may not use this file except in compliance with the License.  You may  %
@@ -368,7 +368,7 @@ static RadonInfo *AcquireRadonInfo(const Image *image,const unsigned long width,
   RadonInfo
     *radon_info;
 
-  radon_info=(RadonInfo *) AcquireMagickMemory(sizeof(*radon_info));
+  radon_info=(RadonInfo *) AcquireAlignedMemory(1,sizeof(*radon_info));
   if (radon_info == (RadonInfo *) NULL)
     return((RadonInfo *) NULL);
   (void) ResetMagickMemory(radon_info,0,sizeof(*radon_info));

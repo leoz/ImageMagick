@@ -17,7 +17,7 @@
 %                              May  1993                                      %
 %                                                                             %
 %                                                                             %
-%  Copyright 1999-2009 ImageMagick Studio LLC, a non-profit organization      %
+%  Copyright 1999-2010 ImageMagick Studio LLC, a non-profit organization      %
 %  dedicated to making software imaging solutions freely available.           %
 %                                                                             %
 %  You may not use this file except in compliance with the License.  You may  %
@@ -274,7 +274,7 @@ MagickExport void Ascii85Initialize(Image *image)
     Allocate image structure.
   */
   if (image->ascii85 == (Ascii85Info *) NULL)
-    image->ascii85=(Ascii85Info *) AcquireMagickMemory(sizeof(*image->ascii85));
+    image->ascii85=(Ascii85Info *) AcquireAlignedMemory(1,sizeof(*image->ascii85));
   if (image->ascii85 == (Ascii85Info *) NULL)
     ThrowFatalException(ResourceLimitFatalError,"MemoryAllocationFailed");
   (void) ResetMagickMemory(image->ascii85,0,sizeof(*image->ascii85));

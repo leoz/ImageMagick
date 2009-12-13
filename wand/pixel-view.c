@@ -23,7 +23,7 @@
 %                                March 2003                                   %
 %                                                                             %
 %                                                                             %
-%  Copyright 1999-2009 ImageMagick Studio LLC, a non-profit organization      %
+%  Copyright 1999-2010 ImageMagick Studio LLC, a non-profit organization      %
 %  dedicated to making software imaging solutions freely available.           %
 %                                                                             %
 %  You may not use this file except in compliance with the License.  You may  %
@@ -127,7 +127,7 @@ WandExport PixelView *ClonePixelView(const PixelView *pixel_view)
   assert(pixel_view->signature == WandSignature);
   if (pixel_view->debug != MagickFalse)
     (void) LogMagickEvent(WandEvent,GetMagickModule(),"%s",pixel_view->name);
-  clone_view=(PixelView *) AcquireMagickMemory(sizeof(*clone_view));
+  clone_view=(PixelView *) AcquireAlignedMemory(1,sizeof(*clone_view));
   if (clone_view == (PixelView *) NULL)
     ThrowWandFatalException(ResourceLimitFatalError,"MemoryAllocationFailed",
       pixel_view->name);
@@ -838,7 +838,7 @@ WandExport PixelView *NewPixelView(MagickWand *wand)
 
   assert(wand != (MagickWand *) NULL);
   assert(wand->signature == MagickSignature);
-  pixel_view=(PixelView *) AcquireMagickMemory(sizeof(*pixel_view));
+  pixel_view=(PixelView *) AcquireAlignedMemory(1,sizeof(*pixel_view));
   if (pixel_view == (PixelView *) NULL)
     ThrowWandFatalException(ResourceLimitFatalError,"MemoryAllocationFailed",
       GetExceptionMessage(errno));
@@ -897,7 +897,7 @@ WandExport PixelView *NewPixelViewRegion(MagickWand *wand,const long x,
 
   assert(wand != (MagickWand *) NULL);
   assert(wand->signature == MagickSignature);
-  pixel_view=(PixelView *) AcquireMagickMemory(sizeof(*pixel_view));
+  pixel_view=(PixelView *) AcquireAlignedMemory(1,sizeof(*pixel_view));
   if (pixel_view == (PixelView *) NULL)
     ThrowWandFatalException(ResourceLimitFatalError,"MemoryAllocationFailed",
       GetExceptionMessage(errno));

@@ -17,7 +17,7 @@
 %                                 July 1992                                   %
 %                                                                             %
 %                                                                             %
-%  Copyright 1999-2009 ImageMagick Studio LLC, a non-profit organization      %
+%  Copyright 1999-2010 ImageMagick Studio LLC, a non-profit organization      %
 %  dedicated to making software imaging solutions freely available.           %
 %                                                                             %
 %  You may not use this file except in compliance with the License.  You may  %
@@ -104,7 +104,7 @@ MagickExport MontageInfo *CloneMontageInfo(const ImageInfo *image_info,
   MontageInfo
     *clone_info;
 
-  clone_info=(MontageInfo *) AcquireMagickMemory(sizeof(*clone_info));
+  clone_info=(MontageInfo *) AcquireAlignedMemory(1,sizeof(*clone_info));
   if (clone_info == (MontageInfo *) NULL)
     ThrowFatalException(ResourceLimitFatalError,"MemoryAllocationFailed");
   GetMontageInfo(image_info,clone_info);

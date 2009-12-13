@@ -17,7 +17,7 @@
 %                                  July 1992                                  %
 %                                                                             %
 %                                                                             %
-%  Copyright 1999-2009 ImageMagick Studio LLC, a non-profit organization      %
+%  Copyright 1999-2010 ImageMagick Studio LLC, a non-profit organization      %
 %  dedicated to making software imaging solutions freely available.           %
 %                                                                             %
 %  You may not use this file except in compliance with the License.  You may  %
@@ -4291,7 +4291,7 @@ static Image *XGetWindowImage(Display *display,const Window window,
                 /*
                   Append colormap to colormap list.
                 */
-                p=(ColormapInfo *) AcquireMagickMemory(sizeof(*p));
+                p=(ColormapInfo *) AcquireAlignedMemory(1,sizeof(*p));
                 if (p == (ColormapInfo *) NULL)
                   return((Image *) NULL);
                 p->colormap=window_info[id].colormap;
@@ -5104,7 +5104,7 @@ MagickExport XWindows *XInitializeWindows(Display *display,
   /*
     Allocate windows structure.
   */
-  windows=(XWindows *) AcquireMagickMemory(sizeof(*windows));
+  windows=(XWindows *) AcquireAlignedMemory(1,sizeof(*windows));
   if (windows == (XWindows *) NULL)
     {
       ThrowXWindowFatalException(XServerFatalError,"MemoryAllocationFailed",

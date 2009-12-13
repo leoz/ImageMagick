@@ -1,5 +1,5 @@
 /*
-  Copyright 1999-2009 ImageMagick Studio LLC, a non-profit organization
+  Copyright 1999-2010 ImageMagick Studio LLC, a non-profit organization
   dedicated to making software imaging solutions freely available.
   
   You may not use this file except in compliance with the License.
@@ -26,13 +26,13 @@ extern "C" {
   Define declarations.
 */
 #define MagickPackageName "ImageMagick"
-#define MagickCopyright  "Copyright (C) 1999-2009 ImageMagick Studio LLC"
+#define MagickCopyright  "Copyright (C) 1999-2010 ImageMagick Studio LLC"
 #define MagickLibVersion  0x658
 #define MagickLibVersionText  "6.5.8"
 #define MagickLibVersionNumber  2,0,1
-#define MagickLibSubversion  "-5"
-#define MagickReleaseDate  "2009-12-06"
-#define MagickChangeDate   "20091205"
+#define MagickLibSubversion  "-6"
+#define MagickReleaseDate  "2009-12-12"
+#define MagickChangeDate   "20091209"
 #define MagickAuthoritativeURL  "http://www.imagemagick.org"
 #define MagickHomeURL  "file:///usr/local/share/doc/ImageMagick-6.5.8/index.html"
 #if (MAGICKCORE_QUANTUM_DEPTH == 8)

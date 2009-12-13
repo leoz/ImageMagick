@@ -17,7 +17,7 @@
 %                                 July 2003                                   %
 %                                                                             %
 %                                                                             %
-%  Copyright 1999-2009 ImageMagick Studio LLC, a non-profit organization      %
+%  Copyright 1999-2010 ImageMagick Studio LLC, a non-profit organization      %
 %  dedicated to making software imaging solutions freely available.           %
 %                                                                             %
 %  You may not use this file except in compliance with the License.  You may  %
@@ -918,7 +918,7 @@ static MagickBooleanType LoadLocaleList(const char *xml,const char *filename,
         while ((isspace((int) ((unsigned char) *q)) != 0) && (q > p))
           q--;
         (void) CopyMagickString(message,p,(size_t) (q-p+2));
-        locale_info=(LocaleInfo *) AcquireMagickMemory(sizeof(*locale_info));
+        locale_info=(LocaleInfo *) AcquireAlignedMemory(1,sizeof(*locale_info));
         if (locale_info == (LocaleInfo *) NULL)
           ThrowFatalException(ResourceLimitFatalError,"MemoryAllocationFailed");
         (void) ResetMagickMemory(locale_info,0,sizeof(*locale_info));

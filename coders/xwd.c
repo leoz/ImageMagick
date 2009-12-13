@@ -17,7 +17,7 @@
 %                                 July 1992                                   %
 %                                                                             %
 %                                                                             %
-%  Copyright 1999-2009 ImageMagick Studio LLC, a non-profit organization      %
+%  Copyright 1999-2010 ImageMagick Studio LLC, a non-profit organization      %
 %  dedicated to making software imaging solutions freely available.           %
 %                                                                             %
 %  You may not use this file except in compliance with the License.  You may  %
@@ -255,7 +255,7 @@ static Image *ReadXWDImage(const ImageInfo *image_info,ExceptionInfo *exception)
   /*
     Initialize the X image.
   */
-  ximage=(XImage *) AcquireMagickMemory(sizeof(*ximage));
+  ximage=(XImage *) AcquireAlignedMemory(1,sizeof(*ximage));
   if (ximage == (XImage *) NULL)
     ThrowReaderException(ResourceLimitError,"MemoryAllocationFailed");
   ximage->depth=(int) header.pixmap_depth;

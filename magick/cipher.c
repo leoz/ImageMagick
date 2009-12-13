@@ -16,7 +16,7 @@
 %                               March  2003                                   %
 %                                                                             %
 %                                                                             %
-%  Copyright 1999-2009 ImageMagick Studio LLC, a non-profit organization      %
+%  Copyright 1999-2010 ImageMagick Studio LLC, a non-profit organization      %
 %  dedicated to making software imaging solutions freely available.           %
 %                                                                             %
 %  You may not use this file except in compliance with the License.  You may  %
@@ -190,7 +190,7 @@ static AESInfo *AcquireAESInfo(void)
   AESInfo
     *aes_info;
 
-  aes_info=(AESInfo *) AcquireMagickMemory(sizeof(*aes_info));
+  aes_info=(AESInfo *) AcquireAlignedMemory(1,sizeof(*aes_info));
   if (aes_info == (AESInfo *) NULL)
     ThrowFatalException(ResourceLimitFatalError,"MemoryAllocationFailed");
   (void) ResetMagickMemory(aes_info,0,sizeof(*aes_info));

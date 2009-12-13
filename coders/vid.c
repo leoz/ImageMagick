@@ -17,7 +17,7 @@
 %                                 July 1992                                   %
 %                                                                             %
 %                                                                             %
-%  Copyright 1999-2009 ImageMagick Studio LLC, a non-profit organization      %
+%  Copyright 1999-2010 ImageMagick Studio LLC, a non-profit organization      %
 %  dedicated to making software imaging solutions freely available.           %
 %                                                                             %
 %  You may not use this file except in compliance with the License.  You may  %
@@ -139,7 +139,7 @@ static Image *ReadVIDImage(const ImageInfo *image_info,ExceptionInfo *exception)
   assert(exception != (ExceptionInfo *) NULL);
   assert(exception->signature == MagickSignature);
   image=AcquireImage(image_info);
-  filelist=(char **) AcquireMagickMemory(sizeof(*filelist));
+  filelist=(char **) AcquireAlignedMemory(1,sizeof(*filelist));
   if (filelist == (char **) NULL)
     ThrowReaderException(ResourceLimitError,"MemoryAllocationFailed");
   filelist[0]=ConstantString(image_info->filename);

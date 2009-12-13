@@ -16,7 +16,7 @@
 %                                 July 1992                                   %
 %                                                                             %
 %                                                                             %
-%  Copyright 1999-2009 ImageMagick Studio LLC, a non-profit organization      %
+%  Copyright 1999-2010 ImageMagick Studio LLC, a non-profit organization      %
 %  dedicated to making software imaging solutions freely available.           %
 %                                                                             %
 %  You may not use this file except in compliance with the License.  You may  %
@@ -2035,7 +2035,7 @@ static MagickBooleanType LoadColorList(const char *xml,const char *filename,
         /*
           Color element.
         */
-        color_info=(ColorInfo *) AcquireMagickMemory(sizeof(*color_info));
+        color_info=(ColorInfo *) AcquireAlignedMemory(1,sizeof(*color_info));
         if (color_info == (ColorInfo *) NULL)
           ThrowFatalException(ResourceLimitFatalError,"MemoryAllocationFailed");
         (void) ResetMagickMemory(color_info,0,sizeof(*color_info));
@@ -2183,7 +2183,7 @@ static MagickBooleanType LoadColorLists(const char *filename,
       *p;
 
     p=ColorMap+i;
-    color_info=(ColorInfo *) AcquireMagickMemory(sizeof(*color_info));
+    color_info=(ColorInfo *) AcquireAlignedMemory(1,sizeof(*color_info));
     if (color_info == (ColorInfo *) NULL)
       {
         (void) ThrowMagickException(exception,GetMagickModule(),

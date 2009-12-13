@@ -17,7 +17,7 @@
 %                              January 1993                                   %
 %                                                                             %
 %                                                                             %
-%  Copyright 1999-2009 ImageMagick Studio LLC, a non-profit organization      %
+%  Copyright 1999-2010 ImageMagick Studio LLC, a non-profit organization      %
 %  dedicated to making software imaging solutions freely available.           %
 %                                                                             %
 %  You may not use this file except in compliance with the License.  You may  %
@@ -94,7 +94,7 @@ MagickExport TokenInfo *AcquireTokenInfo(void)
   TokenInfo
     *token_info;
 
-  token_info=(TokenInfo *) AcquireMagickMemory(sizeof(*token_info));
+  token_info=(TokenInfo *) AcquireAlignedMemory(1,sizeof(*token_info));
   if (token_info == (TokenInfo *) NULL)
     ThrowFatalException(ResourceLimitFatalError,"MemoryAllocationFailed");
   token_info->signature=MagickSignature;

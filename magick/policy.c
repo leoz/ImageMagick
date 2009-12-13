@@ -16,7 +16,7 @@
 %                                 July 1992                                   %
 %                                                                             %
 %                                                                             %
-%  Copyright 1999-2009 ImageMagick Studio LLC, a non-profit organization      %
+%  Copyright 1999-2010 ImageMagick Studio LLC, a non-profit organization      %
 %  dedicated to making software imaging solutions freely available.           %
 %                                                                             %
 %  You may not use this file except in compliance with the License.  You may  %
@@ -746,7 +746,7 @@ static MagickBooleanType LoadPolicyList(const char *xml,const char *filename,
         /*
           Policy element.
         */
-        policy_info=(PolicyInfo *) AcquireMagickMemory(sizeof(*policy_info));
+        policy_info=(PolicyInfo *) AcquireAlignedMemory(1,sizeof(*policy_info));
         if (policy_info == (PolicyInfo *) NULL)
           ThrowFatalException(ResourceLimitFatalError,"MemoryAllocationFailed");
         (void) ResetMagickMemory(policy_info,0,sizeof(*policy_info));
@@ -907,7 +907,7 @@ static MagickBooleanType LoadPolicyLists(const char *filename,
       *p;
 
     p=PolicyMap+i;
-    policy_info=(PolicyInfo *) AcquireMagickMemory(sizeof(*policy_info));
+    policy_info=(PolicyInfo *) AcquireAlignedMemory(1,sizeof(*policy_info));
     if (policy_info == (PolicyInfo *) NULL)
       {
         (void) ThrowMagickException(exception,GetMagickModule(),

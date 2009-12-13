@@ -17,7 +17,7 @@
 %                                September 2002                               %
 %                                                                             %
 %                                                                             %
-%  Copyright 1999-2009 ImageMagick Studio LLC, a non-profit organization      %
+%  Copyright 1999-2010 ImageMagick Studio LLC, a non-profit organization      %
 %  dedicated to making software imaging solutions freely available.           %
 %                                                                             %
 %  You may not use this file except in compliance with the License.  You may  %
@@ -1378,7 +1378,7 @@ static MagickBooleanType LoadLogList(const char *xml,const char *filename,
         /*
           Allocate memory for the log list.
         */
-        log_info=(LogInfo *) AcquireMagickMemory(sizeof(*log_info));
+        log_info=(LogInfo *) AcquireAlignedMemory(1,sizeof(*log_info));
         if (log_info == (LogInfo *) NULL)
           ThrowFatalException(ResourceLimitFatalError,"MemoryAllocationFailed");
         (void) ResetMagickMemory(log_info,0,sizeof(*log_info));
@@ -1552,7 +1552,7 @@ static MagickBooleanType LoadLogLists(const char *filename,
       *p;
 
     p=LogMap+i;
-    log_info=(LogInfo *) AcquireMagickMemory(sizeof(*log_info));
+    log_info=(LogInfo *) AcquireAlignedMemory(1,sizeof(*log_info));
     if (log_info == (LogInfo *) NULL)
       {
         (void) ThrowMagickException(exception,GetMagickModule(),
