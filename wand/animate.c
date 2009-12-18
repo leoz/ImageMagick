@@ -44,6 +44,7 @@
 #include "wand/MagickWand.h"
 #include "wand/mogrify-private.h"
 #include "magick/animate-private.h"
+#include "magick/string-private.h"
 
 /*
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -523,7 +524,8 @@ WandExport MagickBooleanType AnimateImageCommand(ImageInfo *image_info,
             i++;
             if ((i == (long) argc) || (IsGeometry(argv[i]) == MagickFalse))
               ThrowAnimateException(OptionError,"MissingArgument",option);
-            resource_info.border_width=(unsigned int) atoi(argv[i]);
+            resource_info.border_width=(unsigned int)
+              StringToUnsignedLong(argv[i]);
             break;
           }
         ThrowAnimateException(OptionError,"UnrecognizedOption",option);
@@ -614,7 +616,7 @@ WandExport MagickBooleanType AnimateImageCommand(ImageInfo *image_info,
               ThrowAnimateException(OptionError,"MissingArgument",option);
             if (IsGeometry(argv[i]) == MagickFalse)
               ThrowAnimateInvalidArgumentException(option,argv[i]);
-            quantize_info->number_colors=(unsigned long) atol(argv[i]);
+            quantize_info->number_colors=StringToUnsignedLong(argv[i]);
             break;
           }
         if (LocaleCompare("colorspace",option+1) == 0)
@@ -1112,7 +1114,7 @@ WandExport MagickBooleanType AnimateImageCommand(ImageInfo *image_info,
               ThrowAnimateException(OptionError,"MissingArgument",option);
             if (IsGeometry(argv[i]) == MagickFalse)
               ThrowAnimateInvalidArgumentException(option,argv[i]);
-            resource_info.pause=(unsigned int) atoi(argv[i]);
+            resource_info.pause=(unsigned int) StringToUnsignedLong(argv[i]);
             break;
           }
         if (LocaleCompare("page",option+1) == 0)
@@ -1347,7 +1349,7 @@ WandExport MagickBooleanType AnimateImageCommand(ImageInfo *image_info,
               ThrowAnimateException(OptionError,"MissingArgument",option);
             if (IsGeometry(argv[i]) == MagickFalse)
               ThrowAnimateInvalidArgumentException(option,argv[i]);
-            quantize_info->tree_depth=(unsigned long) atol(argv[i]);
+            quantize_info->tree_depth=StringToUnsignedLong(argv[i]);
             break;
           }
         if (LocaleCompare("trim",option+1) == 0)
