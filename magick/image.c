@@ -3774,7 +3774,7 @@ MagickExport MagickBooleanType StripImage(Image *image)
   if (image->debug != MagickFalse)
     (void) LogMagickEvent(TraceEvent,GetMagickModule(),"...");
   DestroyImageProfiles(image);
-  (void) DeleteImageProperty(image,"comment");
+  DeleteImageProperty(image,"comment");
   return(MagickTrue);
 }
 
