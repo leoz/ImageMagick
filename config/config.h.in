@@ -417,9 +417,6 @@
 /* Define to 1 if stdbool.h conforms to C99. */
 #undef HAVE_STDBOOL_H
 
-/* Define to 1 if you have the <stddef.h> header file. */
-#undef HAVE_STDDEF_H
-
 /* Define to 1 if you have the <stdint.h> header file. */
 #undef HAVE_STDINT_H
 
@@ -692,7 +689,7 @@
 /* Magick API method prefix */
 #undef NAMESPACE_PREFIX
 
-/* Turn off assert statements */
+/* Define to 1 if assertions should be disabled. */
 #undef NDEBUG
 
 /* Define if dlsym() requires a leading underscore in symbol names. */
@@ -884,6 +881,9 @@
 /* Define to 1 if on MINIX. */
 #undef _MINIX
 
+/* Define this for the OpenCL Accelerator */
+#undef _OPENCL
+
 /* Define to 2 if the system does not provide POSIX.1 features except with
    this defined. */
 #undef _POSIX_1_SOURCE
@@ -901,9 +901,6 @@
 
 /* Define to appropriate substitue if compiler does not have __func__ */
 #undef __func__
-
-/* Define to empty if `const' does not conform to ANSI C. */
-#undef const
 
 /* Define to a type to use for `error_t' if it is not otherwise available. */
 #undef error_t

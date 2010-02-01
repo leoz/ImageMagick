@@ -197,6 +197,7 @@ static const char
   {
     "",
     "-verbose",
+    "-features -verbose",
     (const char *) NULL
   };
 
@@ -277,12 +278,10 @@ static const struct ReferenceFormats
     { "JPG", UndefinedCompression, 0.003 },
     { "K25", UndefinedCompression, 0.0 },
     { "KDC", UndefinedCompression, 0.0 },
-    { "MAT", UndefinedCompression, 0.0 },
     { "MATTE", UndefinedCompression, 0.0 },
     { "MIFF", UndefinedCompression, 0.0 },
     { "MNG", UndefinedCompression, 0.0 },
     { "MONO", UndefinedCompression, 0.0 },
-    { "MOV", UndefinedCompression, 0.0 },
     { "MRW", UndefinedCompression, 0.0 },
     { "MTV", UndefinedCompression, 0.0 },
     { "NEF", UndefinedCompression, 0.0 },

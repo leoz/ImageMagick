@@ -28,6 +28,7 @@ AC_CONFIG_FILES([\
     config/ImageMagick.rdf \
     config/MagickCore.dox \
     config/MagickWand.dox \
+    config/type-dejavu.xml \
     config/type-ghostscript.xml \
     config/type-windows.xml \
     config/type.xml \
@@ -81,7 +82,7 @@ AC_SUBST(CONFIGURE_ARGS)
 # Source file containing package/library versioning information.
 . ${srcdir}/version.sh
 
-echo "configuring ${PACKAGE_NAME} ${PACKAGE_VERSION}${PACKAGE_LIB_SUBVERSION}"
+echo "configuring ${PACKAGE_NAME} ${PACKAGE_VERSION}${PACKAGE_VERSION_ADDENDUM}"
 AC_CANONICAL_BUILD
 AC_CANONICAL_HOST
 AC_CANONICAL_TARGET([])
@@ -98,12 +99,12 @@ AC_SUBST(PACKAGE_CHANGE_DATE)dnl
 AC_SUBST(PACKAGE_LIB_VERSION)dnl
 AC_SUBST(PACKAGE_LIB_VERSION_NUMBER)dnl
 AC_SUBST(PACKAGE_RELEASE_DATE)dnl
-AC_SUBST(PACKAGE_LIB_SUBVERSION)dnl
+AC_SUBST(PACKAGE_VERSION_ADDENDUM)dnl
 
 # Ensure that make can run correctly
 AM_SANITY_CHECK
 
-AM_INIT_AUTOMAKE($PACKAGE_NAME,"${PACKAGE_VERSION}${PACKAGE_LIB_SUBVERSION}", ' ')
+AM_INIT_AUTOMAKE($PACKAGE_NAME,"${PACKAGE_VERSION}${PACKAGE_VERSION_ADDENDUM}", ' ')
 
 # Enable support for silent build rules
 AM_SILENT_RULES([yes])
@@ -215,6 +216,12 @@ AC_SUBST(MAGICK_CONFIGURE_BUILD_PATH)
 AC_SUBST(MAGICK_FILTER_MODULE_PATH)
 AC_SUBST(DIRSEP)
 
+
+#
+# Enable OS features.
+#
+AC_USE_SYSTEM_EXTENSIONS
+
 # Check for programs
 AC_PROG_CC
 AC_PROG_CXX
@@ -223,17 +230,13 @@ AC_PROG_CPP
 AC_PROG_LD
 AC_SUBST(LD)
 AM_PROG_CC_C_O
+AC_COMPILE_WARNINGS
+AC_INCLUDES_DEFAULT
 AC_PROG_INSTALL
 AC_PROG_MAKE_SET
-AC_COMPILE_WARNINGS
 AC_PROG_LN_S
 AM_WITH_DMALLOC
 PKG_PROG_PKG_CONFIG
-
-#
-# Enable OS features.
-#
-AC_USE_SYSTEM_EXTENSIONS
 
 #
 # Enable run-time checking.
@@ -335,7 +338,7 @@ case "$host" in
     LDFLAGS="$LDFLAGS -L/sw/lib"
   fi
   dnl OS X universal binary support, requires --disable-dependency-tracking
-  AC_ARG_ENABLE(osx-universal-binary,
+  AC_ARG_ENABLE([osx-universal-binary],
         AC_HELP_STRING([--enable-osx-universal-binary],
            [build universal binary on OS X [[default=no]]]),
         [build_osxuniversal="${enableval}"], [build_osxuniversal=no])
@@ -386,7 +389,7 @@ MAGICK_PCFLAGS="$MAGICK_PCFLAGS $OPENMP_CFLAGS"
 AC_SUBST(OPENMP_CFLAGS)
 
 # Enable support for OpenCL
-AX_CHECK_CL
+AX_OPENCL([C])
 CFLAGS="$CL_CFLAGS $CFLAGS"
 LIBS="$CL_LIBS $LIBS"
 AC_SUBST(CL_CFLAGS)
@@ -760,10 +763,11 @@ if ! test x"$ac_cv_header_stdc" = x"yes"; then
     header files.  Compilation cannot proceed.  Please install the ANSI C
     headers and rerun this script.]);
 fi
+AC_HEADER_ASSERT
 AC_HEADER_DIRENT
 
 # Check additional headers
-AC_CHECK_HEADERS(arm/limits.h complex.h errno.h fcntl.h inttypes.h limits.h linux/unistd.h locale.h machine/param.h mach-o/dyld.h OS.h process.h stdarg.h stddef.h string.h strings.h sys/ipc.h sys/resource.h sys/syslimits.h sys/time.h sys/timeb.h sys/times.h sys/types.h sys/wait.h unistd.h wchar.h)
+AC_CHECK_HEADERS(arm/limits.h complex.h errno.h fcntl.h limits.h linux/unistd.h locale.h machine/param.h mach-o/dyld.h OS.h process.h stdarg.h sys/ipc.h sys/resource.h sys/syslimits.h sys/time.h sys/timeb.h sys/times.h sys/wait.h wchar.h)
 
 ########
 #
@@ -778,10 +782,6 @@ AC_HEADER_STAT
 AC_HEADER_TIME
 AC_STRUCT_TM
 AC_SYS_INTERPRETER
-
-# If the C compiler does not fully support the ANSI C qualifier const,
-# define const to be empty.
-AC_C_CONST
 
 # If the C compiler supports the keyword inline, do nothing. Otherwise
 # define inline to __inline__ or __inline if it accepts one of those,
@@ -1581,6 +1581,21 @@ if test "$with_djvu" != 'no'; then
 fi
 AM_CONDITIONAL(DJVU_DELEGATE, test "$have_djvu" = 'yes')
 AC_SUBST(DJVU_LIBS)
+
+dnl ===========================================================================
+
+#
+# Set DejaVu font directory.
+#
+AC_ARG_WITH([dejavu-font-dir],
+    [AC_HELP_STRING([--with-dejavu-font-dir=DIR],
+                    [DejaVu font directory])],
+    [with_dejavu_font_dir=$withval],
+    [with_dejavu_font_dir='default'])
+
+if test "$with_dejavu_font_dir" != 'default'; then
+    DISTCHECK_CONFIG_FLAGS="${DISTCHECK_CONFIG_FLAGS} --with-dejavu-font-dir=$with_dejavu_font_dir "
+fi
 
 dnl ===========================================================================
 
@@ -2729,12 +2744,33 @@ have_xps='no'        ; if test "$XPSDelegate" != "$XPSDelegateDefault"; then hav
 #
 type_include_files=''
 
+# Dejavu fonts.
+AC_MSG_CHECKING(for Dejavu fonts directory)
+dejavu_font_dir=''
+if test "${with_dejavu_font_dir}" != 'default'; then
+  dejavu_font_dir="${with_dejavu_font_dir}/"
+else
+  for font_dir in "${prefix}/share/dejavu/fonts/" '/usr/share/fonts/dejavu/'; do
+    if test -f "${font_dir}DejaVuSerif.ttf"; then
+      dejavu_font_dir="${font_dir}"
+      break 1
+    fi
+  done
+fi
+if test "${dejavu_font_dir}x" != 'x'; then
+  type_include_files="${type_include_files} "'<include file="type-dejavu.xml" />'
+  AC_MSG_RESULT([$dejavu_font_dir])
+else
+  AC_MSG_RESULT([not found!]);
+fi
+AC_SUBST(dejavu_font_dir)
+
 # Windows
 windows_font_dir=''
 if test "$with_windows_font_dir" != "no" && test -n "$with_windows_font_dir"; then
    windows_font_dir="${with_windows_font_dir}/"
 fi
-if test -n "$windows_font_dir"; then
+if test "${windows_font_dir}x" != 'x'; then
     if test -f '/usr/X11R6/lib/X11/fonts/truetype/arial.ttf'; then
       windows_font_dir='/usr/X11R6/lib/X11/fonts/truetype/'
     fi
@@ -2745,7 +2781,7 @@ if test -n "$windows_font_dir"; then
       windows_font_dir='/usr/share/fonts/msttcore/truetype/'
     fi
 fi
-if test -n "$windows_font_dir"; then
+if test "${windows_font_dir}x" != 'x'; then
   type_include_files="$type_include_files "'<include file="type-windows.xml" />'
 fi
 AC_SUBST(windows_font_dir)
@@ -3320,6 +3356,11 @@ AC_OUTPUT
 
 rm -f magick-version
 
+result_dejavu_font_dir='none'
+if test "${dejavu_font_dir}x" != 'x'; then
+    result_dejavu_font_dir=$dejavu_font_dir
+fi
+
 result_ghostscript_font_dir='none'
 if test "${ghostscript_font_dir}x" != 'x'; then
     result_ghostscript_font_dir=$ghostscript_font_dir
@@ -3350,6 +3391,7 @@ High Dynamic Range Imagery
 Delegate Configuration:
 BZLIB             --with-bzlib=$with_bzlib		$have_bzlib
 Autotrace         --with-autotrace=$with_autotrace		$have_autotrace
+Dejavu fonts      --with-dejavu-font-dir=$with_dejavu_font_dir	$result_dejavu_font_dir
 DJVU              --with-djvu=$with_djvu		$have_djvu
 DPS               --with-dps=$with_dps		$have_dps
 FFTW              --with-fftw=$with_fftw		$have_fftw

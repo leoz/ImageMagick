@@ -104,6 +104,11 @@ static MagickBooleanType IdentifyUsage(void)
       "-version             print version information",
       (char *) NULL
     },
+    *operators[]=
+    {
+      "-negate              replace every pixel with its complementary color ",
+      (char *) NULL
+    },
     *settings[]=
     {
       "-alpha option        on, activate, off, deactivate, set, opaque, copy",
@@ -119,9 +124,10 @@ static MagickBooleanType IdentifyUsage(void)
       "-density geometry    horizontal and vertical density of the image",
       "-depth value         image depth",
       "-extract geometry    extract area from image",
+      "-features distance   display image features (e.g. contrast, correlation)",
       "-format \"string\"     output formatted image characteristics",
       "-fuzz distance       colors within this distance are considered equal",
-      "-gamma value         level of gamma correction",
+      "-gamma value         of gamma correction",
       "-interlace type      type of image interlacing scheme",
       "-interpolate method  pixel color interpolation method",
       "-limit type value    pixel cache resource limit",
@@ -136,6 +142,7 @@ static MagickBooleanType IdentifyUsage(void)
       "-set attribute value set an image attribute",
       "-size geometry       width and height of image",
       "-strip               strip image of all profiles and comments",
+      "-unique              display the number of unique colors in the image",
       "-units type          the units of image resolution",
       "-verbose             print detailed information about the image",
       "-virtual-pixel method",
@@ -150,6 +157,9 @@ static MagickBooleanType IdentifyUsage(void)
     "file ... ]\n",GetClientName());
   (void) printf("\nImage Settings:\n");
   for (p=settings; *p != (char *) NULL; p++)
+    (void) printf("  %s\n",*p);
+  (void) printf("\nImage Operators:\n");
+  for (p=operators; *p != (char *) NULL; p++)
     (void) printf("  %s\n",*p);
   (void) printf("\nMiscellaneous Options:\n");
   for (p=miscellaneous; *p != (char *) NULL; p++)
@@ -509,6 +519,17 @@ WandExport MagickBooleanType IdentifyImageCommand(ImageInfo *image_info,
       }
       case 'f':
       {
+        if (LocaleCompare("features",option+1) == 0)
+          {
+            if (*option == '+')
+              break;
+            i++;
+            if (i == (long) (argc-1))
+              ThrowIdentifyException(OptionError,"MissingArgument",option);
+            if (IsGeometry(argv[i]) == MagickFalse)
+              ThrowIdentifyInvalidArgumentException(option,argv[i]);
+            break;
+          }
         if (LocaleCompare("format",option+1) == 0)
           {
             format=(char *) NULL;
@@ -661,6 +682,12 @@ WandExport MagickBooleanType IdentifyImageCommand(ImageInfo *image_info,
           break;
         ThrowIdentifyException(OptionError,"UnrecognizedOption",option)
       }
+      case 'n':
+      {
+        if (LocaleCompare("negate",option+1) == 0)
+          break;
+        ThrowIdentifyException(OptionError,"UnrecognizedOption",option)
+      }
       case 'p':
       {
         if (LocaleCompare("ping",option+1) == 0)
@@ -748,6 +775,8 @@ WandExport MagickBooleanType IdentifyImageCommand(ImageInfo *image_info,
       }
       case 'u':
       {
+        if (LocaleCompare("unique",option+1) == 0)
+          break;
         if (LocaleCompare("units",option+1) == 0)
           {
             long

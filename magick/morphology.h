@@ -42,17 +42,17 @@ typedef enum
   ManhattenKernel,
   EuclideanKernel,
   UserDefinedKernel   /* user specified kernel values */
-} MagickKernelType;
+} KernelInfoType;
 
 typedef enum
 {
   UndefinedMorphology,
   ConvolveMorphology,          /* Weighted Sum of pixels - Convolve */
-  DialateMorphology,           /* Weighted Value Maximum */
+  DilateMorphology,            /* Weighted Value Maximum */
   ErodeMorphology,             /* Weighted Value Minimum */
-  CloseMorphology,             /* Erode then Dialate */
-  OpenMorphology,              /* Dialate then Erode */
-  DialateIntensityMorphology,  /* Pixel Pick using GreyScale Dialate */
+  CloseMorphology,             /* Erode then Dilate */
+  OpenMorphology,              /* Dilate then Erode */
+  DilateIntensityMorphology,   /* Pixel Pick using GreyScale Dialate */
   ErodeIntensityMorphology,    /* Pixel Pick using GreyScale Erode */
   CloseIntensityMorphology,    /* Pixel Pick using GreyScale Close */
   OpenIntensityMorphology,     /* Pixel Pick using GreyScale Open */
@@ -61,43 +61,38 @@ typedef enum
 
 typedef struct
 {
-  MagickKernelType
+  KernelInfoType
     type;
 
   unsigned long
     width,
-    height,
-    offset_x,
-    offset_y;
+    height;
 
-  double *
-    values;
+  long
+    x,
+    y;
 
   double
-    value_min,
-    value_max,
-    range_neg,
-    range_pos;
+    *values,
+    minimum,
+    maximum,
+    negative_range,
+    positive_range;
 
-  MagickBooleanType
-    normalized;
+  unsigned long
+    signature;
+} KernelInfo;
 
-} MagickKernel;
-
-extern MagickExport MagickKernel
-  *AcquireKernelFromString(const char *),
-  *AcquireKernelBuiltIn(const MagickKernelType, const GeometryInfo *),
-  *DestroyKernel(MagickKernel *);
-
-extern MagickExport void
-  KernelNormalize(MagickKernel *),
-  KernelPrint(MagickKernel *),
-  KernelRotate(MagickKernel *, double);
+extern MagickExport KernelInfo
+  *AcquireKernelInfo(const char *),
+  *AcquireKernelBuiltIn(const KernelInfoType, const GeometryInfo *),
+  *DestroyKernelInfo(KernelInfo *);
 
 extern MagickExport Image
-  *MorphologyImage(const Image *, const ChannelType, MorphologyMethod,
-      const long, MagickKernel *, ExceptionInfo *);
-
+  *MorphologyImage(const Image *,MorphologyMethod,const long,KernelInfo *,
+    ExceptionInfo *),
+  *MorphologyImageChannel(const Image *,const ChannelType,MorphologyMethod,
+    const long,KernelInfo *,ExceptionInfo *);
 
 #if defined(__cplusplus) || defined(c_plusplus)
 }

@@ -54,6 +54,8 @@ magick_libMagickCore_la_DEPENDENCIES = $(MAGICK_LTDLDEPS)
 MAGICK_BASE_SRCS = \
 	magick/ImageMagick.h \
 	magick/MagickCore.h \
+	magick/accelerate.c \
+	magick/accelerate.h \
 	magick/animate.c \
 	magick/animate.h \
 	magick/animate-private.h \
@@ -120,6 +122,8 @@ MAGICK_BASE_SRCS = \
 	magick/exception.c \
 	magick/exception.h \
 	magick/exception-private.h \
+	magick/feature.c \
+	magick/feature.h \
 	magick/fourier.c \
 	magick/fourier.h \
 	magick/fx.c \
@@ -169,6 +173,7 @@ MAGICK_BASE_SRCS = \
 	magick/montage.h \
 	magick/morphology.c \
 	magick/morphology.h \
+	magick/morphology-private.h \
 	magick/nt-base.h \
 	magick/nt-feature.h \
 	magick/option.c \
@@ -276,6 +281,7 @@ MAGICK_INCLUDE_HDRS = \
 	magick/ImageMagick.h \
 	magick/MagickCore.h \
 	magick/PreRvIcccm.h \
+	magick/accelerate.h \
 	magick/animate.h \
 	magick/annotate.h \
 	magick/api.h \
@@ -304,6 +310,7 @@ MAGICK_INCLUDE_HDRS = \
 	magick/effect.h \
 	magick/enhance.h \
 	magick/exception.h \
+	magick/feature.h \
 	magick/fourier.h \
 	magick/fx.h \
 	magick/gem.h \
@@ -378,6 +385,7 @@ MAGICK_NOINST_HDRS = \
 	magick/mac.h \
 	magick/mime-private.h \
 	magick/monitor-private.h \
+	magick/morphology-private.h \
 	magick/nt-base.h \
 	magick/nt-feature.h \
 	magick/pixel-private.h \

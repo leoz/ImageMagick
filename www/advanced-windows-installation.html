@@ -124,9 +124,6 @@
 
 <div class="sponsbox">
 <div  class="sponsor">
-   <a href="http://www.abi-stoff.de/abizeitung/" title="Abibuch">Abizeitung</a><!-- 20101101000200 -->
-</div>
-<div  class="sponsor">
   <a href="http://www.tomsgutscheine.de">Tom's Gutscheine</a><!-- 201005010360 invendio.de-->
 </div>
 <div  class="sponsor">
@@ -211,7 +208,7 @@
   <dd>Specify the depth of the pixel component depth (8, 16, or 32).  A value of 8 uses half the memory than 16 and may run 30% faster, but provides 256 times less color resolution than a value of 16.  We recommend a quantum depth of 16 because 16-bit images are becoming more prevalent on the Internet.</dd>
 <dt>MAGICKCORE_INSTALLED_SUPPORT (default undefined)</dt>
   <dd>Define to build a ImageMagick which uses registry settings or embedded paths to locate installed components (coder modules and configuration files). The default is to look for all files in the same directory as the executable.  You will wand to define this value if you intend on <a href="#install">installing</a> ImageMagick on your system.</dd>
-<dt>ProvideDllMain (default undefined)</dt>
+<dt>ProvideDllMain (default defined)</dt>
   <dd>Define to include a DllMain() function ensures that the ImageMagick DLL is properly initialized without participation from dependent applications. This avoids the requirement to invoke IntializeMagick() from dependent applications is only useful for DLL builds.</dd>
 </dl>
 
@@ -383,7 +380,7 @@
 
 	<ol>
 	<li>Download and install <a href="http://www.jrsoftware.org/isinfo.html">Inno Setup 5</a>.</li>
-	<li>Download and install <a href="http://www.activestate.com/store/activeperl/download/">ActiveState ActivePerl</a>.</li>
+	<li>Download and install <a href="http://www.activestate.com/activeperl/download/">ActiveState ActivePerl</a>.</li>
 	</ol>
 
 <h3>Run the Configure Wizard</h3>
@@ -486,8 +483,7 @@
  <!--    <span id="linkbar-west">&nbsp;</span>  -->
     <span id="linkbar-center">
       <a href="http://www.imagemagick.org/discourse-server/">Discourse Server</a> &bull;
-      <a href="../www/mailing-list.html">Mailing Lists</a> &bull;
-    <a href="http://studio.webbyland.com/ImageMagick/MagickStudio/scripts/MagickStudio.cgi">Studio</a>
+    <a href="http://www.imagemagick.org/MagickStudio/scripts/MagickStudio.cgi">Studio</a>
     </span>
     <span id="linkbar-east">&nbsp;</span>
   </div>

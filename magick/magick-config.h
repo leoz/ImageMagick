@@ -628,11 +628,6 @@
 #define MAGICKCORE_HAVE_STDBOOL_H  1 
 #endif
 
-/* Define to 1 if you have the <stddef.h> header file. */
-#ifndef MAGICKCORE_HAVE_STDDEF_H 
-#define MAGICKCORE_HAVE_STDDEF_H  1 
-#endif
-
 /* Define to 1 if you have the <stdint.h> header file. */
 #ifndef MAGICKCORE_HAVE_STDINT_H 
 #define MAGICKCORE_HAVE_STDINT_H  1 
@@ -1012,7 +1007,7 @@
 
 /* Define to the system default library search path. */
 #ifndef MAGICKCORE_LT_DLSEARCH_PATH 
-#define MAGICKCORE_LT_DLSEARCH_PATH  "/lib64:/usr/lib64:/lib:/usr/lib:/usr/lib64/atlas:/usr/lib64/mysql:/usr/lib64/openmotif:/usr/lib64/qt-3.3/lib:/usr/lib64/xulrunner-1.9.2" 
+#define MAGICKCORE_LT_DLSEARCH_PATH  "/lib64:/usr/lib64:/lib:/usr/lib:/usr/lib64/atlas:/usr/lib64/mysql:/usr/lib64/openmotif:/usr/lib64/qt-3.3/lib:/usr/lib64/tcl8.5:/usr/lib64/wine/:/usr/lib64/xulrunner-1.9.2" 
 #endif
 
 /* The archive extension */
@@ -1043,7 +1038,7 @@
 /* Magick API method prefix */
 /* #undef NAMESPACE_PREFIX */
 
-/* Turn off assert statements */
+/* Define to 1 if assertions should be disabled. */
 /* #undef NDEBUG */
 
 /* Define if dlsym() requires a leading underscore in symbol names. */
@@ -1307,6 +1302,9 @@
 /* Define to 1 if on MINIX. */
 /* #undef _MINIX */
 
+/* Define this for the OpenCL Accelerator */
+/* #undef _OPENCL */
+
 /* Define to 2 if the system does not provide POSIX.1 features except with
    this defined. */
 /* #undef _POSIX_1_SOURCE */
@@ -1324,9 +1322,6 @@
 
 /* Define to appropriate substitue if compiler does not have __func__ */
 /* #undef __func__ */
-
-/* Define to empty if `const' does not conform to ANSI C. */
-/* #undef const */
 
 /* Define to a type to use for `error_t' if it is not otherwise available. */
 /* #undef error_t */

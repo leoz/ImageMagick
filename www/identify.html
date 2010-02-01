@@ -225,16 +225,16 @@
     Tainted: False  <br/>
     Filesize: 3.97266kb  <br/>
     Number pixels: 3.14453kb  <br/>
-    Version: ImageMagick 6.5.9-0 2010-01-01 Q16 http://www.imagemagick.org</span></p>
+    Version: ImageMagick 6.5.9-0 2010-01-15 Q16 http://www.imagemagick.org</span></p>
 <p>To get the print size in inches of an image at 72 DPI, use:</p>
 
 <p class='crt'><span class="crtprompt"> $magick&gt; </span><span class='crtin'>identify -format "%[fx:w/72] by %[fx:h/72] inches" document.png</span><span class='crtout'>8.5 x 11 inches</span></p>
 <p>The depth and dimensions of a raw image must be specified on the command line:</p>
 
 <p class='crt'><span class="crtprompt"> $magick&gt; </span><span class='crtin'>identify -depth 8 -size 640x480 image.raw</span><span class='crtout'>image.raw RGB 640x480 DirectClass 9kb 0.000u 0:01</span></p>
-<p>Here we display the number of unique colors in the image:</p>
+<p>Here we display the image texture features and the number of unique colors in the image:</p>
 
-<p class='crt'><span class="crtprompt"> $magick&gt; </span><span class='crtin'>identify -define unique=true -verbose image.png</span></p>
+<p class='crt'><span class="crtprompt"> $magick&gt; </span><span class='crtin'>identify -verbose -features 1 -unique image.png</span></p>
 <p>You can find additional examples of using <kbd>identify</kbd> in <a href="http://www.imagemagick.org/Usage/">Examples of ImageMagick Usage</a>.</p>
 
 </div>
@@ -305,6 +305,11 @@ transparent, extract, background, or shape the alpha channel</td>
   <tr>
     <td valign="top"><a href="../www/command-line-options.html#extract">-extract <em class="option">geometry</em></a></td>
     <td valign="top">extract area from image</td>
+  </tr>
+
+  <tr>
+    <td valign="top"><a href="../www/command-line-options.html#features">-features <em class="option">distance</em></a></td>
+    <td valign="top">display image features (e.g. contract, correlations, etc.).</td>
   </tr>
 
   <tr>
@@ -388,6 +393,11 @@ transparent, extract, background, or shape the alpha channel</td>
   </tr>
 
   <tr>
+    <td valign="top"><a href="../www/command-line-options.html#unique">-unique</a></td>
+    <td valign="top">display image the number of unique colors in the image.</td>
+  </tr>
+
+  <tr>
     <td valign="top"><a href="../www/command-line-options.html#units">-units <em class="option">type</em></a></td>
     <td valign="top">the units of image resolution</td>
   </tr>
@@ -418,7 +428,6 @@ transparent, extract, background, or shape the alpha channel</td>
  <!--    <span id="linkbar-west">&nbsp;</span>  -->
     <span id="linkbar-center">
       <a href="http://www.imagemagick.org/discourse-server/">Discourse Server</a> &bull;
-      <a href="../www/mailing-list.html">Mailing Lists</a> &bull;
     <a href="http://www.imagemagick.org/MagickStudio/scripts/MagickStudio.cgi">Studio</a>
     </span>
     <span id="linkbar-east">&nbsp;</span>

@@ -5883,7 +5883,7 @@ static MagickBooleanType XDrawEditImage(Display *display,
               */
               degrees=RadiansToDegrees(-atan2((double) (line_info.y2-
                 line_info.y1),(double) (line_info.x2-line_info.x1)));
-              (void) FormatMagickString(text,MaxTextExtent," %.15g",
+              (void) FormatMagickString(text,MaxTextExtent," %g",
                 (double) degrees);
               XInfoWidget(display,windows,text);
               XHighlightLine(display,windows->image.id,
@@ -5953,7 +5953,7 @@ static MagickBooleanType XDrawEditImage(Display *display,
               */
               degrees=RadiansToDegrees(-atan2((double) (line_info.y2-
                 line_info.y1),(double) (line_info.x2-line_info.x1)));
-              (void) FormatMagickString(text,MaxTextExtent," %.15g",
+              (void) FormatMagickString(text,MaxTextExtent," %g",
                 (double) degrees);
               XInfoWidget(display,windows,text);
               XHighlightLine(display,windows->image.id,
@@ -7601,7 +7601,7 @@ static Image *XMagickCommand(Display *display,XResourceInfo *resource_info,
       /*
         Query user for the fuzz factor.
       */
-      (void) FormatMagickString(fuzz,MaxTextExtent,"%.15g%%",100.0*
+      (void) FormatMagickString(fuzz,MaxTextExtent,"%g%%",100.0*
         (*image)->fuzz/(QuantumRange+1.0));
       (void) XDialogWidget(display,windows,"Trim","Enter fuzz factor:",fuzz);
       if (*fuzz == '\0')
@@ -12121,7 +12121,7 @@ static MagickBooleanType XRotateImage(Display *display,
             */
             if (windows->info.mapped == MagickFalse)
               (void) XMapWindow(display,windows->info.id);
-            (void) FormatMagickString(text,MaxTextExtent," %.15g",
+            (void) FormatMagickString(text,MaxTextExtent," %g",
               direction == VerticalRotateCommand ? degrees-90.0 : degrees);
             XInfoWidget(display,windows,text);
             XHighlightLine(display,windows->image.id,
@@ -15513,35 +15513,31 @@ MagickExport Image *XDisplayImage(Display *display,XResourceInfo *resource_info,
         /*
           Refresh windows that are now exposed.
         */
-        if (event.xexpose.window == windows->image.id)
-          if ((event.xexpose.count == 0) &&
-              (windows->image.mapped != MagickFalse))
-            {
-              XRefreshWindow(display,&windows->image,&event);
-              delay=display_image->delay/MagickMax(
-                display_image->ticks_per_second,1L);
-              timer=time((time_t *) NULL)+(delay == 0 ? 1 : delay)+1;
-              break;
-            }
-        if (event.xexpose.window == windows->magnify.id)
-          if (event.xexpose.count == 0)
-            if (windows->magnify.mapped != MagickFalse)
-              {
-                XMakeMagnifyImage(display,windows);
-                break;
-              }
+        if ((event.xexpose.window == windows->image.id) &&
+            (windows->image.mapped != MagickFalse))
+          {
+            XRefreshWindow(display,&windows->image,&event);
+            delay=display_image->delay/MagickMax(
+              display_image->ticks_per_second,1L);
+            timer=time((time_t *) NULL)+(delay == 0 ? 1 : delay)+1;
+            break;
+          }
+        if ((event.xexpose.window == windows->magnify.id) &&
+            (windows->magnify.mapped != MagickFalse))
+          {
+            XMakeMagnifyImage(display,windows);
+            break;
+          }
         if (event.xexpose.window == windows->pan.id)
-          if (event.xexpose.count == 0)
-            {
-              XDrawPanRectangle(display,windows);
-              break;
-            }
+          {
+            XDrawPanRectangle(display,windows);
+            break;
+          }
         if (event.xexpose.window == windows->icon.id)
-          if (event.xexpose.count == 0)
-            {
-              XRefreshWindow(display,&windows->icon,&event);
-              break;
-            }
+          {
+            XRefreshWindow(display,&windows->icon,&event);
+            break;
+          }
         break;
       }
       case KeyPress:

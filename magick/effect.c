@@ -41,7 +41,7 @@
   Include declarations.
 */
 #include "magick/studio.h"
-#include "magick/property.h"
+#include "magick/accelerate.h"
 #include "magick/blob.h"
 #include "magick/cache-view.h"
 #include "magick/color.h"
@@ -878,7 +878,7 @@ MagickExport Image *BlurImageChannel(const Image *image,
         *message='\0';
         (void) FormatMagickString(format,MaxTextExtent,"%ld: ",i);
         (void) ConcatenateString(&message,format);
-        (void) FormatMagickString(format,MaxTextExtent,"%.15g ",*k++);
+        (void) FormatMagickString(format,MaxTextExtent,"%g ",*k++);
         (void) ConcatenateString(&message,format);
         (void) LogMagickEvent(TransformEvent,GetMagickModule(),"%s",message);
       }
@@ -1380,7 +1380,7 @@ MagickExport Image *ConvolveImageChannel(const Image *image,
         (void) ConcatenateString(&message,format);
         for (u=0; u < (long) width; u++)
         {
-          (void) FormatMagickString(format,MaxTextExtent,"%.15g ",*k++);
+          (void) FormatMagickString(format,MaxTextExtent,"%g ",*k++);
           (void) ConcatenateString(&message,format);
         }
         (void) LogMagickEvent(TransformEvent,GetMagickModule(),"%s",message);
@@ -2129,10 +2129,10 @@ MagickExport Image *EmbossImage(const Image *image,const double radius,
 %
 %  The format of the FilterImage method is:
 %
-%      Image *FilterImage(const Image *image,const MagickKernel *kernel,
+%      Image *FilterImage(const Image *image,const KernelInfo *kernel,
 %        ExceptionInfo *exception)
 %      Image *FilterImageChannel(const Image *image,const ChannelType channel,
-%        const MagickKernel *kernel,ExceptionInfo *exception)
+%        const KernelInfo *kernel,ExceptionInfo *exception)
 %
 %  A description of each parameter follows:
 %
@@ -2146,7 +2146,7 @@ MagickExport Image *EmbossImage(const Image *image,const double radius,
 %
 */
 
-MagickExport Image *FilterImage(const Image *image,const MagickKernel *kernel,
+MagickExport Image *FilterImage(const Image *image,const KernelInfo *kernel,
   ExceptionInfo *exception)
 {
   Image
@@ -2157,16 +2157,13 @@ MagickExport Image *FilterImage(const Image *image,const MagickKernel *kernel,
 }
 
 MagickExport Image *FilterImageChannel(const Image *image,
-  const ChannelType channel,const MagickKernel *kernel,ExceptionInfo *exception)
+  const ChannelType channel,const KernelInfo *kernel,ExceptionInfo *exception)
 {
 #define FilterImageTag  "Filter/Image"
 
   CacheView
     *filter_view,
     *image_view;
-
-  double
-    *normal_kernel;
 
   Image
     *filter_image;
@@ -2180,12 +2177,6 @@ MagickExport Image *FilterImageChannel(const Image *image,
 
   MagickPixelPacket
     bias;
-
-  MagickRealType
-    gamma;
-
-  register long
-    i;
 
   /*
     Initialize filter image attributes.
@@ -2231,29 +2222,16 @@ MagickExport Image *FilterImageChannel(const Image *image,
         (void) ConcatenateString(&message,format);
         for (u=0; u < (long) kernel->width; u++)
         {
-          (void) FormatMagickString(format,MaxTextExtent,"%.15g ",*k++);
+          (void) FormatMagickString(format,MaxTextExtent,"%g ",*k++);
           (void) ConcatenateString(&message,format);
         }
         (void) LogMagickEvent(TransformEvent,GetMagickModule(),"%s",message);
       }
       message=DestroyString(message);
     }
-  /*
-    Normalize kernel.
-  */
-  normal_kernel=(double *) AcquireQuantumMemory(kernel->width*kernel->height,
-    sizeof(*normal_kernel));
-  if (normal_kernel == (double *) NULL)
-    {
-      filter_image=DestroyImage(filter_image);
-      ThrowImageException(ResourceLimitError,"MemoryAllocationFailed");
-    }
-  gamma=0.0;
-  for (i=0; i < (long) (kernel->width*kernel->height); i++)
-    gamma+=kernel->values[i];
-  gamma=1.0/(fabs((double) gamma) <= MagickEpsilon ? 1.0 : gamma);
-  for (i=0; i < (long) (kernel->width*kernel->height); i++)
-    normal_kernel[i]=gamma*kernel->values[i];
+  status=AccelerateConvolveImage(image,kernel,filter_image,exception);
+  if (status == MagickTrue)
+    return(filter_image);
   /*
     Filter image.
   */
@@ -2318,7 +2296,7 @@ MagickExport Image *FilterImageChannel(const Image *image,
         u;
 
       pixel=bias;
-      k=normal_kernel;
+      k=kernel->values;
       kernel_pixels=p;
       if (((channel & OpacityChannel) == 0) || (image->matte == MagickFalse))
         {
@@ -2341,7 +2319,7 @@ MagickExport Image *FilterImageChannel(const Image *image,
             SetBluePixelComponent(q,ClampBluePixelComponent(&pixel));
           if ((channel & OpacityChannel) != 0)
             {
-              k=normal_kernel;
+              k=kernel->values;
               kernel_pixels=p;
               for (v=0; v < (long) kernel->width; v++)
               {
@@ -2360,7 +2338,7 @@ MagickExport Image *FilterImageChannel(const Image *image,
               register const IndexPacket
                 *restrict kernel_indexes;
 
-              k=normal_kernel;
+              k=kernel->values;
               kernel_indexes=indexes;
               for (v=0; v < (long) kernel->width; v++)
               {
@@ -2404,7 +2382,7 @@ MagickExport Image *FilterImageChannel(const Image *image,
             q->blue=ClampToQuantum(gamma*GetBluePixelComponent(&pixel));
           if ((channel & OpacityChannel) != 0)
             {
-              k=normal_kernel;
+              k=kernel->values;
               kernel_pixels=p;
               for (v=0; v < (long) kernel->width; v++)
               {
@@ -2423,7 +2401,7 @@ MagickExport Image *FilterImageChannel(const Image *image,
               register const IndexPacket
                 *restrict kernel_indexes;
 
-              k=normal_kernel;
+              k=kernel->values;
               kernel_pixels=p;
               kernel_indexes=indexes;
               for (v=0; v < (long) kernel->width; v++)
@@ -2464,7 +2442,6 @@ MagickExport Image *FilterImageChannel(const Image *image,
   filter_image->type=image->type;
   filter_view=DestroyCacheView(filter_view);
   image_view=DestroyCacheView(image_view);
-  normal_kernel=(double *) RelinquishMagickMemory(normal_kernel);
   if (status == MagickFalse)
     filter_image=DestroyImage(filter_image);
   return(filter_image);
@@ -3465,14 +3442,14 @@ MagickExport Image *PreviewImage(const Image *image,const PreviewType preview,
       {
         degrees+=45.0;
         preview_image=RotateImage(thumbnail,degrees,exception);
-        (void) FormatMagickString(label,MaxTextExtent,"rotate %.15g",degrees);
+        (void) FormatMagickString(label,MaxTextExtent,"rotate %g",degrees);
         break;
       }
       case ShearPreview:
       {
         degrees+=5.0;
         preview_image=ShearImage(thumbnail,degrees,degrees,exception);
-        (void) FormatMagickString(label,MaxTextExtent,"shear %.15gx%.15g",
+        (void) FormatMagickString(label,MaxTextExtent,"shear %gx%g",
           degrees,2.0*degrees);
         break;
       }
@@ -3489,7 +3466,7 @@ MagickExport Image *PreviewImage(const Image *image,const PreviewType preview,
         preview_image=CloneImage(thumbnail,0,0,MagickTrue,exception);
         if (preview_image == (Image *) NULL)
           break;
-        (void) FormatMagickString(factor,MaxTextExtent,"100,100,%.15g",
+        (void) FormatMagickString(factor,MaxTextExtent,"100,100,%g",
           2.0*percentage);
         (void) ModulateImage(preview_image,factor);
         (void) FormatMagickString(label,MaxTextExtent,"modulate %s",factor);
@@ -3500,7 +3477,7 @@ MagickExport Image *PreviewImage(const Image *image,const PreviewType preview,
         preview_image=CloneImage(thumbnail,0,0,MagickTrue,exception);
         if (preview_image == (Image *) NULL)
           break;
-        (void) FormatMagickString(factor,MaxTextExtent,"100,%.15g",
+        (void) FormatMagickString(factor,MaxTextExtent,"100,%g",
           2.0*percentage);
         (void) ModulateImage(preview_image,factor);
         (void) FormatMagickString(label,MaxTextExtent,"modulate %s",factor);
@@ -3511,7 +3488,7 @@ MagickExport Image *PreviewImage(const Image *image,const PreviewType preview,
         preview_image=CloneImage(thumbnail,0,0,MagickTrue,exception);
         if (preview_image == (Image *) NULL)
           break;
-        (void) FormatMagickString(factor,MaxTextExtent,"%.15g",2.0*percentage);
+        (void) FormatMagickString(factor,MaxTextExtent,"%g",2.0*percentage);
         (void) ModulateImage(preview_image,factor);
         (void) FormatMagickString(label,MaxTextExtent,"modulate %s",factor);
         break;
@@ -3524,7 +3501,7 @@ MagickExport Image *PreviewImage(const Image *image,const PreviewType preview,
           break;
         gamma+=0.4f;
         (void) GammaImageChannel(preview_image,DefaultChannels,gamma);
-        (void) FormatMagickString(label,MaxTextExtent,"gamma %.15g",gamma);
+        (void) FormatMagickString(label,MaxTextExtent,"gamma %g",gamma);
         break;
       }
       case SpiffPreview:
@@ -3589,7 +3566,7 @@ MagickExport Image *PreviewImage(const Image *image,const PreviewType preview,
       case ReduceNoisePreview:
       {
         preview_image=ReduceNoiseImage(thumbnail,radius,exception);
-        (void) FormatMagickString(label,MaxTextExtent,"noise %.15g",radius);
+        (void) FormatMagickString(label,MaxTextExtent,"noise %g",radius);
         break;
       }
       case AddNoisePreview:
@@ -3639,14 +3616,14 @@ MagickExport Image *PreviewImage(const Image *image,const PreviewType preview,
       case SharpenPreview:
       {
         preview_image=SharpenImage(thumbnail,radius,sigma,exception);
-        (void) FormatMagickString(label,MaxTextExtent,"sharpen %.15gx%.15g",
+        (void) FormatMagickString(label,MaxTextExtent,"sharpen %gx%g",
           radius,sigma);
         break;
       }
       case BlurPreview:
       {
         preview_image=BlurImage(thumbnail,radius,sigma,exception);
-        (void) FormatMagickString(label,MaxTextExtent,"blur %.15gx%.15g",radius,
+        (void) FormatMagickString(label,MaxTextExtent,"blur %gx%g",radius,
           sigma);
         break;
       }
@@ -3657,20 +3634,20 @@ MagickExport Image *PreviewImage(const Image *image,const PreviewType preview,
           break;
         (void) BilevelImage(thumbnail,
           (double) (percentage*((MagickRealType) QuantumRange+1.0))/100.0);
-        (void) FormatMagickString(label,MaxTextExtent,"threshold %.15g",
+        (void) FormatMagickString(label,MaxTextExtent,"threshold %g",
           (double) (percentage*((MagickRealType) QuantumRange+1.0))/100.0);
         break;
       }
       case EdgeDetectPreview:
       {
         preview_image=EdgeImage(thumbnail,radius,exception);
-        (void) FormatMagickString(label,MaxTextExtent,"edge %.15g",radius);
+        (void) FormatMagickString(label,MaxTextExtent,"edge %g",radius);
         break;
       }
       case SpreadPreview:
       {
         preview_image=SpreadImage(thumbnail,radius,exception);
-        (void) FormatMagickString(label,MaxTextExtent,"spread %.15g",
+        (void) FormatMagickString(label,MaxTextExtent,"spread %g",
           radius+0.5);
         break;
       }
@@ -3681,7 +3658,7 @@ MagickExport Image *PreviewImage(const Image *image,const PreviewType preview,
           break;
         (void) SolarizeImage(preview_image,(double) QuantumRange*
           percentage/100.0);
-        (void) FormatMagickString(label,MaxTextExtent,"solarize %.15g",
+        (void) FormatMagickString(label,MaxTextExtent,"solarize %g",
           (QuantumRange*percentage)/100.0);
         break;
       }
@@ -3690,7 +3667,7 @@ MagickExport Image *PreviewImage(const Image *image,const PreviewType preview,
         degrees+=10.0;
         preview_image=ShadeImage(thumbnail,MagickTrue,degrees,degrees,
           exception);
-        (void) FormatMagickString(label,MaxTextExtent,"shade %.15gx%.15g",
+        (void) FormatMagickString(label,MaxTextExtent,"shade %gx%g",
           degrees,degrees);
         break;
       }
@@ -3716,14 +3693,14 @@ MagickExport Image *PreviewImage(const Image *image,const PreviewType preview,
         threshold+=0.4f;
         (void) SegmentImage(preview_image,RGBColorspace,MagickFalse,threshold,
           threshold);
-        (void) FormatMagickString(label,MaxTextExtent,"segment %.15gx%.15g",
+        (void) FormatMagickString(label,MaxTextExtent,"segment %gx%g",
           threshold,threshold);
         break;
       }
       case SwirlPreview:
       {
         preview_image=SwirlImage(thumbnail,degrees,exception);
-        (void) FormatMagickString(label,MaxTextExtent,"swirl %.15g",degrees);
+        (void) FormatMagickString(label,MaxTextExtent,"swirl %g",degrees);
         degrees+=45.0;
         break;
       }
@@ -3731,28 +3708,28 @@ MagickExport Image *PreviewImage(const Image *image,const PreviewType preview,
       {
         degrees+=0.1f;
         preview_image=ImplodeImage(thumbnail,degrees,exception);
-        (void) FormatMagickString(label,MaxTextExtent,"implode %.15g",degrees);
+        (void) FormatMagickString(label,MaxTextExtent,"implode %g",degrees);
         break;
       }
       case WavePreview:
       {
         degrees+=5.0f;
         preview_image=WaveImage(thumbnail,0.5*degrees,2.0*degrees,exception);
-        (void) FormatMagickString(label,MaxTextExtent,"wave %.15gx%.15g",
+        (void) FormatMagickString(label,MaxTextExtent,"wave %gx%g",
           0.5*degrees,2.0*degrees);
         break;
       }
       case OilPaintPreview:
       {
         preview_image=OilPaintImage(thumbnail,(double) radius,exception);
-        (void) FormatMagickString(label,MaxTextExtent,"paint %.15g",radius);
+        (void) FormatMagickString(label,MaxTextExtent,"paint %g",radius);
         break;
       }
       case CharcoalDrawingPreview:
       {
         preview_image=CharcoalImage(thumbnail,(double) radius,(double) sigma,
           exception);
-        (void) FormatMagickString(label,MaxTextExtent,"charcoal %.15gx%.15g",
+        (void) FormatMagickString(label,MaxTextExtent,"charcoal %gx%g",
           radius,sigma);
         break;
       }
@@ -3795,13 +3772,13 @@ MagickExport Image *PreviewImage(const Image *image,const PreviewType preview,
           }
         (void) RelinquishUniqueFileResource(preview_image->filename);
         if ((GetBlobSize(preview_image)/1024) >= 1024)
-          (void) FormatMagickString(label,MaxTextExtent,"quality %s\n%.15gmb ",
+          (void) FormatMagickString(label,MaxTextExtent,"quality %s\n%gmb ",
             factor,(double) ((MagickOffsetType) GetBlobSize(preview_image))/
             1024.0/1024.0);
         else
           if (GetBlobSize(preview_image) >= 1024)
             (void) FormatMagickString(label,MaxTextExtent,
-              "quality %s\n%.15gkb ",factor,(double) ((MagickOffsetType)
+              "quality %s\n%gkb ",factor,(double) ((MagickOffsetType)
               GetBlobSize(preview_image))/1024.0);
           else
             (void) FormatMagickString(label,MaxTextExtent,"quality %s\n%lub ",

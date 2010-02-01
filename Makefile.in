@@ -242,6 +242,7 @@ DIST_COMMON = $(am__configure_deps) $(am__include_HEADERS_DIST) \
 	$(top_srcdir)/config/config.h.in \
 	$(top_srcdir)/config/configure.xml.in \
 	$(top_srcdir)/config/delegates.xml.in \
+	$(top_srcdir)/config/type-dejavu.xml.in \
 	$(top_srcdir)/config/type-ghostscript.xml.in \
 	$(top_srcdir)/config/type-windows.xml.in \
 	$(top_srcdir)/config/type.xml.in $(top_srcdir)/configure \
@@ -278,8 +279,8 @@ am__aclocal_m4_deps = $(top_srcdir)/m4/ac_compile_warnings.m4 \
 	$(top_srcdir)/m4/ac_func_fseeko.m4 \
 	$(top_srcdir)/m4/ac_prog_perl_version.m4 \
 	$(top_srcdir)/m4/acx_pthread.m4 $(top_srcdir)/m4/argz.m4 \
-	$(top_srcdir)/m4/ax_check_cl.m4 \
 	$(top_srcdir)/m4/ax_lang_compiler_ms.m4 \
+	$(top_srcdir)/m4/ax_opencl.m4 \
 	$(top_srcdir)/m4/ax_prefix_config_h.m4 \
 	$(top_srcdir)/m4/cxx_have_bool.m4 \
 	$(top_srcdir)/m4/cxx_have_lstring.m4 \
@@ -301,13 +302,13 @@ mkinstalldirs = $(SHELL) $(top_srcdir)/config/mkinstalldirs
 CONFIG_HEADER = $(top_builddir)/config/config.h
 CONFIG_CLEAN_FILES = config/configure.xml config/delegates.xml \
 	config/ImageMagick.rdf config/MagickCore.dox \
-	config/MagickWand.dox config/type-ghostscript.xml \
-	config/type-windows.xml config/type.xml ImageMagick.spec \
-	Magick++/bin/Magick++-config magick/ImageMagick.pc \
-	Magick++/lib/ImageMagick++.pc Magick++/lib/Magick++.pc \
-	magick/Magick-config magick/MagickCore-config \
-	magick/MagickCore.pc magick/version.h magick.sh \
-	PerlMagick/Magick.pm PerlMagick/Makefile.PL \
+	config/MagickWand.dox config/type-dejavu.xml \
+	config/type-ghostscript.xml config/type-windows.xml \
+	config/type.xml ImageMagick.spec Magick++/bin/Magick++-config \
+	magick/ImageMagick.pc Magick++/lib/ImageMagick++.pc \
+	Magick++/lib/Magick++.pc magick/Magick-config \
+	magick/MagickCore-config magick/MagickCore.pc magick/version.h \
+	magick.sh PerlMagick/Magick.pm PerlMagick/Makefile.PL \
 	PerlMagick/check.sh utilities/animate.1 utilities/compare.1 \
 	utilities/composite.1 utilities/conjure.1 utilities/convert.1 \
 	utilities/display.1 utilities/identify.1 \
@@ -861,6 +862,13 @@ coders_pdf_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(coders_pdf_la_LDFLAGS) $(LDFLAGS) -o $@
 @WITH_MODULES_TRUE@am_coders_pdf_la_rpath = -rpath $(codersdir)
+coders_pes_la_DEPENDENCIES = $(MAGICKCORE_LIBS)
+am_coders_pes_la_OBJECTS = coders/coders_pes_la-pes.lo
+coders_pes_la_OBJECTS = $(am_coders_pes_la_OBJECTS)
+coders_pes_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
+	$(coders_pes_la_LDFLAGS) $(LDFLAGS) -o $@
+@WITH_MODULES_TRUE@am_coders_pes_la_rpath = -rpath $(codersdir)
 coders_pict_la_DEPENDENCIES = $(MAGICKCORE_LIBS)
 am_coders_pict_la_OBJECTS = coders/coders_pict_la-pict.lo
 coders_pict_la_OBJECTS = $(am_coders_pict_la_OBJECTS)
@@ -1233,16 +1241,6 @@ filters_analyze_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_CFLAGS) $(CFLAGS) $(filters_analyze_la_LDFLAGS) \
 	$(LDFLAGS) -o $@
 @WITH_MODULES_TRUE@am_filters_analyze_la_rpath = -rpath $(filtersdir)
-filters_convolve_la_DEPENDENCIES = $(MAGICKCORE_LIBS) \
-	$(am__DEPENDENCIES_1)
-am_filters_convolve_la_OBJECTS =  \
-	filters/filters_convolve_la-convolve.lo
-filters_convolve_la_OBJECTS = $(am_filters_convolve_la_OBJECTS)
-filters_convolve_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
-	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
-	$(AM_CFLAGS) $(CFLAGS) $(filters_convolve_la_LDFLAGS) \
-	$(LDFLAGS) -o $@
-@WITH_MODULES_TRUE@am_filters_convolve_la_rpath = -rpath $(filtersdir)
 ltdl_dld_link_la_DEPENDENCIES =
 am_ltdl_dld_link_la_OBJECTS = ltdl/loaders/dld_link.lo
 ltdl_dld_link_la_OBJECTS = $(am_ltdl_dld_link_la_OBJECTS)
@@ -1309,16 +1307,17 @@ ltdl_shl_load_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_CFLAGS) $(CFLAGS) $(ltdl_shl_load_la_LDFLAGS) $(LDFLAGS) \
 	-o $@
 am__magick_libMagickCore_la_SOURCES_DIST = magick/ImageMagick.h \
-	magick/MagickCore.h magick/animate.c magick/animate.h \
-	magick/animate-private.h magick/annotate.c magick/annotate.h \
-	magick/api.h magick/artifact.c magick/artifact.h \
-	magick/attribute.c magick/attribute.h magick/blob.c \
-	magick/blob.h magick/blob-private.h magick/cache.c \
-	magick/cache.h magick/cache-private.h magick/cache-view.c \
-	magick/cache-view.h magick/cipher.c magick/cipher.h \
-	magick/client.c magick/client.h magick/coder.c magick/coder.h \
-	magick/color.c magick/color.h magick/color-private.h \
-	magick/colormap.c magick/colormap.h magick/colormap-private.h \
+	magick/MagickCore.h magick/accelerate.c magick/accelerate.h \
+	magick/animate.c magick/animate.h magick/animate-private.h \
+	magick/annotate.c magick/annotate.h magick/api.h \
+	magick/artifact.c magick/artifact.h magick/attribute.c \
+	magick/attribute.h magick/blob.c magick/blob.h \
+	magick/blob-private.h magick/cache.c magick/cache.h \
+	magick/cache-private.h magick/cache-view.c magick/cache-view.h \
+	magick/cipher.c magick/cipher.h magick/client.c \
+	magick/client.h magick/coder.c magick/coder.h magick/color.c \
+	magick/color.h magick/color-private.h magick/colormap.c \
+	magick/colormap.h magick/colormap-private.h \
 	magick/colorspace.c magick/colorspace.h \
 	magick/colorspace-private.h magick/compare.c magick/compare.h \
 	magick/composite.c magick/composite.h \
@@ -1331,56 +1330,58 @@ am__magick_libMagickCore_la_SOURCES_DIST = magick/ImageMagick.h \
 	magick/distort.h magick/draw.c magick/draw.h \
 	magick/draw-private.h magick/effect.c magick/effect.h \
 	magick/enhance.c magick/enhance.h magick/exception.c \
-	magick/exception.h magick/exception-private.h magick/fourier.c \
-	magick/fourier.h magick/fx.c magick/fx.h magick/fx-private.h \
-	magick/gem.c magick/gem.h magick/geometry.c magick/geometry.h \
-	magick/hashmap.c magick/hashmap.h magick/histogram.c \
-	magick/histogram.h magick/identify.c magick/identify.h \
-	magick/image.c magick/image.h magick/image-private.h \
-	magick/layer.c magick/layer.h magick/list.c magick/list.h \
-	magick/locale.c magick/locale_.h magick/log.c magick/log.h \
-	magick/mac.h magick/magic.c magick/magic.h magick/magick.c \
+	magick/exception.h magick/exception-private.h magick/feature.c \
+	magick/feature.h magick/fourier.c magick/fourier.h magick/fx.c \
+	magick/fx.h magick/fx-private.h magick/gem.c magick/gem.h \
+	magick/geometry.c magick/geometry.h magick/hashmap.c \
+	magick/hashmap.h magick/histogram.c magick/histogram.h \
+	magick/identify.c magick/identify.h magick/image.c \
+	magick/image.h magick/image-private.h magick/layer.c \
+	magick/layer.h magick/list.c magick/list.h magick/locale.c \
+	magick/locale_.h magick/log.c magick/log.h magick/mac.h \
+	magick/magic.c magick/magic.h magick/magick.c \
 	magick/magick-config.h magick/magick-type.h magick/magick.h \
 	magick/matrix.c magick/matrix.h magick/memory.c \
 	magick/memory_.h magick/methods.h magick/mime.c magick/mime.h \
 	magick/module.c magick/module.h magick/monitor.c \
 	magick/monitor.h magick/monitor-private.h magick/montage.c \
 	magick/montage.h magick/morphology.c magick/morphology.h \
-	magick/nt-base.h magick/nt-feature.h magick/option.c \
-	magick/option.h magick/paint.c magick/paint.h magick/pixel.c \
-	magick/pixel.h magick/pixel-private.h magick/policy.c \
-	magick/policy.h magick/PreRvIcccm.c magick/PreRvIcccm.h \
-	magick/prepress.c magick/prepress.h magick/property.c \
-	magick/property.h magick/profile.c magick/profile.h \
-	magick/quantize.c magick/quantize.h magick/quantum.c \
-	magick/quantum.h magick/quantum-export.c \
-	magick/quantum-import.c magick/quantum-private.h \
-	magick/random.c magick/random_.h magick/random-private.h \
-	magick/registry.c magick/registry.h magick/resample.c \
-	magick/resample.h magick/resample-private.h magick/resize.c \
-	magick/resize.h magick/resize-private.h magick/resource.c \
-	magick/resource_.h magick/segment.c magick/segment.h \
-	magick/semaphore.c magick/semaphore.h magick/shear.c \
-	magick/shear.h magick/signature.c magick/signature.h \
-	magick/signature-private.h magick/splay-tree.c \
-	magick/splay-tree.h magick/static.c magick/static.h \
-	magick/statistic.c magick/statistic.h magick/stream.c \
-	magick/stream.h magick/stream-private.h magick/string.c \
-	magick/string_.h magick/string-private.h magick/studio.h \
-	magick/thread.c magick/thread_.h magick/thread-private.h \
-	magick/timer.c magick/timer.h magick/token.c magick/token.h \
-	magick/token-private.h magick/transform.c magick/transform.h \
-	magick/threshold.c magick/threshold.h magick/type.c \
-	magick/type.h magick/utility.c magick/utility.h \
-	magick/version.c magick/version.h magick/vms.h magick/widget.c \
-	magick/widget.h magick/xml-tree.c magick/xml-tree.h \
-	magick/xwindow.c magick/xwindow.h magick/nt-feature.c \
-	magick/nt-base.c coders/art.c coders/avs.c coders/bmp.c \
-	coders/braille.c coders/cals.c coders/caption.c coders/cin.c \
-	coders/cip.c coders/clip.c coders/cmyk.c coders/cut.c \
-	coders/dcm.c coders/dds.c coders/dib.c coders/dng.c \
-	coders/dot.c coders/dpx.c coders/fax.c coders/fits.c \
-	coders/gif.c coders/gradient.c coders/gray.c coders/hald.c \
+	magick/morphology-private.h magick/nt-base.h \
+	magick/nt-feature.h magick/option.c magick/option.h \
+	magick/paint.c magick/paint.h magick/pixel.c magick/pixel.h \
+	magick/pixel-private.h magick/policy.c magick/policy.h \
+	magick/PreRvIcccm.c magick/PreRvIcccm.h magick/prepress.c \
+	magick/prepress.h magick/property.c magick/property.h \
+	magick/profile.c magick/profile.h magick/quantize.c \
+	magick/quantize.h magick/quantum.c magick/quantum.h \
+	magick/quantum-export.c magick/quantum-import.c \
+	magick/quantum-private.h magick/random.c magick/random_.h \
+	magick/random-private.h magick/registry.c magick/registry.h \
+	magick/resample.c magick/resample.h magick/resample-private.h \
+	magick/resize.c magick/resize.h magick/resize-private.h \
+	magick/resource.c magick/resource_.h magick/segment.c \
+	magick/segment.h magick/semaphore.c magick/semaphore.h \
+	magick/shear.c magick/shear.h magick/signature.c \
+	magick/signature.h magick/signature-private.h \
+	magick/splay-tree.c magick/splay-tree.h magick/static.c \
+	magick/static.h magick/statistic.c magick/statistic.h \
+	magick/stream.c magick/stream.h magick/stream-private.h \
+	magick/string.c magick/string_.h magick/string-private.h \
+	magick/studio.h magick/thread.c magick/thread_.h \
+	magick/thread-private.h magick/timer.c magick/timer.h \
+	magick/token.c magick/token.h magick/token-private.h \
+	magick/transform.c magick/transform.h magick/threshold.c \
+	magick/threshold.h magick/type.c magick/type.h \
+	magick/utility.c magick/utility.h magick/version.c \
+	magick/version.h magick/vms.h magick/widget.c magick/widget.h \
+	magick/xml-tree.c magick/xml-tree.h magick/xwindow.c \
+	magick/xwindow.h magick/nt-feature.c magick/nt-base.c \
+	coders/art.c coders/avs.c coders/bmp.c coders/braille.c \
+	coders/cals.c coders/caption.c coders/cin.c coders/cip.c \
+	coders/clip.c coders/cmyk.c coders/cut.c coders/dcm.c \
+	coders/dds.c coders/dib.c coders/dng.c coders/dot.c \
+	coders/dpx.c coders/fax.c coders/fits.c coders/gif.c \
+	coders/gradient.c coders/gray.c coders/hald.c \
 	coders/histogram.c coders/hrz.c coders/html.c coders/icon.c \
 	coders/info.c coders/inline.c coders/ipl.c coders/label.c \
 	coders/magick.c coders/map.c coders/mat.c coders/matte.c \
@@ -1388,23 +1389,24 @@ am__magick_libMagickCore_la_SOURCES_DIST = magick/ImageMagick.h \
 	coders/mpeg.c coders/mpr.c coders/msl.c coders/mtv.c \
 	coders/mvg.c coders/null.c coders/otb.c coders/palm.c \
 	coders/pattern.c coders/pcd.c coders/pcl.c coders/pcx.c \
-	coders/pdb.c coders/pdf.c coders/pict.c coders/pix.c \
-	coders/plasma.c coders/pnm.c coders/preview.c coders/ps.c \
-	coders/ps2.c coders/ps3.c coders/psd.c coders/pwp.c \
-	coders/raw.c coders/rgb.c coders/rla.c coders/rle.c \
-	coders/scr.c coders/sct.c coders/sfw.c coders/sgi.c \
-	coders/stegano.c coders/sun.c coders/svg.c coders/tga.c \
-	coders/thumbnail.c coders/tile.c coders/tim.c coders/ttf.c \
-	coders/txt.c coders/uil.c coders/url.c coders/uyvy.c \
-	coders/vicar.c coders/vid.c coders/viff.c coders/wbmp.c \
-	coders/wpg.c coders/xbm.c coders/xc.c coders/xcf.c \
-	coders/xpm.c coders/xps.c coders/ycbcr.c coders/yuv.c \
-	coders/dps.c coders/djvu.c coders/exr.c coders/fpx.c \
-	coders/clipboard.c coders/emf.c coders/jbig.c coders/jpeg.c \
-	coders/jp2.c coders/png.c coders/ept.c coders/tiff.c \
-	coders/wmf.c coders/x.c coders/xwd.c filters/analyze.c \
-	filters/convolve.c
-am__objects_2 = magick/magick_libMagickCore_la-animate.lo \
+	coders/pdb.c coders/pdf.c coders/pes.c coders/pict.c \
+	coders/pix.c coders/plasma.c coders/pnm.c coders/preview.c \
+	coders/ps.c coders/ps2.c coders/ps3.c coders/psd.c \
+	coders/pwp.c coders/raw.c coders/rgb.c coders/rla.c \
+	coders/rle.c coders/scr.c coders/sct.c coders/sfw.c \
+	coders/sgi.c coders/stegano.c coders/sun.c coders/svg.c \
+	coders/tga.c coders/thumbnail.c coders/tile.c coders/tim.c \
+	coders/ttf.c coders/txt.c coders/uil.c coders/url.c \
+	coders/uyvy.c coders/vicar.c coders/vid.c coders/viff.c \
+	coders/wbmp.c coders/wpg.c coders/xbm.c coders/xc.c \
+	coders/xcf.c coders/xpm.c coders/xps.c coders/ycbcr.c \
+	coders/yuv.c coders/dps.c coders/djvu.c coders/exr.c \
+	coders/fpx.c coders/clipboard.c coders/emf.c coders/jbig.c \
+	coders/jpeg.c coders/jp2.c coders/png.c coders/ept.c \
+	coders/tiff.c coders/wmf.c coders/x.c coders/xwd.c \
+	filters/analyze.c
+am__objects_2 = magick/magick_libMagickCore_la-accelerate.lo \
+	magick/magick_libMagickCore_la-animate.lo \
 	magick/magick_libMagickCore_la-annotate.lo \
 	magick/magick_libMagickCore_la-artifact.lo \
 	magick/magick_libMagickCore_la-attribute.lo \
@@ -1431,6 +1433,7 @@ am__objects_2 = magick/magick_libMagickCore_la-animate.lo \
 	magick/magick_libMagickCore_la-effect.lo \
 	magick/magick_libMagickCore_la-enhance.lo \
 	magick/magick_libMagickCore_la-exception.lo \
+	magick/magick_libMagickCore_la-feature.lo \
 	magick/magick_libMagickCore_la-fourier.lo \
 	magick/magick_libMagickCore_la-fx.lo \
 	magick/magick_libMagickCore_la-gem.lo \
@@ -1571,6 +1574,7 @@ am__objects_16 = coders/magick_libMagickCore_la-art.lo \
 	coders/magick_libMagickCore_la-pcx.lo \
 	coders/magick_libMagickCore_la-pdb.lo \
 	coders/magick_libMagickCore_la-pdf.lo \
+	coders/magick_libMagickCore_la-pes.lo \
 	coders/magick_libMagickCore_la-pict.lo \
 	coders/magick_libMagickCore_la-pix.lo \
 	coders/magick_libMagickCore_la-plasma.lo \
@@ -1617,8 +1621,7 @@ am__objects_16 = coders/magick_libMagickCore_la-art.lo \
 	$(am__objects_8) $(am__objects_9) $(am__objects_10) \
 	$(am__objects_11) $(am__objects_12) $(am__objects_13) \
 	$(am__objects_14) $(am__objects_15)
-am__objects_17 = filters/magick_libMagickCore_la-analyze.lo \
-	filters/magick_libMagickCore_la-convolve.lo
+am__objects_17 = filters/magick_libMagickCore_la-analyze.lo
 @WITH_MODULES_FALSE@am_magick_libMagickCore_la_OBJECTS =  \
 @WITH_MODULES_FALSE@	$(am__objects_2) $(am__objects_3) \
 @WITH_MODULES_FALSE@	$(am__objects_16) $(am__objects_17)
@@ -1942,31 +1945,31 @@ SOURCES = $(Magick___lib_libMagick___la_SOURCES) \
 	$(coders_palm_la_SOURCES) $(coders_pattern_la_SOURCES) \
 	$(coders_pcd_la_SOURCES) $(coders_pcl_la_SOURCES) \
 	$(coders_pcx_la_SOURCES) $(coders_pdb_la_SOURCES) \
-	$(coders_pdf_la_SOURCES) $(coders_pict_la_SOURCES) \
-	$(coders_pix_la_SOURCES) $(coders_plasma_la_SOURCES) \
-	$(coders_png_la_SOURCES) $(coders_pnm_la_SOURCES) \
-	$(coders_preview_la_SOURCES) $(coders_ps_la_SOURCES) \
-	$(coders_ps2_la_SOURCES) $(coders_ps3_la_SOURCES) \
-	$(coders_psd_la_SOURCES) $(coders_pwp_la_SOURCES) \
-	$(coders_raw_la_SOURCES) $(coders_rgb_la_SOURCES) \
-	$(coders_rla_la_SOURCES) $(coders_rle_la_SOURCES) \
-	$(coders_scr_la_SOURCES) $(coders_sct_la_SOURCES) \
-	$(coders_sfw_la_SOURCES) $(coders_sgi_la_SOURCES) \
-	$(coders_stegano_la_SOURCES) $(coders_sun_la_SOURCES) \
-	$(coders_svg_la_SOURCES) $(coders_tga_la_SOURCES) \
-	$(coders_thumbnail_la_SOURCES) $(coders_tiff_la_SOURCES) \
-	$(coders_tile_la_SOURCES) $(coders_tim_la_SOURCES) \
-	$(coders_ttf_la_SOURCES) $(coders_txt_la_SOURCES) \
-	$(coders_uil_la_SOURCES) $(coders_url_la_SOURCES) \
-	$(coders_uyvy_la_SOURCES) $(coders_vicar_la_SOURCES) \
-	$(coders_vid_la_SOURCES) $(coders_viff_la_SOURCES) \
-	$(coders_wbmp_la_SOURCES) $(coders_wmf_la_SOURCES) \
-	$(coders_wpg_la_SOURCES) $(coders_x_la_SOURCES) \
-	$(coders_xbm_la_SOURCES) $(coders_xc_la_SOURCES) \
-	$(coders_xcf_la_SOURCES) $(coders_xpm_la_SOURCES) \
-	$(coders_xps_la_SOURCES) $(coders_xwd_la_SOURCES) \
-	$(coders_ycbcr_la_SOURCES) $(coders_yuv_la_SOURCES) \
-	$(filters_analyze_la_SOURCES) $(filters_convolve_la_SOURCES) \
+	$(coders_pdf_la_SOURCES) $(coders_pes_la_SOURCES) \
+	$(coders_pict_la_SOURCES) $(coders_pix_la_SOURCES) \
+	$(coders_plasma_la_SOURCES) $(coders_png_la_SOURCES) \
+	$(coders_pnm_la_SOURCES) $(coders_preview_la_SOURCES) \
+	$(coders_ps_la_SOURCES) $(coders_ps2_la_SOURCES) \
+	$(coders_ps3_la_SOURCES) $(coders_psd_la_SOURCES) \
+	$(coders_pwp_la_SOURCES) $(coders_raw_la_SOURCES) \
+	$(coders_rgb_la_SOURCES) $(coders_rla_la_SOURCES) \
+	$(coders_rle_la_SOURCES) $(coders_scr_la_SOURCES) \
+	$(coders_sct_la_SOURCES) $(coders_sfw_la_SOURCES) \
+	$(coders_sgi_la_SOURCES) $(coders_stegano_la_SOURCES) \
+	$(coders_sun_la_SOURCES) $(coders_svg_la_SOURCES) \
+	$(coders_tga_la_SOURCES) $(coders_thumbnail_la_SOURCES) \
+	$(coders_tiff_la_SOURCES) $(coders_tile_la_SOURCES) \
+	$(coders_tim_la_SOURCES) $(coders_ttf_la_SOURCES) \
+	$(coders_txt_la_SOURCES) $(coders_uil_la_SOURCES) \
+	$(coders_url_la_SOURCES) $(coders_uyvy_la_SOURCES) \
+	$(coders_vicar_la_SOURCES) $(coders_vid_la_SOURCES) \
+	$(coders_viff_la_SOURCES) $(coders_wbmp_la_SOURCES) \
+	$(coders_wmf_la_SOURCES) $(coders_wpg_la_SOURCES) \
+	$(coders_x_la_SOURCES) $(coders_xbm_la_SOURCES) \
+	$(coders_xc_la_SOURCES) $(coders_xcf_la_SOURCES) \
+	$(coders_xpm_la_SOURCES) $(coders_xps_la_SOURCES) \
+	$(coders_xwd_la_SOURCES) $(coders_ycbcr_la_SOURCES) \
+	$(coders_yuv_la_SOURCES) $(filters_analyze_la_SOURCES) \
 	$(ltdl_dld_link_la_SOURCES) $(ltdl_dlopen_la_SOURCES) \
 	$(ltdl_dyld_la_SOURCES) $(ltdl_libltdl_la_SOURCES) \
 	$(ltdl_libltdlc_la_SOURCES) $(ltdl_load_add_on_la_SOURCES) \
@@ -2030,31 +2033,31 @@ DIST_SOURCES = $(Magick___lib_libMagick___la_SOURCES) \
 	$(coders_palm_la_SOURCES) $(coders_pattern_la_SOURCES) \
 	$(coders_pcd_la_SOURCES) $(coders_pcl_la_SOURCES) \
 	$(coders_pcx_la_SOURCES) $(coders_pdb_la_SOURCES) \
-	$(coders_pdf_la_SOURCES) $(coders_pict_la_SOURCES) \
-	$(coders_pix_la_SOURCES) $(coders_plasma_la_SOURCES) \
-	$(coders_png_la_SOURCES) $(coders_pnm_la_SOURCES) \
-	$(coders_preview_la_SOURCES) $(coders_ps_la_SOURCES) \
-	$(coders_ps2_la_SOURCES) $(coders_ps3_la_SOURCES) \
-	$(coders_psd_la_SOURCES) $(coders_pwp_la_SOURCES) \
-	$(coders_raw_la_SOURCES) $(coders_rgb_la_SOURCES) \
-	$(coders_rla_la_SOURCES) $(coders_rle_la_SOURCES) \
-	$(coders_scr_la_SOURCES) $(coders_sct_la_SOURCES) \
-	$(coders_sfw_la_SOURCES) $(coders_sgi_la_SOURCES) \
-	$(coders_stegano_la_SOURCES) $(coders_sun_la_SOURCES) \
-	$(coders_svg_la_SOURCES) $(coders_tga_la_SOURCES) \
-	$(coders_thumbnail_la_SOURCES) $(coders_tiff_la_SOURCES) \
-	$(coders_tile_la_SOURCES) $(coders_tim_la_SOURCES) \
-	$(coders_ttf_la_SOURCES) $(coders_txt_la_SOURCES) \
-	$(coders_uil_la_SOURCES) $(coders_url_la_SOURCES) \
-	$(coders_uyvy_la_SOURCES) $(coders_vicar_la_SOURCES) \
-	$(coders_vid_la_SOURCES) $(coders_viff_la_SOURCES) \
-	$(coders_wbmp_la_SOURCES) $(coders_wmf_la_SOURCES) \
-	$(coders_wpg_la_SOURCES) $(coders_x_la_SOURCES) \
-	$(coders_xbm_la_SOURCES) $(coders_xc_la_SOURCES) \
-	$(coders_xcf_la_SOURCES) $(coders_xpm_la_SOURCES) \
-	$(coders_xps_la_SOURCES) $(coders_xwd_la_SOURCES) \
-	$(coders_ycbcr_la_SOURCES) $(coders_yuv_la_SOURCES) \
-	$(filters_analyze_la_SOURCES) $(filters_convolve_la_SOURCES) \
+	$(coders_pdf_la_SOURCES) $(coders_pes_la_SOURCES) \
+	$(coders_pict_la_SOURCES) $(coders_pix_la_SOURCES) \
+	$(coders_plasma_la_SOURCES) $(coders_png_la_SOURCES) \
+	$(coders_pnm_la_SOURCES) $(coders_preview_la_SOURCES) \
+	$(coders_ps_la_SOURCES) $(coders_ps2_la_SOURCES) \
+	$(coders_ps3_la_SOURCES) $(coders_psd_la_SOURCES) \
+	$(coders_pwp_la_SOURCES) $(coders_raw_la_SOURCES) \
+	$(coders_rgb_la_SOURCES) $(coders_rla_la_SOURCES) \
+	$(coders_rle_la_SOURCES) $(coders_scr_la_SOURCES) \
+	$(coders_sct_la_SOURCES) $(coders_sfw_la_SOURCES) \
+	$(coders_sgi_la_SOURCES) $(coders_stegano_la_SOURCES) \
+	$(coders_sun_la_SOURCES) $(coders_svg_la_SOURCES) \
+	$(coders_tga_la_SOURCES) $(coders_thumbnail_la_SOURCES) \
+	$(coders_tiff_la_SOURCES) $(coders_tile_la_SOURCES) \
+	$(coders_tim_la_SOURCES) $(coders_ttf_la_SOURCES) \
+	$(coders_txt_la_SOURCES) $(coders_uil_la_SOURCES) \
+	$(coders_url_la_SOURCES) $(coders_uyvy_la_SOURCES) \
+	$(coders_vicar_la_SOURCES) $(coders_vid_la_SOURCES) \
+	$(coders_viff_la_SOURCES) $(coders_wbmp_la_SOURCES) \
+	$(coders_wmf_la_SOURCES) $(coders_wpg_la_SOURCES) \
+	$(coders_x_la_SOURCES) $(coders_xbm_la_SOURCES) \
+	$(coders_xc_la_SOURCES) $(coders_xcf_la_SOURCES) \
+	$(coders_xpm_la_SOURCES) $(coders_xps_la_SOURCES) \
+	$(coders_xwd_la_SOURCES) $(coders_ycbcr_la_SOURCES) \
+	$(coders_yuv_la_SOURCES) $(filters_analyze_la_SOURCES) \
 	$(ltdl_dld_link_la_SOURCES) $(ltdl_dlopen_la_SOURCES) \
 	$(ltdl_dyld_la_SOURCES) $(ltdl_libltdl_la_SOURCES) \
 	$(ltdl_libltdlc_la_SOURCES) $(ltdl_load_add_on_la_SOURCES) \
@@ -2379,7 +2382,6 @@ P7ZIP = @P7ZIP@
 PACKAGE = @PACKAGE@
 PACKAGE_BUGREPORT = @PACKAGE_BUGREPORT@
 PACKAGE_CHANGE_DATE = @PACKAGE_CHANGE_DATE@
-PACKAGE_LIB_SUBVERSION = @PACKAGE_LIB_SUBVERSION@
 PACKAGE_LIB_VERSION = @PACKAGE_LIB_VERSION@
 PACKAGE_LIB_VERSION_NUMBER = @PACKAGE_LIB_VERSION_NUMBER@
 PACKAGE_NAME = @PACKAGE_NAME@
@@ -2389,6 +2391,7 @@ PACKAGE_STRING = @PACKAGE_STRING@
 PACKAGE_TARNAME = @PACKAGE_TARNAME@
 PACKAGE_URL = @PACKAGE_URL@
 PACKAGE_VERSION = @PACKAGE_VERSION@
+PACKAGE_VERSION_ADDENDUM = @PACKAGE_VERSION_ADDENDUM@
 PATH_SEPARATOR = @PATH_SEPARATOR@
 PCLCMYKDevice = @PCLCMYKDevice@
 PCLColorDevice = @PCLColorDevice@
@@ -2484,6 +2487,7 @@ build_vendor = @build_vendor@
 builddir = @builddir@
 datadir = @datadir@
 datarootdir = @datarootdir@
+dejavu_font_dir = @dejavu_font_dir@
 
 # Architecture independent data files installed in the package's data directory
 docdir = $(SHARE_PATH)
@@ -2549,8 +2553,9 @@ MODULECOMMONFLAGS = -no-undefined -export-symbols-regex ".*" -shared -module -av
 DISTCHECK_CONFIGURE_FLAGS = $(DISTCHECK_CONFIG_FLAGS)
 CLEANFILES = $(LTDL_CLEANFILES) $(WAND_CLEANFILES) \
 	$(MAGICKPP_CLEANFILES) $(UTILITIES_CLEANFILES) \
-	$(TESTS_CLEANFILES) ltdl/libltdl.la ltdl/libltdlc.la \
-	ltdl/libdlloader.la $(ltdl_LIBOBJS) $(ltdl_LTLIBOBJS)
+	$(TESTS_CLEANFILES) magick/wizard-config.h _configs.sed \
+	ltdl/libltdl.la ltdl/libltdlc.la ltdl/libdlloader.la \
+	$(ltdl_LIBOBJS) $(ltdl_LTLIBOBJS)
 
 # Binary scripts
 bin_SCRIPTS = \
@@ -2631,7 +2636,7 @@ M4_EXTRA_DIST = \
   ac_prog_perl_version.m4 \
   acx_pthread.m4 \
   argz.m4 \
-  ax_check_cl.m4 \
+  ax_opencl.m4 \
   ax_lang_compiler_ms.m4 \
   ax_prefix_config_h.m4 \
   cxx_have_bool.m4 \
@@ -2675,6 +2680,7 @@ configlib_DATA = \
 	config/locale.xml \
 	config/policy.xml \
 	config/type.xml \
+	config/type-dejavu.xml \
 	config/type-ghostscript.xml \
 	config/type-windows.xml
 
@@ -2694,6 +2700,7 @@ CONFIG_EXTRA_DIST = \
 	config/policy.xml \
 	config/sRGB.icm \
 	config/thresholds.xml \
+	config/type-dejavu.xml.in \
 	config/type-ghostscript.xml.in \
 	config/type-windows.xml.in \
 	config/type.xml.in
@@ -2826,6 +2833,7 @@ MAGICK_CODER_SRCS = \
 	coders/pcx.c \
 	coders/pdb.c \
 	coders/pdf.c \
+	coders/pes.c \
 	coders/pict.c \
 	coders/pix.c \
 	coders/plasma.c \
@@ -2936,6 +2944,7 @@ MAGICK_CODER_SRCS = \
 @WITH_MODULES_TRUE@	coders/pcx.la \
 @WITH_MODULES_TRUE@	coders/pdb.la \
 @WITH_MODULES_TRUE@	coders/pdf.la \
+@WITH_MODULES_TRUE@	coders/pes.la \
 @WITH_MODULES_TRUE@	coders/pict.la \
 @WITH_MODULES_TRUE@	coders/pix.la \
 @WITH_MODULES_TRUE@	coders/plasma.la \
@@ -3370,6 +3379,12 @@ coders_pdf_la_CPPFLAGS = $(MODULE_EXTRA_CPPFLAGS)
 coders_pdf_la_LDFLAGS = $(MODULECOMMONFLAGS)
 coders_pdf_la_LIBADD = $(MAGICKCORE_LIBS) $(JBIG_LIBS) $(JPEG_LIBS) $(ZLIB_LIBS) $(GS_LIBS) $(MATH_LIBS)
 
+# PES coder module
+coders_pes_la_SOURCES = coders/pes.c
+coders_pes_la_CPPFLAGS = $(MODULE_EXTRA_CPPFLAGS)
+coders_pes_la_LDFLAGS = $(MODULECOMMONFLAGS)
+coders_pes_la_LIBADD = $(MAGICKCORE_LIBS)
+
 # PICT coder module
 coders_pict_la_SOURCES = coders/pict.c
 coders_pict_la_CPPFLAGS = $(MODULE_EXTRA_CPPFLAGS)
@@ -3685,6 +3700,8 @@ magick_libMagickCore_la_DEPENDENCIES = $(MAGICK_LTDLDEPS)
 MAGICK_BASE_SRCS = \
 	magick/ImageMagick.h \
 	magick/MagickCore.h \
+	magick/accelerate.c \
+	magick/accelerate.h \
 	magick/animate.c \
 	magick/animate.h \
 	magick/animate-private.h \
@@ -3751,6 +3768,8 @@ MAGICK_BASE_SRCS = \
 	magick/exception.c \
 	magick/exception.h \
 	magick/exception-private.h \
+	magick/feature.c \
+	magick/feature.h \
 	magick/fourier.c \
 	magick/fourier.h \
 	magick/fx.c \
@@ -3800,6 +3819,7 @@ MAGICK_BASE_SRCS = \
 	magick/montage.h \
 	magick/morphology.c \
 	magick/morphology.h \
+	magick/morphology-private.h \
 	magick/nt-base.h \
 	magick/nt-feature.h \
 	magick/option.c \
@@ -3902,6 +3922,7 @@ MAGICK_INCLUDE_HDRS = \
 	magick/ImageMagick.h \
 	magick/MagickCore.h \
 	magick/PreRvIcccm.h \
+	magick/accelerate.h \
 	magick/animate.h \
 	magick/annotate.h \
 	magick/api.h \
@@ -3930,6 +3951,7 @@ MAGICK_INCLUDE_HDRS = \
 	magick/effect.h \
 	magick/enhance.h \
 	magick/exception.h \
+	magick/feature.h \
 	magick/fourier.h \
 	magick/fx.h \
 	magick/gem.h \
@@ -4004,6 +4026,7 @@ MAGICK_NOINST_HDRS = \
 	magick/mac.h \
 	magick/mime-private.h \
 	magick/monitor-private.h \
+	magick/morphology-private.h \
 	magick/nt-base.h \
 	magick/nt-feature.h \
 	magick/pixel-private.h \
@@ -4046,13 +4069,11 @@ MAGICK_UNINSTALL_LOCAL_TARGETS = magick-uninstall-local
 # Where filter modules get installed
 filtersdir = $(FILTER_PATH)
 MAGICK_FILTER_SRCS = \
-	filters/analyze.c \
-	filters/convolve.c
+	filters/analyze.c
 
 @WITH_MODULES_FALSE@filters_LTLIBRARIES = 
 @WITH_MODULES_TRUE@filters_LTLIBRARIES = \
-@WITH_MODULES_TRUE@	filters/analyze.la \
-@WITH_MODULES_TRUE@	filters/convolve.la
+@WITH_MODULES_TRUE@	filters/analyze.la
 
 
 # analyze filter module
@@ -4060,12 +4081,6 @@ filters_analyze_la_SOURCES = filters/analyze.c
 filters_analyze_la_CPPFLAGS = $(MODULE_EXTRA_CPPFLAGS)
 filters_analyze_la_LDFLAGS = $(MODULECOMMONFLAGS)
 filters_analyze_la_LIBADD = $(MAGICKCORE_LIBS) $(MATH_LIBS)
-
-# convolve filter module
-filters_convolve_la_SOURCES = filters/convolve.c
-filters_convolve_la_CPPFLAGS = $(MODULE_EXTRA_CPPFLAGS)
-filters_convolve_la_LDFLAGS = $(MODULECOMMONFLAGS)
-filters_convolve_la_LIBADD = $(MAGICKCORE_LIBS) $(MATH_LIBS)
 wandincdir = $(topincludedir)/wand
 WAND_SOURCES = \
 	wand/MagickWand.h \
@@ -4581,9 +4596,9 @@ HTML_UNINSTALL_DATA_TARGETS = uninstall-data-html
 #
 # Build Windows source Zip and 7Zip balls
 #
-@ZIP_DELEGATE_TRUE@DIST_WINDOWS_SRC_ZIP = $(PACKAGE_NAME)-$(PACKAGE_VERSION)$(PACKAGE_LIB_SUBVERSION)-windows.zip
+@ZIP_DELEGATE_TRUE@DIST_WINDOWS_SRC_ZIP = $(PACKAGE_NAME)-$(PACKAGE_VERSION)$(PACKAGE_VERSION_ADDENDUM)-windows.zip
 @P7ZIP_DELEGATE_FALSE@DIST_WINDOWS_SRC_7ZIP = 
-@P7ZIP_DELEGATE_TRUE@DIST_WINDOWS_SRC_7ZIP = $(PACKAGE_NAME)-$(PACKAGE_VERSION)$(PACKAGE_LIB_SUBVERSION)-windows.7z
+@P7ZIP_DELEGATE_TRUE@DIST_WINDOWS_SRC_7ZIP = $(PACKAGE_NAME)-$(PACKAGE_VERSION)$(PACKAGE_VERSION_ADDENDUM)-windows.7z
 
 #
 # RPM build support
@@ -4593,11 +4608,11 @@ HTML_UNINSTALL_DATA_TARGETS = uninstall-data-html
 @RPM_DELEGATE_TRUE@RPMARCH = i386
 @RPM_DELEGATE_FALSE@DIST_ARCHIVE_RPM = 
 @RPM_DELEGATE_TRUE@DIST_ARCHIVE_RPM = \
-@RPM_DELEGATE_TRUE@	$(RPMDIR)/$(RPMARCH)/$(PACKAGE_NAME)-$(PACKAGE_VERSION)$(PACKAGE_LIB_SUBVERSION)-$(PACKAGE_RELEASE).$(RPMARCH).rpm \
-@RPM_DELEGATE_TRUE@	$(RPMDIR)/$(RPMARCH)/$(PACKAGE_NAME)-c++-$(PACKAGE_VERSION)$(PACKAGE_LIB_SUBVERSION)-$(PACKAGE_RELEASE).$(RPMARCH).rpm \
-@RPM_DELEGATE_TRUE@	$(RPMDIR)/$(RPMARCH)/$(PACKAGE_NAME)-c++-devel-$(PACKAGE_VERSION)$(PACKAGE_LIB_SUBVERSION)-$(PACKAGE_RELEASE).$(RPMARCH).rpm \
-@RPM_DELEGATE_TRUE@	$(RPMDIR)/$(RPMARCH)/$(PACKAGE_NAME)-devel-$(PACKAGE_VERSION)$(PACKAGE_LIB_SUBVERSION)-$(PACKAGE_RELEASE).$(RPMARCH).rpm \
-@RPM_DELEGATE_TRUE@	$(RPMDIR)/$(RPMARCH)/$(PACKAGE_NAME)-perl-$(PACKAGE_VERSION)$(PACKAGE_LIB_SUBVERSION)-$(PACKAGE_RELEASE).$(RPMARCH).rpm
+@RPM_DELEGATE_TRUE@	$(RPMDIR)/$(RPMARCH)/$(PACKAGE_NAME)-$(PACKAGE_VERSION)$(PACKAGE_VERSION_ADDENDUM)-$(PACKAGE_RELEASE).$(RPMARCH).rpm \
+@RPM_DELEGATE_TRUE@	$(RPMDIR)/$(RPMARCH)/$(PACKAGE_NAME)-c++-$(PACKAGE_VERSION)$(PACKAGE_VERSION_ADDENDUM)-$(PACKAGE_RELEASE).$(RPMARCH).rpm \
+@RPM_DELEGATE_TRUE@	$(RPMDIR)/$(RPMARCH)/$(PACKAGE_NAME)-c++-devel-$(PACKAGE_VERSION)$(PACKAGE_VERSION_ADDENDUM)-$(PACKAGE_RELEASE).$(RPMARCH).rpm \
+@RPM_DELEGATE_TRUE@	$(RPMDIR)/$(RPMARCH)/$(PACKAGE_NAME)-devel-$(PACKAGE_VERSION)$(PACKAGE_VERSION_ADDENDUM)-$(PACKAGE_RELEASE).$(RPMARCH).rpm \
+@RPM_DELEGATE_TRUE@	$(RPMDIR)/$(RPMARCH)/$(PACKAGE_NAME)-perl-$(PACKAGE_VERSION)$(PACKAGE_VERSION_ADDENDUM)-$(PACKAGE_RELEASE).$(RPMARCH).rpm
 
 all: $(BUILT_SOURCES)
 	$(MAKE) $(AM_MAKEFLAGS) all-am
@@ -4664,6 +4679,8 @@ config/ImageMagick.rdf: $(top_builddir)/config.status $(top_srcdir)/config/Image
 config/MagickCore.dox: $(top_builddir)/config.status $(top_srcdir)/config/MagickCore.dox.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
 config/MagickWand.dox: $(top_builddir)/config.status $(top_srcdir)/config/MagickWand.dox.in
+	cd $(top_builddir) && $(SHELL) ./config.status $@
+config/type-dejavu.xml: $(top_builddir)/config.status $(top_srcdir)/config/type-dejavu.xml.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
 config/type-ghostscript.xml: $(top_builddir)/config.status $(top_srcdir)/config/type-ghostscript.xml.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
@@ -5129,6 +5146,10 @@ coders/coders_pdf_la-pdf.lo: coders/$(am__dirstamp) \
 	coders/$(DEPDIR)/$(am__dirstamp)
 coders/pdf.la: $(coders_pdf_la_OBJECTS) $(coders_pdf_la_DEPENDENCIES) coders/$(am__dirstamp)
 	$(AM_V_CCLD)$(coders_pdf_la_LINK) $(am_coders_pdf_la_rpath) $(coders_pdf_la_OBJECTS) $(coders_pdf_la_LIBADD) $(LIBS)
+coders/coders_pes_la-pes.lo: coders/$(am__dirstamp) \
+	coders/$(DEPDIR)/$(am__dirstamp)
+coders/pes.la: $(coders_pes_la_OBJECTS) $(coders_pes_la_DEPENDENCIES) coders/$(am__dirstamp)
+	$(AM_V_CCLD)$(coders_pes_la_LINK) $(am_coders_pes_la_rpath) $(coders_pes_la_OBJECTS) $(coders_pes_la_LIBADD) $(LIBS)
 coders/coders_pict_la-pict.lo: coders/$(am__dirstamp) \
 	coders/$(DEPDIR)/$(am__dirstamp)
 coders/pict.la: $(coders_pict_la_OBJECTS) $(coders_pict_la_DEPENDENCIES) coders/$(am__dirstamp)
@@ -5327,10 +5348,6 @@ filters/filters_analyze_la-analyze.lo: filters/$(am__dirstamp) \
 	filters/$(DEPDIR)/$(am__dirstamp)
 filters/analyze.la: $(filters_analyze_la_OBJECTS) $(filters_analyze_la_DEPENDENCIES) filters/$(am__dirstamp)
 	$(AM_V_CCLD)$(filters_analyze_la_LINK) $(am_filters_analyze_la_rpath) $(filters_analyze_la_OBJECTS) $(filters_analyze_la_LIBADD) $(LIBS)
-filters/filters_convolve_la-convolve.lo: filters/$(am__dirstamp) \
-	filters/$(DEPDIR)/$(am__dirstamp)
-filters/convolve.la: $(filters_convolve_la_OBJECTS) $(filters_convolve_la_DEPENDENCIES) filters/$(am__dirstamp)
-	$(AM_V_CCLD)$(filters_convolve_la_LINK) $(am_filters_convolve_la_rpath) $(filters_convolve_la_OBJECTS) $(filters_convolve_la_LIBADD) $(LIBS)
 ltdl/loaders/$(am__dirstamp):
 	@$(MKDIR_P) ltdl/loaders
 	@: > ltdl/loaders/$(am__dirstamp)
@@ -5402,6 +5419,8 @@ magick/$(am__dirstamp):
 magick/$(DEPDIR)/$(am__dirstamp):
 	@$(MKDIR_P) magick/$(DEPDIR)
 	@: > magick/$(DEPDIR)/$(am__dirstamp)
+magick/magick_libMagickCore_la-accelerate.lo: magick/$(am__dirstamp) \
+	magick/$(DEPDIR)/$(am__dirstamp)
 magick/magick_libMagickCore_la-animate.lo: magick/$(am__dirstamp) \
 	magick/$(DEPDIR)/$(am__dirstamp)
 magick/magick_libMagickCore_la-annotate.lo: magick/$(am__dirstamp) \
@@ -5455,6 +5474,8 @@ magick/magick_libMagickCore_la-effect.lo: magick/$(am__dirstamp) \
 magick/magick_libMagickCore_la-enhance.lo: magick/$(am__dirstamp) \
 	magick/$(DEPDIR)/$(am__dirstamp)
 magick/magick_libMagickCore_la-exception.lo: magick/$(am__dirstamp) \
+	magick/$(DEPDIR)/$(am__dirstamp)
+magick/magick_libMagickCore_la-feature.lo: magick/$(am__dirstamp) \
 	magick/$(DEPDIR)/$(am__dirstamp)
 magick/magick_libMagickCore_la-fourier.lo: magick/$(am__dirstamp) \
 	magick/$(DEPDIR)/$(am__dirstamp)
@@ -5682,6 +5703,8 @@ coders/magick_libMagickCore_la-pdb.lo: coders/$(am__dirstamp) \
 	coders/$(DEPDIR)/$(am__dirstamp)
 coders/magick_libMagickCore_la-pdf.lo: coders/$(am__dirstamp) \
 	coders/$(DEPDIR)/$(am__dirstamp)
+coders/magick_libMagickCore_la-pes.lo: coders/$(am__dirstamp) \
+	coders/$(DEPDIR)/$(am__dirstamp)
 coders/magick_libMagickCore_la-pict.lo: coders/$(am__dirstamp) \
 	coders/$(DEPDIR)/$(am__dirstamp)
 coders/magick_libMagickCore_la-pix.lo: coders/$(am__dirstamp) \
@@ -5797,8 +5820,6 @@ coders/magick_libMagickCore_la-x.lo: coders/$(am__dirstamp) \
 coders/magick_libMagickCore_la-xwd.lo: coders/$(am__dirstamp) \
 	coders/$(DEPDIR)/$(am__dirstamp)
 filters/magick_libMagickCore_la-analyze.lo: filters/$(am__dirstamp) \
-	filters/$(DEPDIR)/$(am__dirstamp)
-filters/magick_libMagickCore_la-convolve.lo: filters/$(am__dirstamp) \
 	filters/$(DEPDIR)/$(am__dirstamp)
 magick/libMagickCore.la: $(magick_libMagickCore_la_OBJECTS) $(magick_libMagickCore_la_DEPENDENCIES) magick/$(am__dirstamp)
 	$(AM_V_CCLD)$(magick_libMagickCore_la_LINK) -rpath $(libdir) $(magick_libMagickCore_la_OBJECTS) $(magick_libMagickCore_la_LIBADD) $(LIBS)
@@ -6323,6 +6344,8 @@ mostlyclean-compile:
 	-rm -f coders/coders_pdb_la-pdb.lo
 	-rm -f coders/coders_pdf_la-pdf.$(OBJEXT)
 	-rm -f coders/coders_pdf_la-pdf.lo
+	-rm -f coders/coders_pes_la-pes.$(OBJEXT)
+	-rm -f coders/coders_pes_la-pes.lo
 	-rm -f coders/coders_pict_la-pict.$(OBJEXT)
 	-rm -f coders/coders_pict_la-pict.lo
 	-rm -f coders/coders_pix_la-pix.$(OBJEXT)
@@ -6543,6 +6566,8 @@ mostlyclean-compile:
 	-rm -f coders/magick_libMagickCore_la-pdb.lo
 	-rm -f coders/magick_libMagickCore_la-pdf.$(OBJEXT)
 	-rm -f coders/magick_libMagickCore_la-pdf.lo
+	-rm -f coders/magick_libMagickCore_la-pes.$(OBJEXT)
+	-rm -f coders/magick_libMagickCore_la-pes.lo
 	-rm -f coders/magick_libMagickCore_la-pict.$(OBJEXT)
 	-rm -f coders/magick_libMagickCore_la-pict.lo
 	-rm -f coders/magick_libMagickCore_la-pix.$(OBJEXT)
@@ -6639,12 +6664,8 @@ mostlyclean-compile:
 	-rm -f coders/magick_libMagickCore_la-yuv.lo
 	-rm -f filters/filters_analyze_la-analyze.$(OBJEXT)
 	-rm -f filters/filters_analyze_la-analyze.lo
-	-rm -f filters/filters_convolve_la-convolve.$(OBJEXT)
-	-rm -f filters/filters_convolve_la-convolve.lo
 	-rm -f filters/magick_libMagickCore_la-analyze.$(OBJEXT)
 	-rm -f filters/magick_libMagickCore_la-analyze.lo
-	-rm -f filters/magick_libMagickCore_la-convolve.$(OBJEXT)
-	-rm -f filters/magick_libMagickCore_la-convolve.lo
 	-rm -f ltdl/loaders/dld_link.$(OBJEXT)
 	-rm -f ltdl/loaders/dld_link.lo
 	-rm -f ltdl/loaders/dlopen.$(OBJEXT)
@@ -6683,6 +6704,8 @@ mostlyclean-compile:
 	-rm -f ltdl/ltdl_libltdlc_la-slist.lo
 	-rm -f magick/magick_libMagickCore_la-PreRvIcccm.$(OBJEXT)
 	-rm -f magick/magick_libMagickCore_la-PreRvIcccm.lo
+	-rm -f magick/magick_libMagickCore_la-accelerate.$(OBJEXT)
+	-rm -f magick/magick_libMagickCore_la-accelerate.lo
 	-rm -f magick/magick_libMagickCore_la-animate.$(OBJEXT)
 	-rm -f magick/magick_libMagickCore_la-animate.lo
 	-rm -f magick/magick_libMagickCore_la-annotate.$(OBJEXT)
@@ -6737,6 +6760,8 @@ mostlyclean-compile:
 	-rm -f magick/magick_libMagickCore_la-enhance.lo
 	-rm -f magick/magick_libMagickCore_la-exception.$(OBJEXT)
 	-rm -f magick/magick_libMagickCore_la-exception.lo
+	-rm -f magick/magick_libMagickCore_la-feature.$(OBJEXT)
+	-rm -f magick/magick_libMagickCore_la-feature.lo
 	-rm -f magick/magick_libMagickCore_la-fourier.$(OBJEXT)
 	-rm -f magick/magick_libMagickCore_la-fourier.lo
 	-rm -f magick/magick_libMagickCore_la-fx.$(OBJEXT)
@@ -7013,6 +7038,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@coders/$(DEPDIR)/coders_pcx_la-pcx.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@coders/$(DEPDIR)/coders_pdb_la-pdb.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@coders/$(DEPDIR)/coders_pdf_la-pdf.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@coders/$(DEPDIR)/coders_pes_la-pes.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@coders/$(DEPDIR)/coders_pict_la-pict.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@coders/$(DEPDIR)/coders_pix_la-pix.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@coders/$(DEPDIR)/coders_plasma_la-plasma.Plo@am__quote@
@@ -7123,6 +7149,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@coders/$(DEPDIR)/magick_libMagickCore_la-pcx.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@coders/$(DEPDIR)/magick_libMagickCore_la-pdb.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@coders/$(DEPDIR)/magick_libMagickCore_la-pdf.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@coders/$(DEPDIR)/magick_libMagickCore_la-pes.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@coders/$(DEPDIR)/magick_libMagickCore_la-pict.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@coders/$(DEPDIR)/magick_libMagickCore_la-pix.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@coders/$(DEPDIR)/magick_libMagickCore_la-plasma.Plo@am__quote@
@@ -7171,9 +7198,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@coders/$(DEPDIR)/magick_libMagickCore_la-ycbcr.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@coders/$(DEPDIR)/magick_libMagickCore_la-yuv.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@filters/$(DEPDIR)/filters_analyze_la-analyze.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@filters/$(DEPDIR)/filters_convolve_la-convolve.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@filters/$(DEPDIR)/magick_libMagickCore_la-analyze.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@filters/$(DEPDIR)/magick_libMagickCore_la-convolve.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ltdl/$(DEPDIR)/ltdl_libltdl_la-lt__alloc.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ltdl/$(DEPDIR)/ltdl_libltdl_la-lt_dlloader.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ltdl/$(DEPDIR)/ltdl_libltdl_la-lt_error.Plo@am__quote@
@@ -7193,6 +7218,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@ltdl/loaders/$(DEPDIR)/ltdl_libltdlc_la-preopen.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ltdl/loaders/$(DEPDIR)/shl_load.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@magick/$(DEPDIR)/magick_libMagickCore_la-PreRvIcccm.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@magick/$(DEPDIR)/magick_libMagickCore_la-accelerate.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@magick/$(DEPDIR)/magick_libMagickCore_la-animate.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@magick/$(DEPDIR)/magick_libMagickCore_la-annotate.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@magick/$(DEPDIR)/magick_libMagickCore_la-artifact.Plo@am__quote@
@@ -7220,6 +7246,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@magick/$(DEPDIR)/magick_libMagickCore_la-effect.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@magick/$(DEPDIR)/magick_libMagickCore_la-enhance.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@magick/$(DEPDIR)/magick_libMagickCore_la-exception.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@magick/$(DEPDIR)/magick_libMagickCore_la-feature.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@magick/$(DEPDIR)/magick_libMagickCore_la-fourier.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@magick/$(DEPDIR)/magick_libMagickCore_la-fx.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@magick/$(DEPDIR)/magick_libMagickCore_la-gem.Plo@am__quote@
@@ -7845,6 +7872,14 @@ coders/coders_pdf_la-pdf.lo: coders/pdf.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(coders_pdf_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o coders/coders_pdf_la-pdf.lo `test -f 'coders/pdf.c' || echo '$(srcdir)/'`coders/pdf.c
 
+coders/coders_pes_la-pes.lo: coders/pes.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(coders_pes_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT coders/coders_pes_la-pes.lo -MD -MP -MF coders/$(DEPDIR)/coders_pes_la-pes.Tpo -c -o coders/coders_pes_la-pes.lo `test -f 'coders/pes.c' || echo '$(srcdir)/'`coders/pes.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) coders/$(DEPDIR)/coders_pes_la-pes.Tpo coders/$(DEPDIR)/coders_pes_la-pes.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='coders/pes.c' object='coders/coders_pes_la-pes.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(coders_pes_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o coders/coders_pes_la-pes.lo `test -f 'coders/pes.c' || echo '$(srcdir)/'`coders/pes.c
+
 coders/coders_pict_la-pict.lo: coders/pict.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(coders_pict_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT coders/coders_pict_la-pict.lo -MD -MP -MF coders/$(DEPDIR)/coders_pict_la-pict.Tpo -c -o coders/coders_pict_la-pict.lo `test -f 'coders/pict.c' || echo '$(srcdir)/'`coders/pict.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) coders/$(DEPDIR)/coders_pict_la-pict.Tpo coders/$(DEPDIR)/coders_pict_la-pict.Plo
@@ -8229,14 +8264,6 @@ filters/filters_analyze_la-analyze.lo: filters/analyze.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(filters_analyze_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o filters/filters_analyze_la-analyze.lo `test -f 'filters/analyze.c' || echo '$(srcdir)/'`filters/analyze.c
 
-filters/filters_convolve_la-convolve.lo: filters/convolve.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(filters_convolve_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT filters/filters_convolve_la-convolve.lo -MD -MP -MF filters/$(DEPDIR)/filters_convolve_la-convolve.Tpo -c -o filters/filters_convolve_la-convolve.lo `test -f 'filters/convolve.c' || echo '$(srcdir)/'`filters/convolve.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) filters/$(DEPDIR)/filters_convolve_la-convolve.Tpo filters/$(DEPDIR)/filters_convolve_la-convolve.Plo
-@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='filters/convolve.c' object='filters/filters_convolve_la-convolve.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(filters_convolve_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o filters/filters_convolve_la-convolve.lo `test -f 'filters/convolve.c' || echo '$(srcdir)/'`filters/convolve.c
-
 ltdl/loaders/ltdl_libltdl_la-preopen.lo: ltdl/loaders/preopen.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ltdl_libltdl_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ltdl/loaders/ltdl_libltdl_la-preopen.lo -MD -MP -MF ltdl/loaders/$(DEPDIR)/ltdl_libltdl_la-preopen.Tpo -c -o ltdl/loaders/ltdl_libltdl_la-preopen.lo `test -f 'ltdl/loaders/preopen.c' || echo '$(srcdir)/'`ltdl/loaders/preopen.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) ltdl/loaders/$(DEPDIR)/ltdl_libltdl_la-preopen.Tpo ltdl/loaders/$(DEPDIR)/ltdl_libltdl_la-preopen.Plo
@@ -8332,6 +8359,14 @@ ltdl/ltdl_libltdlc_la-slist.lo: ltdl/slist.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ltdl/slist.c' object='ltdl/ltdl_libltdlc_la-slist.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ltdl_libltdlc_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ltdl/ltdl_libltdlc_la-slist.lo `test -f 'ltdl/slist.c' || echo '$(srcdir)/'`ltdl/slist.c
+
+magick/magick_libMagickCore_la-accelerate.lo: magick/accelerate.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(magick_libMagickCore_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT magick/magick_libMagickCore_la-accelerate.lo -MD -MP -MF magick/$(DEPDIR)/magick_libMagickCore_la-accelerate.Tpo -c -o magick/magick_libMagickCore_la-accelerate.lo `test -f 'magick/accelerate.c' || echo '$(srcdir)/'`magick/accelerate.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) magick/$(DEPDIR)/magick_libMagickCore_la-accelerate.Tpo magick/$(DEPDIR)/magick_libMagickCore_la-accelerate.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='magick/accelerate.c' object='magick/magick_libMagickCore_la-accelerate.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(magick_libMagickCore_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o magick/magick_libMagickCore_la-accelerate.lo `test -f 'magick/accelerate.c' || echo '$(srcdir)/'`magick/accelerate.c
 
 magick/magick_libMagickCore_la-animate.lo: magick/animate.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(magick_libMagickCore_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT magick/magick_libMagickCore_la-animate.lo -MD -MP -MF magick/$(DEPDIR)/magick_libMagickCore_la-animate.Tpo -c -o magick/magick_libMagickCore_la-animate.lo `test -f 'magick/animate.c' || echo '$(srcdir)/'`magick/animate.c
@@ -8548,6 +8583,14 @@ magick/magick_libMagickCore_la-exception.lo: magick/exception.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='magick/exception.c' object='magick/magick_libMagickCore_la-exception.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(magick_libMagickCore_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o magick/magick_libMagickCore_la-exception.lo `test -f 'magick/exception.c' || echo '$(srcdir)/'`magick/exception.c
+
+magick/magick_libMagickCore_la-feature.lo: magick/feature.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(magick_libMagickCore_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT magick/magick_libMagickCore_la-feature.lo -MD -MP -MF magick/$(DEPDIR)/magick_libMagickCore_la-feature.Tpo -c -o magick/magick_libMagickCore_la-feature.lo `test -f 'magick/feature.c' || echo '$(srcdir)/'`magick/feature.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) magick/$(DEPDIR)/magick_libMagickCore_la-feature.Tpo magick/$(DEPDIR)/magick_libMagickCore_la-feature.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='magick/feature.c' object='magick/magick_libMagickCore_la-feature.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(magick_libMagickCore_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o magick/magick_libMagickCore_la-feature.lo `test -f 'magick/feature.c' || echo '$(srcdir)/'`magick/feature.c
 
 magick/magick_libMagickCore_la-fourier.lo: magick/fourier.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(magick_libMagickCore_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT magick/magick_libMagickCore_la-fourier.lo -MD -MP -MF magick/$(DEPDIR)/magick_libMagickCore_la-fourier.Tpo -c -o magick/magick_libMagickCore_la-fourier.lo `test -f 'magick/fourier.c' || echo '$(srcdir)/'`magick/fourier.c
@@ -9453,6 +9496,14 @@ coders/magick_libMagickCore_la-pdf.lo: coders/pdf.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(magick_libMagickCore_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o coders/magick_libMagickCore_la-pdf.lo `test -f 'coders/pdf.c' || echo '$(srcdir)/'`coders/pdf.c
 
+coders/magick_libMagickCore_la-pes.lo: coders/pes.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(magick_libMagickCore_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT coders/magick_libMagickCore_la-pes.lo -MD -MP -MF coders/$(DEPDIR)/magick_libMagickCore_la-pes.Tpo -c -o coders/magick_libMagickCore_la-pes.lo `test -f 'coders/pes.c' || echo '$(srcdir)/'`coders/pes.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) coders/$(DEPDIR)/magick_libMagickCore_la-pes.Tpo coders/$(DEPDIR)/magick_libMagickCore_la-pes.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='coders/pes.c' object='coders/magick_libMagickCore_la-pes.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(magick_libMagickCore_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o coders/magick_libMagickCore_la-pes.lo `test -f 'coders/pes.c' || echo '$(srcdir)/'`coders/pes.c
+
 coders/magick_libMagickCore_la-pict.lo: coders/pict.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(magick_libMagickCore_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT coders/magick_libMagickCore_la-pict.lo -MD -MP -MF coders/$(DEPDIR)/magick_libMagickCore_la-pict.Tpo -c -o coders/magick_libMagickCore_la-pict.lo `test -f 'coders/pict.c' || echo '$(srcdir)/'`coders/pict.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) coders/$(DEPDIR)/magick_libMagickCore_la-pict.Tpo coders/$(DEPDIR)/magick_libMagickCore_la-pict.Plo
@@ -9916,14 +9967,6 @@ filters/magick_libMagickCore_la-analyze.lo: filters/analyze.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='filters/analyze.c' object='filters/magick_libMagickCore_la-analyze.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(magick_libMagickCore_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o filters/magick_libMagickCore_la-analyze.lo `test -f 'filters/analyze.c' || echo '$(srcdir)/'`filters/analyze.c
-
-filters/magick_libMagickCore_la-convolve.lo: filters/convolve.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(magick_libMagickCore_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT filters/magick_libMagickCore_la-convolve.lo -MD -MP -MF filters/$(DEPDIR)/magick_libMagickCore_la-convolve.Tpo -c -o filters/magick_libMagickCore_la-convolve.lo `test -f 'filters/convolve.c' || echo '$(srcdir)/'`filters/convolve.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) filters/$(DEPDIR)/magick_libMagickCore_la-convolve.Tpo filters/$(DEPDIR)/magick_libMagickCore_la-convolve.Plo
-@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='filters/convolve.c' object='filters/magick_libMagickCore_la-convolve.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(magick_libMagickCore_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o filters/magick_libMagickCore_la-convolve.lo `test -f 'filters/convolve.c' || echo '$(srcdir)/'`filters/convolve.c
 
 wand/wand_libMagickWand_la-animate.lo: wand/animate.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(wand_libMagickWand_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT wand/wand_libMagickWand_la-animate.lo -MD -MP -MF wand/$(DEPDIR)/wand_libMagickWand_la-animate.Tpo -c -o wand/wand_libMagickWand_la-animate.lo `test -f 'wand/animate.c' || echo '$(srcdir)/'`wand/animate.c
@@ -11125,16 +11168,17 @@ html:
 	doxygen config/MagickCore.dox
 	doxygen config/MagickWand.dox
 $(DIST_WINDOWS_SRC_ZIP) $(DIST_WINDOWS_SRC_7ZIP) windows-dist:
-	if test -d $(PACKAGE_NAME)-$(PACKAGE_VERSION)$(PACKAGE_LIB_SUBVERSION) ; then \
-	  chmod -R u+w $(PACKAGE_NAME)-$(PACKAGE_VERSION)$(PACKAGE_LIB_SUBVERSION) ; \
-	  rm -rf $(PACKAGE_NAME)-$(PACKAGE_VERSION)$(PACKAGE_LIB_SUBVERSION) ; \
+	if test -d $(PACKAGE_NAME)-$(PACKAGE_VERSION)$(PACKAGE_VERSION_ADDENDUM) ; then \
+	  chmod -R u+w $(PACKAGE_NAME)-$(PACKAGE_VERSION)$(PACKAGE_VERSION_ADDENDUM) ; \
+	  rm -rf $(PACKAGE_NAME)-$(PACKAGE_VERSION)$(PACKAGE_VERSION_ADDENDUM) ; \
 	fi
+  svn export https://subversion.imagemagick.org/subversion/ImageMagick-Windows/trunk $(PACKAGE_NAME)-$(PACKAGE_VERSION)$(PACKAGE_VERSION_ADDENDUM)
 @ZIP_DELEGATE_TRUE@	rm -f $(DIST_WINDOWS_SRC_ZIP)
-@ZIP_DELEGATE_TRUE@	$(ZIP) -r -9 -q  $(DIST_WINDOWS_SRC_ZIP) $(PACKAGE_NAME)-$(PACKAGE_VERSION)$(PACKAGE_LIB_SUBVERSION)
+@ZIP_DELEGATE_TRUE@	$(ZIP) -r -9 -q  $(DIST_WINDOWS_SRC_ZIP) $(PACKAGE_NAME)-$(PACKAGE_VERSION)$(PACKAGE_VERSION_ADDENDUM)
 @P7ZIP_DELEGATE_TRUE@	rm -f $(DIST_WINDOWS_SRC_7ZIP)
-@P7ZIP_DELEGATE_TRUE@	$(P7ZIP) a -t7z -mx=9 $(DIST_WINDOWS_SRC_7ZIP) $(PACKAGE_NAME)-$(PACKAGE_VERSION)$(PACKAGE_LIB_SUBVERSION)
+@P7ZIP_DELEGATE_TRUE@	$(P7ZIP) a -t7z -mx=9 $(DIST_WINDOWS_SRC_7ZIP) $(PACKAGE_NAME)-$(PACKAGE_VERSION)$(PACKAGE_VERSION_ADDENDUM)
 @P7ZIP_DELEGATE_TRUE@	chmod 644 $(DIST_WINDOWS_SRC_7ZIP)
-	rm -rf $(PACKAGE_NAME)-$(PACKAGE_VERSION)$(PACKAGE_LIB_SUBVERSION)
+	rm -rf $(PACKAGE_NAME)-$(PACKAGE_VERSION)$(PACKAGE_VERSION_ADDENDUM)
 @RPM_DELEGATE_TRUE@.PHONY: srpm
 @RPM_DELEGATE_TRUE@$(DIST_ARCHIVE_SRPM) srpm: dist-bzip2
 @RPM_DELEGATE_TRUE@	rm -f $(DIST_ARCHIVE_SRPM)

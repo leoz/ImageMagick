@@ -131,6 +131,7 @@ MAGICK_CODER_SRCS = \
 	coders/pcx.c \
 	coders/pdb.c \
 	coders/pdf.c \
+	coders/pes.c \
 	coders/pict.c \
 	coders/pix.c \
 	coders/plasma.c \
@@ -241,6 +242,7 @@ coders_LTLIBRARIES = \
 	coders/pcx.la \
 	coders/pdb.la \
 	coders/pdf.la \
+	coders/pes.la \
 	coders/pict.la \
 	coders/pix.la \
 	coders/plasma.la \
@@ -665,7 +667,6 @@ coders_pcx_la_CPPFLAGS     = $(MODULE_EXTRA_CPPFLAGS)
 coders_pcx_la_LDFLAGS      = $(MODULECOMMONFLAGS)
 coders_pcx_la_LIBADD       = $(MAGICKCORE_LIBS)
 
-
 # PDB coder module
 coders_pdb_la_SOURCES      = coders/pdb.c
 coders_pdb_la_CPPFLAGS     = $(MODULE_EXTRA_CPPFLAGS)
@@ -677,6 +678,12 @@ coders_pdf_la_SOURCES      = coders/pdf.c
 coders_pdf_la_CPPFLAGS     = $(MODULE_EXTRA_CPPFLAGS)
 coders_pdf_la_LDFLAGS      = $(MODULECOMMONFLAGS)
 coders_pdf_la_LIBADD       = $(MAGICKCORE_LIBS) $(JBIG_LIBS) $(JPEG_LIBS) $(ZLIB_LIBS) $(GS_LIBS) $(MATH_LIBS)
+
+# PES coder module
+coders_pes_la_SOURCES      = coders/pes.c
+coders_pes_la_CPPFLAGS     = $(MODULE_EXTRA_CPPFLAGS)
+coders_pes_la_LDFLAGS      = $(MODULECOMMONFLAGS)
+coders_pes_la_LIBADD       = $(MAGICKCORE_LIBS)
 
 # PICT coder module
 coders_pict_la_SOURCES     = coders/pict.c
@@ -959,4 +966,3 @@ coders_yuv_la_SOURCES      = coders/yuv.c
 coders_yuv_la_CPPFLAGS     = $(MODULE_EXTRA_CPPFLAGS)
 coders_yuv_la_LDFLAGS      = $(MODULECOMMONFLAGS)
 coders_yuv_la_LIBADD       = $(MAGICKCORE_LIBS)
-

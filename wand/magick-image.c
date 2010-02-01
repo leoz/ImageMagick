@@ -1633,7 +1633,7 @@ WandExport MagickBooleanType MagickColorizeImage(MagickWand *wand,
   if (wand->images == (Image *) NULL)
     ThrowWandException(WandError,"ContainsNoImages",wand->name);
   (void) FormatMagickString(percent_opaque,MaxTextExtent,
-    "%.15g,%.15g,%.15g,%.15g",(double) (100.0*QuantumScale*
+    "%g,%g,%g,%g",(double) (100.0*QuantumScale*
     PixelGetRedQuantum(opacity)),(double) (100.0*QuantumScale*
     PixelGetGreenQuantum(opacity)),(double) (100.0*QuantumScale*
     PixelGetBlueQuantum(opacity)),(double) (100.0*QuantumScale*
@@ -3194,9 +3194,9 @@ WandExport MagickBooleanType MagickExtentImage(MagickWand *wand,
 %  The format of the MagickFilterImage method is:
 %
 %      MagickBooleanType MagickFilterImage(MagickWand *wand,
-%        const MagickKernel *kernel)
+%        const KernelInfo *kernel)
 %      MagickBooleanType MagickFilterImageChannel(MagickWand *wand,
-%        const ChannelType channel,const MagickKernel *kernel)
+%        const ChannelType channel,const KernelInfo *kernel)
 %
 %  A description of each parameter follows:
 %
@@ -3209,7 +3209,7 @@ WandExport MagickBooleanType MagickExtentImage(MagickWand *wand,
 */
 
 WandExport MagickBooleanType MagickFilterImage(MagickWand *wand,
-  const MagickKernel *kernel)
+  const KernelInfo *kernel)
 {
   MagickBooleanType
     status;
@@ -3219,7 +3219,7 @@ WandExport MagickBooleanType MagickFilterImage(MagickWand *wand,
 }
 
 WandExport MagickBooleanType MagickFilterImageChannel(MagickWand *wand,
-  const ChannelType channel,const MagickKernel *kernel)
+  const ChannelType channel,const KernelInfo *kernel)
 {
   Image
     *filter_image;
@@ -3228,7 +3228,7 @@ WandExport MagickBooleanType MagickFilterImageChannel(MagickWand *wand,
   assert(wand->signature == WandSignature);
   if (wand->debug != MagickFalse)
     (void) LogMagickEvent(WandEvent,GetMagickModule(),"%s",wand->name);
-  if (kernel == (const MagickKernel *) NULL)
+  if (kernel == (const KernelInfo *) NULL)
     return(MagickFalse);
   if (wand->images == (Image *) NULL)
     ThrowWandException(WandError,"ContainsNoImages",wand->name);
@@ -4262,46 +4262,53 @@ WandExport double *MagickGetImageChannelDistortions(MagickWand *wand,
 %                                                                             %
 %                                                                             %
 %                                                                             %
-%   M a g i c k G e t I m a g e C h a n n e l M e a n                         %
+%   M a g i c k G e t I m a g e C h a n n e l F e a t u r e s                 %
 %                                                                             %
 %                                                                             %
 %                                                                             %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-%  MagickGetImageChannelMean() gets the mean and standard deviation of one or
-%  more image channels.
+%  MagickGetImageChannelFeatures() returns features for each channel in the
+%  image in each of four directions (horizontal, vertical, left and right
+%  diagonals) for the specified distance.  The features include the angular
+%  second moment, contrast, correlation, sum of squares: variance, inverse
+%  difference moment, sum average, sum varience, sum entropy, entropy,
+%  difference variance, difference entropy, information measures of
+%  correlation 1, information measures of correlation 2, and maximum
+%  correlation coefficient.  You can access the red channel contrast, for
+%  example, like this:
 %
-%  The format of the MagickGetImageChannelMean method is:
+%      channel_features=MagickGetImageChannelFeatures(wand,1);
+%      contrast=channel_features[RedChannel].contrast[0];
 %
-%      MagickBooleanType MagickGetImageChannelMean(MagickWand *wand,
-%        const ChannelType channel,double *mean,double *standard_deviation)
+%  Use MagickRelinquishMemory() to free the statistics buffer.
+%
+%  The format of the MagickGetImageChannelFeatures method is:
+%
+%      ChannelFeatures *MagickGetImageChannelFeatures(MagickWand *wand,
+%        const unsigned long distance)
 %
 %  A description of each parameter follows:
 %
 %    o wand: the magick wand.
 %
-%    o channel: the image channel(s).
-%
-%    o mean:  The mean pixel value for the specified channel(s).
-%
-%    o standard_deviation:  The standard deviation for the specified channel(s).
+%    o distance: the distance.
 %
 */
-WandExport MagickBooleanType MagickGetImageChannelMean(MagickWand *wand,
-  const ChannelType channel,double *mean,double *standard_deviation)
+WandExport ChannelFeatures *MagickGetImageChannelFeatures(MagickWand *wand,
+  const unsigned long distance)
 {
-  MagickBooleanType
-    status;
-
   assert(wand != (MagickWand *) NULL);
   assert(wand->signature == WandSignature);
   if (wand->debug != MagickFalse)
     (void) LogMagickEvent(WandEvent,GetMagickModule(),"%s",wand->name);
   if (wand->images == (Image *) NULL)
-    ThrowWandException(WandError,"ContainsNoImages",wand->name);
-  status=GetImageChannelMean(wand->images,channel,mean,standard_deviation,
-    wand->exception);
-  return(status);
+    {
+      (void) ThrowMagickException(wand->exception,GetMagickModule(),WandError,
+        "ContainsNoImages","`%s'",wand->name);
+      return((ChannelFeatures *) NULL);
+    }
+  return(GetImageChannelFeatures(wand->images,distance,wand->exception));
 }
 
 /*
@@ -4350,7 +4357,54 @@ WandExport MagickBooleanType MagickGetImageChannelKurtosis(MagickWand *wand,
     wand->exception);
   return(status);
 }
+
+/*
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                                             %
+%                                                                             %
+%                                                                             %
+%   M a g i c k G e t I m a g e C h a n n e l M e a n                         %
+%                                                                             %
+%                                                                             %
+%                                                                             %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%  MagickGetImageChannelMean() gets the mean and standard deviation of one or
+%  more image channels.
+%
+%  The format of the MagickGetImageChannelMean method is:
+%
+%      MagickBooleanType MagickGetImageChannelMean(MagickWand *wand,
+%        const ChannelType channel,double *mean,double *standard_deviation)
+%
+%  A description of each parameter follows:
+%
+%    o wand: the magick wand.
+%
+%    o channel: the image channel(s).
+%
+%    o mean:  The mean pixel value for the specified channel(s).
+%
+%    o standard_deviation:  The standard deviation for the specified channel(s).
+%
+*/
+WandExport MagickBooleanType MagickGetImageChannelMean(MagickWand *wand,
+  const ChannelType channel,double *mean,double *standard_deviation)
+{
+  MagickBooleanType
+    status;
 
+  assert(wand != (MagickWand *) NULL);
+  assert(wand->signature == WandSignature);
+  if (wand->debug != MagickFalse)
+    (void) LogMagickEvent(WandEvent,GetMagickModule(),"%s",wand->name);
+  if (wand->images == (Image *) NULL)
+    ThrowWandException(WandError,"ContainsNoImages",wand->name);
+  status=GetImageChannelMean(wand->images,channel,mean,standard_deviation,
+    wand->exception);
+  return(status);
+}
+
 /*
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                                                                             %
@@ -4413,7 +4467,7 @@ WandExport MagickBooleanType MagickGetImageChannelRange(MagickWand *wand,
 %  maxima, the mean, the standard deviation, the kurtosis and the skewness.
 %  You can access the red channel mean, for example, like this:
 %
-%      channel_statistics=MagickGetImageChannelStatistics(image,excepton);
+%      channel_statistics=MagickGetImageChannelStatistics(wand);
 %      red_mean=channel_statistics[RedChannel].mean;
 %
 %  Use MagickRelinquishMemory() to free the statistics buffer.
@@ -6911,7 +6965,7 @@ WandExport MagickBooleanType MagickModulateImage(MagickWand *wand,
     (void) LogMagickEvent(WandEvent,GetMagickModule(),"%s",wand->name);
   if (wand->images == (Image *) NULL)
     ThrowWandException(WandError,"ContainsNoImages",wand->name);
-  (void) FormatMagickString(modulate,MaxTextExtent,"%.15g,%.15g,%.15g",
+  (void) FormatMagickString(modulate,MaxTextExtent,"%g,%g,%g",
     brightness,saturation,hue);
   status=ModulateImage(wand->images,modulate);
   if (status == MagickFalse)
@@ -7075,6 +7129,78 @@ WandExport MagickWand *MagickMorphImages(MagickWand *wand,
   if (morph_image == (Image *) NULL)
     return((MagickWand *) NULL);
   return(CloneMagickWandFromImages(wand,morph_image));
+}
+
+/*
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                                             %
+%                                                                             %
+%                                                                             %
+%   M a g i c k M o r p h o l o g y I m a g e                                 %
+%                                                                             %
+%                                                                             %
+%                                                                             %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%  MagickMorphologyImage() applies a user supplied kernel to the image
+%  according to the given mophology method.
+%
+%  The format of the MagickMorphologyImage method is:
+%
+%      MagickBooleanType MagickMorphologyImage(MagickWand *wand,
+%        MorphologyMethod method,const long iterations,KernelInfo *kernel)
+%      MagickBooleanType MagickMorphologyImageChannel(MagickWand *wand,
+%        ChannelType channel,MorphologyMethod method,const long iterations,
+%        KernelInfo *kernel)
+%
+%  A description of each parameter follows:
+%
+%    o wand: the magick wand.
+%
+%    o channel: the image channel(s).
+%
+%    o method: the morphology method to be applied.
+%
+%    o iterations: apply the operation this many times (or no change).
+%      A value of -1 means loop until no change found.  How this is applied
+%      may depend on the morphology method.  Typically this is a value of 1.
+%
+%    o kernel: An array of doubles representing the morphology kernel.
+%
+*/
+
+WandExport MagickBooleanType MagickMorphologyImage(MagickWand *wand,
+  MorphologyMethod method,const long iterations,KernelInfo *kernel)
+{
+  MagickBooleanType
+    status;
+
+  status=MagickMorphologyImageChannel(wand,DefaultChannels,method,iterations,
+    kernel);
+  return(status);
+}
+
+WandExport MagickBooleanType MagickMorphologyImageChannel(MagickWand *wand,
+  const ChannelType channel,MorphologyMethod method,const long iterations,
+  KernelInfo *kernel)
+{
+  Image
+    *morphology_image;
+
+  assert(wand != (MagickWand *) NULL);
+  assert(wand->signature == WandSignature);
+  if (wand->debug != MagickFalse)
+    (void) LogMagickEvent(WandEvent,GetMagickModule(),"%s",wand->name);
+  if (kernel == (const KernelInfo *) NULL)
+    return(MagickFalse);
+  if (wand->images == (Image *) NULL)
+    ThrowWandException(WandError,"ContainsNoImages",wand->name);
+  morphology_image=MorphologyImageChannel(wand->images,channel,method,
+    iterations,kernel,wand->exception);
+  if (morphology_image == (Image *) NULL)
+    return(MagickFalse);
+  ReplaceImageInList(&wand->images,morphology_image);
+  return(MagickTrue);
 }
 
 /*
@@ -8290,7 +8416,7 @@ WandExport MagickBooleanType MagickRandomThresholdImageChannel(
     (void) LogMagickEvent(WandEvent,GetMagickModule(),"%s",wand->name);
   if (wand->images == (Image *) NULL)
     ThrowWandException(WandError,"ContainsNoImages",wand->name);
-  (void) FormatMagickString(threshold,MaxTextExtent,"%.15gx%.15g",low,high);
+  (void) FormatMagickString(threshold,MaxTextExtent,"%gx%g",low,high);
   status=RandomThresholdImageChannel(wand->images,channel,threshold,
     wand->exception);
   if (status == MagickFalse)
@@ -11964,7 +12090,7 @@ WandExport MagickBooleanType MagickTintImage(MagickWand *wand,
   if (wand->images == (Image *) NULL)
     ThrowWandException(WandError,"ContainsNoImages",wand->name);
   (void) FormatMagickString(percent_opaque,MaxTextExtent,
-    "%.15g,%.15g,%.15g,%.15g",(double) (100.0*QuantumScale*
+    "%g,%g,%g,%g",(double) (100.0*QuantumScale*
     PixelGetRedQuantum(opacity)),(double) (100.0*QuantumScale*
     PixelGetGreenQuantum(opacity)),(double) (100.0*QuantumScale*
     PixelGetBlueQuantum(opacity)),(double) (100.0*QuantumScale*

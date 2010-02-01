@@ -23,6 +23,9 @@
 extern "C" {
 #endif
 
+extern WandExport ChannelFeatures
+  *MagickGetImageChannelFeatures(MagickWand *,const unsigned long);
+
 extern WandExport ChannelStatistics
   *MagickGetImageChannelStatistics(MagickWand *);
 
@@ -148,8 +151,8 @@ extern WandExport MagickBooleanType
     void *),
   MagickExtentImage(MagickWand *,const unsigned long,const unsigned long,
     const long,const long),
-  MagickFilterImage(MagickWand *,const MagickKernel *),
-  MagickFilterImageChannel(MagickWand *,const ChannelType,const MagickKernel *),
+  MagickFilterImage(MagickWand *,const KernelInfo *),
+  MagickFilterImageChannel(MagickWand *,const ChannelType,const KernelInfo *),
   MagickFlipImage(MagickWand *),
   MagickFloodfillPaintImage(MagickWand *,const ChannelType,const PixelWand *,
     const double,const PixelWand *,const long,const long,
@@ -211,6 +214,9 @@ extern WandExport MagickBooleanType
   MagickMedianFilterImage(MagickWand *,const double),
   MagickMinifyImage(MagickWand *),
   MagickModulateImage(MagickWand *,const double,const double,const double),
+  MagickMorphologyImage(MagickWand *,MorphologyMethod,const long,KernelInfo *),
+  MagickMorphologyImageChannel(MagickWand *,const ChannelType,MorphologyMethod,
+    const long,KernelInfo *),
   MagickMotionBlurImage(MagickWand *,const double,const double,const double),
   MagickMotionBlurImageChannel(MagickWand *,const ChannelType,const double,
     const double,const double),

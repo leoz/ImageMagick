@@ -12,7 +12,7 @@ PACKAGE_NAME='ImageMagick'
 # PACKAGE_NAME (e.g. "1.0.0").
 PACKAGE_VERSION='6.5.9'
 PACKAGE_LIB_VERSION="0x659"
-PACKAGE_RELEASE="0"
+PACKAGE_RELEASE="1"
 PACKAGE_LIB_VERSION_NUMBER="6,5,9,${PACKAGE_RELEASE}"
 PACKAGE_RELEASE_DATE=`date +%F`
 PACKAGE_STRING="$PACKAGE_NAME $PACKAGE_VERSION"
@@ -25,7 +25,7 @@ PACKAGE_CHANGE_DATE=`awk '/^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]/ { print 
 #
 # Package version addendum.  This is an arbitrary suffix (if any) appended
 # to the package version. (e.g. "beta1")
-PACKAGE_LIB_SUBVERSION="-${PACKAGE_RELEASE}"
+PACKAGE_VERSION_ADDENDUM="-${PACKAGE_RELEASE}"
 
 #
 # Libtool library revision control info: See the libtool documentation under

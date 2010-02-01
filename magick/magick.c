@@ -70,6 +70,7 @@
 #include "magick/signature-private.h"
 #include "magick/splay-tree.h"
 #include "magick/string_.h"
+#include "magick/string-private.h"
 #include "magick/thread_.h"
 #include "magick/thread-private.h"
 #include "magick/token.h"
@@ -638,7 +639,49 @@ MagickExport char **GetMagickList(const char *pattern,
 %                                                                             %
 %                                                                             %
 %                                                                             %
-+   G e t M a g i c k E n d i a n S u p p o r t                               %
+%   G e t M a g i c k P r e c i s i o n                                       %
+%                                                                             %
+%                                                                             %
+%                                                                             %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%  GetMagickPrecision() returns the maximum number of significant digits to be
+%  printed.
+%
+%  The format of the GetMagickPrecision method is:
+%
+%      int GetMagickPrecision(void)
+%
+*/
+MagickExport int GetMagickPrecision(void)
+{
+#define MagickPrecision  6
+
+  (void) LogMagickEvent(TraceEvent,GetMagickModule(),"...");
+  if (SetMagickPrecision(0) == 0)
+    {
+      char
+        *limit;
+
+      (void) SetMagickPrecision(MagickPrecision);
+      limit=GetEnvironmentValue("MAGICK_PRECISION");
+      if (limit == (char *) NULL)
+        limit=GetPolicyValue("precision");
+      if (limit != (char *) NULL)
+        {
+          (void) SetMagickPrecision(StringToInteger(limit));
+          limit=DestroyString(limit);
+        }
+    }
+  return(SetMagickPrecision(0));
+}
+
+/*
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                                             %
+%                                                                             %
+%                                                                             %
++   G e t M a g i c k R a w S u p p o r t                                     %
 %                                                                             %
 %                                                                             %
 %                                                                             %
@@ -1425,6 +1468,40 @@ MagickExport MagickInfo *SetMagickInfo(const char *name)
     EncoderThreadSupport);
   magick_info->signature=MagickSignature;
   return(magick_info);
+}
+
+/*
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                                             %
+%                                                                             %
+%                                                                             %
+%   S e t M a g i c k P r e c i s i o n                                       %
+%                                                                             %
+%                                                                             %
+%                                                                             %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%  SetMagickPrecision() sets the maximum number of significant digits to be
+%  printed and returns it.
+%
+%  The format of the SetMagickPrecision method is:
+%
+%      int SetMagickPrecision(const int precision)
+%
+%  A description of each parameter follows:
+%
+%    o precision: set the maximum number of significant digits to be printed.
+%
+*/
+MagickExport int SetMagickPrecision(const int precision)
+{
+  static int
+    magick_precision = 0;
+
+  (void) LogMagickEvent(TraceEvent,GetMagickModule(),"...");
+  if (precision != 0)
+    magick_precision=precision;
+  return(magick_precision);
 }
 
 /*
