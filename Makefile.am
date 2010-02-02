@@ -40,7 +40,7 @@ CLEANFILES = \
 	$(MAGICKPP_CLEANFILES) \
 	$(UTILITIES_CLEANFILES) \
 	$(TESTS_CLEANFILES) \
-  magick/wizard-config.h \
+  magick/magick-config.h \
   _configs.sed
 
 bin_PROGRAMS = \
@@ -311,7 +311,7 @@ endif # P7ZIP_DELEGATE
 #
 if RPM_DELEGATE
 
-DIST_ARCHIVE_SRPM=$(distdir)-$(PACKAGE_RELEASE).src.rpm
+DIST_ARCHIVE_SRPM=$(distdir).src.rpm
 .PHONY: srpm
 $(DIST_ARCHIVE_SRPM) srpm: dist-bzip2
 	rm -f $(DIST_ARCHIVE_SRPM)
