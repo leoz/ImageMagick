@@ -483,6 +483,7 @@ MagickExport MagickBooleanType CloseBlob(Image *image)
   if (image->blob->synchronize != MagickFalse)
     SyncBlob(image);
   image->blob->size=GetBlobSize(image);
+  image->extent=image->blob->size;
   image->blob->eof=MagickFalse;
   if (image->blob->exempt != MagickFalse)
     {
@@ -1193,31 +1194,31 @@ MagickExport const struct stat *GetBlobProperties(const Image *image)
 MagickExport MagickSizeType GetBlobSize(const Image *image)
 {
   MagickSizeType
-    length;
+    extent;
 
   assert(image != (Image *) NULL);
   assert(image->signature == MagickSignature);
   if (image->debug != MagickFalse)
     (void) LogMagickEvent(TraceEvent,GetMagickModule(),"%s",image->filename);
   assert(image->blob != (BlobInfo *) NULL);
-  length=0;
+  extent=0;
   switch (image->blob->type)
   {
     case UndefinedStream:
     {
-      length=image->blob->size;
+      extent=image->blob->size;
       break;
     }
     case FileStream:
     {
       if (fstat(fileno(image->blob->file),&image->blob->properties) == 0)
-        length=(MagickSizeType) image->blob->properties.st_size;
+        extent=(MagickSizeType) image->blob->properties.st_size;
       break;
     }
     case StandardStream:
     case PipeStream:
     {
-      length=image->blob->size;
+      extent=image->blob->size;
       break;
     }
     case ZipStream:
@@ -1228,18 +1229,18 @@ MagickExport MagickSizeType GetBlobSize(const Image *image)
 
       status=GetPathAttributes(image->filename,&image->blob->properties);
       if (status != MagickFalse)
-        length=(MagickSizeType) image->blob->properties.st_size;
+        extent=(MagickSizeType) image->blob->properties.st_size;
       break;
     }
     case FifoStream:
       break;
     case BlobStream:
     {
-      length=(MagickSizeType) image->blob->length;
+      extent=(MagickSizeType) image->blob->extent;
       break;
     }
   }
-  return(length);
+  return(extent);
 }
 
 /*
@@ -2323,35 +2324,36 @@ MagickExport MagickBooleanType OpenBlob(const ImageInfo *image_info,
 #endif
   if (*type == 'w')
     {
-      /*
-        Form filename for multi-part images.
-      */
-      (void) InterpretImageFilename(image_info,image,image->filename,(int)
-        image->scene,filename);
-      if (image_info->adjoin == MagickFalse)
-        if ((image->previous != (Image *) NULL) ||
-            (GetNextImageInList(image) != (Image *) NULL))
-          {
-            if (LocaleCompare(filename,image->filename) == 0)
-              {
-                char
-                  extension[MaxTextExtent],
-                  path[MaxTextExtent];
+      (void) CopyMagickString(filename,image->filename,MaxTextExtent);
+      if ((image_info->adjoin == MagickFalse) &&
+          ((GetPreviousImageInList(image) != (Image *) NULL) ||
+           (GetNextImageInList(image) != (Image *) NULL)))
+        {
+          /*
+            Form filename for multi-part images.
+          */
+          (void) InterpretImageFilename(image_info,image,image->filename,(int)
+            image->scene,filename);
+          if (LocaleCompare(filename,image->filename) == 0)
+            {
+              char
+                extension[MaxTextExtent],
+                path[MaxTextExtent];
 
-                GetPathComponent(image->filename,RootPath,path);
-                GetPathComponent(image->filename,ExtensionPath,extension);
-                if (*extension == '\0')
-                  (void) FormatMagickString(filename,MaxTextExtent,"%s-%lu",
-                    path,image->scene);
-                else
-                  (void) FormatMagickString(filename,MaxTextExtent,"%s-%lu.%s",
-                    path,image->scene,extension);
-              }
-          }
-      (void) CopyMagickString(image->filename,filename,MaxTextExtent);
+              GetPathComponent(image->filename,RootPath,path);
+              GetPathComponent(image->filename,ExtensionPath,extension);
+              if (*extension == '\0')
+                (void) FormatMagickString(filename,MaxTextExtent,"%s-%lu",
+                  path,image->scene);
+              else
+                (void) FormatMagickString(filename,MaxTextExtent,
+                  "%s-%lu.%s",path,image->scene,extension);
+            }
+          (void) CopyMagickString(image->filename,filename,MaxTextExtent);
 #if defined(macintosh)
-      SetApplicationType(filename,image_info->magick,'8BIM');
+          SetApplicationType(filename,image_info->magick,'8BIM');
 #endif
+        }
     }
 #if defined(MAGICKCORE_ZLIB_DELEGATE)
   if (((strlen(filename) > 2) &&
