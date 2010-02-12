@@ -2325,16 +2325,16 @@ MagickExport MagickBooleanType OpenBlob(const ImageInfo *image_info,
   if (*type == 'w')
     {
       (void) CopyMagickString(filename,image->filename,MaxTextExtent);
-      if ((image_info->adjoin == MagickFalse) &&
-          ((GetPreviousImageInList(image) != (Image *) NULL) ||
-           (GetNextImageInList(image) != (Image *) NULL)))
+      if (image_info->adjoin == MagickFalse)
         {
           /*
             Form filename for multi-part images.
           */
           (void) InterpretImageFilename(image_info,image,image->filename,(int)
             image->scene,filename);
-          if (LocaleCompare(filename,image->filename) == 0)
+          if ((LocaleCompare(filename,image->filename) == 0) &&
+              ((GetPreviousImageInList(image) != (Image *) NULL) ||
+               (GetNextImageInList(image) != (Image *) NULL)))
             {
               char
                 extension[MaxTextExtent],
