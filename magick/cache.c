@@ -49,6 +49,7 @@
 #include "magick/composite-private.h"
 #include "magick/exception.h"
 #include "magick/exception-private.h"
+#include "magick/geometry.h"
 #include "magick/list.h"
 #include "magick/log.h"
 #include "magick/magick.h"
@@ -149,9 +150,6 @@ static SemaphoreInfo
 
 static SplayTreeInfo
   *cache_resources = (SplayTreeInfo *) NULL;
-
-static time_t
-  cache_timer = 0;
 
 /*
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1616,11 +1614,11 @@ MagickExport Cache DestroyPixelCache(Cache cache)
       cache_info->number_threads);
   if (cache_info->random_info != (RandomInfo *) NULL)
     cache_info->random_info=DestroyRandomInfo(cache_info->random_info);
-  cache_info->signature=(~MagickSignature);
   if (cache_info->disk_semaphore != (SemaphoreInfo *) NULL)
     DestroySemaphoreInfo(&cache_info->disk_semaphore);
   if (cache_info->semaphore != (SemaphoreInfo *) NULL)
     DestroySemaphoreInfo(&cache_info->semaphore);
+  cache_info->signature=(~MagickSignature);
   cache_info=(CacheInfo *) RelinquishAlignedMemory(cache_info);
   cache=(Cache) NULL;
   return(cache);
@@ -2160,58 +2158,68 @@ MagickExport Cache GetImagePixelCache(Image *image,
   CacheInfo
     *cache_info;
 
-  MagickSizeType
-    time_limit;
-
   MagickBooleanType
     destroy,
     status;
+
+  static MagickSizeType
+    time_limit = 0;
 
   if (image->debug != MagickFalse)
     (void) LogMagickEvent(TraceEvent,GetMagickModule(),"%s",image->filename);
   status=MagickTrue;
   LockSemaphoreInfo(image->semaphore);
-  time_limit=GetMagickResourceLimit(TimeResource);
-  if (cache_timer == 0)
-    cache_timer=time((time_t *) NULL);
-  if ((time_limit != MagickResourceInfinity) &&
-      ((MagickSizeType) (time((time_t *) NULL)-cache_timer) >= time_limit))
-    ThrowFatalException(ResourceLimitFatalError,"TimeLimitExceeded");
+  if (time_limit == 0)
+    time_limit=GetMagickResourceLimit(TimeResource);
+  if (time_limit != MagickResourceInfinity)
+    {
+      static time_t
+        cache_timer = 0;
+
+      if (cache_timer == 0)
+        cache_timer=time((time_t *) NULL);
+      if ((MagickSizeType) (time((time_t *) NULL)-cache_timer) >= time_limit)
+        ThrowFatalException(ResourceLimitFatalError,"TimeLimitExceeded");
+    }
   assert(image->cache != (Cache) NULL);
   cache_info=(CacheInfo *) image->cache;
   destroy=MagickFalse;
-  LockSemaphoreInfo(cache_info->semaphore);
   if ((cache_info->reference_count > 1) || (cache_info->mode == ReadMode))
     {
-      Image
-        clone_image;
-
-      CacheInfo
-        *clone_info;
-
-      /*
-        Clone pixel cache.
-      */
-      clone_image=(*image);
-      clone_image.cache=ClonePixelCache(cache_info);
-      clone_info=(CacheInfo *) clone_image.cache;
-      status=ClonePixelCacheNexus(cache_info,clone_info,exception);
-      if (status != MagickFalse)
+      LockSemaphoreInfo(cache_info->semaphore);
+      if ((cache_info->reference_count > 1) || (cache_info->mode == ReadMode))
         {
-          status=OpenPixelCache(&clone_image,IOMode,exception);
+          Image
+            clone_image;
+
+          CacheInfo
+            *clone_info;
+
+          /*
+            Clone pixel cache.
+          */
+          clone_image=(*image);
+          clone_image.cache=ClonePixelCache(cache_info);
+          clone_info=(CacheInfo *) clone_image.cache;
+          status=ClonePixelCacheNexus(cache_info,clone_info,exception);
           if (status != MagickFalse)
             {
-              if (clone != MagickFalse)
-                status=ClonePixelCachePixels(clone_info,cache_info,exception);
+              status=OpenPixelCache(&clone_image,IOMode,exception);
               if (status != MagickFalse)
                 {
-                  destroy=MagickTrue;
-                  image->cache=clone_image.cache;
+                  if (clone != MagickFalse)
+                    status=ClonePixelCachePixels(clone_info,cache_info,
+                      exception);
+                  if (status != MagickFalse)
+                    {
+                      destroy=MagickTrue;
+                      image->cache=clone_image.cache;
+                    }
                 }
             }
         }
+      UnlockSemaphoreInfo(cache_info->semaphore);
     }
-  UnlockSemaphoreInfo(cache_info->semaphore);
   if (destroy != MagickFalse)
     cache_info=(CacheInfo *) DestroyPixelCache(cache_info);
   if (status != MagickFalse)
@@ -4982,9 +4990,6 @@ static PixelPacket *SetPixelCacheNexusPixels(const Image *image,
   MagickBooleanType
     status;
 
-  MagickOffsetType
-    offset;
-
   MagickSizeType
     length,
     number_pixels;
@@ -5002,35 +5007,32 @@ static PixelPacket *SetPixelCacheNexusPixels(const Image *image,
   if ((cache_info->type != DiskCache) && (image->clip_mask == (Image *) NULL) &&
       (image->mask == (Image *) NULL))
     {
-      offset=(MagickOffsetType) nexus_info->region.y*cache_info->columns+
-        nexus_info->region.x;
-      length=(MagickSizeType) (nexus_info->region.height-1)*cache_info->columns+
-        nexus_info->region.width-1;
-      number_pixels=(MagickSizeType) cache_info->columns*cache_info->rows;
-      if ((offset >= 0) && (((MagickSizeType) offset+length) < number_pixels))
-        {
-          long
-            x,
-            y;
+      long
+        x,
+        y;
 
-          x=nexus_info->region.x+nexus_info->region.width;
-          y=nexus_info->region.y+nexus_info->region.height;
-          if ((nexus_info->region.x >= 0) &&
-              (x <= (long) cache_info->columns) &&
-              (nexus_info->region.y >= 0) && (y <= (long) cache_info->rows))
-            if ((nexus_info->region.height == 1UL) ||
-                ((nexus_info->region.x == 0) &&
-                ((nexus_info->region.width % cache_info->columns) == 0)))
-              {
-                /*
-                  Pixels are accessed directly from memory.
-                */
-                nexus_info->pixels=cache_info->pixels+offset;
-                nexus_info->indexes=(IndexPacket *) NULL;
-                if (cache_info->active_index_channel != MagickFalse)
-                  nexus_info->indexes=cache_info->indexes+offset;
-                return(nexus_info->pixels);
-              }
+      x=nexus_info->region.x+nexus_info->region.width-1;
+      y=nexus_info->region.y+nexus_info->region.height-1;
+      if (((nexus_info->region.x >= 0) && (x < (long) cache_info->columns) &&
+           (nexus_info->region.y >= 0) && (y < (long) cache_info->rows)) &&
+          ((nexus_info->region.height == 1UL) ||
+           ((nexus_info->region.x == 0) &&
+           ((nexus_info->region.width == cache_info->columns) ||
+            ((nexus_info->region.width % cache_info->columns) == 0)))))
+        {
+          MagickOffsetType
+            offset;
+
+          /*
+            Pixels are accessed directly from memory.
+          */
+          offset=(MagickOffsetType) nexus_info->region.y*cache_info->columns+
+            nexus_info->region.x;
+          nexus_info->pixels=cache_info->pixels+offset;
+          nexus_info->indexes=(IndexPacket *) NULL;
+          if (cache_info->active_index_channel != MagickFalse)
+            nexus_info->indexes=cache_info->indexes+offset;
+          return(nexus_info->pixels);
         }
     }
   /*
