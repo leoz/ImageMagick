@@ -340,7 +340,7 @@ MagickExport Image *BlobToImage(const ImageInfo *image_info,const void *blob,
   blob_info->blob=(void *) blob;
   blob_info->length=length;
   if (*blob_info->magick == '\0')
-    (void) SetImageInfo(blob_info,MagickFalse,exception);
+    (void) SetImageInfo(blob_info,0,exception);
   magick_info=GetMagickInfo(blob_info->magick,exception);
   if (magick_info == (const MagickInfo *) NULL)
     {
@@ -1236,7 +1236,7 @@ MagickExport MagickSizeType GetBlobSize(const Image *image)
       break;
     case BlobStream:
     {
-      extent=(MagickSizeType) image->blob->extent;
+      extent=(MagickSizeType) image->blob->length;
       break;
     }
   }
@@ -1362,7 +1362,7 @@ MagickExport unsigned char *ImageToBlob(const ImageInfo *image_info,
   blob=(unsigned char *) NULL;
   blob_info=CloneImageInfo(image_info);
   blob_info->adjoin=MagickFalse;
-  (void) SetImageInfo(blob_info,MagickTrue,exception);
+  (void) SetImageInfo(blob_info,1,exception);
   if (*blob_info->magick != '\0')
     (void) CopyMagickString(image->magick,blob_info->magick,MaxTextExtent);
   magick_info=GetMagickInfo(image->magick,exception);
@@ -1639,7 +1639,8 @@ MagickExport unsigned char *ImagesToBlob(const ImageInfo *image_info,
   *length=0;
   blob=(unsigned char *) NULL;
   blob_info=CloneImageInfo(image_info);
-  (void) SetImageInfo(blob_info,MagickTrue,exception);
+  (void) SetImageInfo(blob_info,(unsigned int) GetImageListLength(images),
+    exception);
   if (*blob_info->magick != '\0')
     (void) CopyMagickString(images->magick,blob_info->magick,MaxTextExtent);
   if (blob_info->adjoin == MagickFalse)
@@ -3166,6 +3167,60 @@ MagickExport unsigned int ReadBlobMSBLong(Image *image)
   value|=((unsigned int) (*p++) << 8);
   value|=(unsigned int) (*p++);
   return(value);
+}
+
+/*
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                                             %
+%                                                                             %
+%                                                                             %
++  R e a d B l o b M S B L o n g L o n g                                      %
+%                                                                             %
+%                                                                             %
+%                                                                             %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%  ReadBlobMSBLongLong() reads a long value as a 64-bit quantity in
+%  most-significant byte first order.
+%
+%  The format of the ReadBlobMSBLongLong method is:
+%
+%      unsigned int ReadBlobMSBLongLong(Image *image)
+%
+%  A description of each parameter follows.
+%
+%    o image: the image.
+%
+*/
+MagickExport MagickSizeType ReadBlobMSBLongLong(Image *image)
+{
+  register const unsigned char
+    *p;
+
+  register MagickSizeType
+    value;
+
+  ssize_t
+    count;
+
+  unsigned char
+    buffer[4];
+
+  assert(image != (Image *) NULL);
+  assert(image->signature == MagickSignature);
+  *buffer='\0';
+  p=ReadBlobStream(image,8,buffer,&count);
+  if (count != 8)
+    return(MagickULLConstant(0));
+  value=((MagickSizeType) (*p++)) << 56;
+  value|=((MagickSizeType) (*p++)) << 48;
+  value|=((MagickSizeType) (*p++)) << 40;
+  value|=((MagickSizeType) (*p++)) << 32;
+  value|=((MagickSizeType) (*p++)) << 24;
+  value|=((MagickSizeType) (*p++)) << 16;
+  value|=((MagickSizeType) (*p++)) << 8;
+  value|=((MagickSizeType) (*p++));
+  return(value & MagickULLConstant(0xffffffffffffffff));
 }
 
 /*

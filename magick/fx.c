@@ -2205,11 +2205,32 @@ static const char *FxOperatorPrecedence(const char *expression,
         expression++;
         continue;
       }
-    if (LocaleNCompare(expression,"atan2",5) == 0)
+    switch (*expression)
+    {
+      case 'A':
+      case 'a':
       {
-        expression+=5;
-        continue;
+        if (LocaleNCompare(expression,"atan2",5) == 0)
+          {
+            expression+=5;
+            break;
+          }
+        break;
       }
+      case 'J':
+      case 'j':
+      {
+        if ((LocaleNCompare(expression,"j0",2) == 0) ||
+            (LocaleNCompare(expression,"j1",2) == 0))
+          {
+            expression+=2;
+            break;
+          }
+        break;
+      }
+      default:
+        break;
+    }
     if ((c == (int) '{') || (c == (int) '['))
       level++;
     else
@@ -2612,6 +2633,14 @@ static MagickRealType FxEvaluateSubexpression(FxInfo *fx_info,
             exception);
           return((MagickRealType) acos((double) alpha));
         }
+      if (LocaleNCompare(expression,"airy",4) == 0)
+        {
+          alpha=FxEvaluateSubexpression(fx_info,channel,x,y,expression+4,beta,
+            exception);
+          if (alpha == 0.0)
+            return(0.5);
+          return((MagickRealType) (j0((double) alpha)/alpha));
+        }
       if (LocaleNCompare(expression,"asin",4) == 0)
         {
           alpha=FxEvaluateSubexpression(fx_info,channel,x,y,expression+4,beta,
@@ -2787,6 +2816,26 @@ static MagickRealType FxEvaluateSubexpression(FxInfo *fx_info,
     {
       if (LocaleCompare(expression,"j") == 0)
         return(FxGetSymbol(fx_info,channel,x,y,expression,exception));
+      if (LocaleNCompare(expression,"j0",2) == 0)
+        {
+          alpha=FxEvaluateSubexpression(fx_info,channel,x,y,expression+2,beta,
+            exception);
+          return((MagickRealType) j0((double) alpha));
+        }
+      if (LocaleNCompare(expression,"j1",2) == 0)
+        {
+          alpha=FxEvaluateSubexpression(fx_info,channel,x,y,expression+2,beta,
+            exception);
+          return((MagickRealType) j1((double) alpha));
+        }
+      if (LocaleNCompare(expression,"jinc",4) == 0)
+        {
+          alpha=FxEvaluateSubexpression(fx_info,channel,x,y,expression+4,beta,
+            exception);
+          if (alpha == 0.0)
+            return((MagickRealType) (MagickPI/4.0));
+          return((MagickRealType) j1((double) (MagickPI*alpha))/(2.0*alpha));
+        }
       break;
     }
     case 'L':
@@ -2904,6 +2953,16 @@ static MagickRealType FxEvaluateSubexpression(FxInfo *fx_info,
           alpha=FxEvaluateSubexpression(fx_info,channel,x,y,expression+4,beta,
             exception);
           return(alpha < 0.0 ? -1.0 : 1.0);
+        }
+      if (LocaleNCompare(expression,"sinc",4) == 0)
+        {
+          alpha=FxEvaluateSubexpression(fx_info,channel,x,y,expression+4,beta,
+            exception);
+          if (alpha == 0)
+            return(1.0);
+          gamma=(MagickRealType) (sin((double) (MagickPI*alpha))/
+            (MagickPI*alpha));
+          return(gamma);
         }
       if (LocaleNCompare(expression,"sinh",4) == 0)
         {

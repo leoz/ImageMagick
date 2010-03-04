@@ -1482,8 +1482,9 @@ static MagickBooleanType WriteDPXImage(const ImageInfo *image_info,Image *image)
           dpx.image.image_element[i].descriptor=RGBComponentType;
           if (image->matte != MagickFalse)
             dpx.image.image_element[i].descriptor=RGBAComponentType;
-          if ((IsGrayImage(image,&image->exception) != MagickFalse) &&
-              (image->matte == MagickFalse))
+          if ((image_info->type != TrueColorType) &&
+              (image->matte == MagickFalse) &&
+              (IsGrayImage(image,&image->exception) != MagickFalse))
             dpx.image.image_element[i].descriptor=LumaComponentType;
           break;
         }
@@ -1793,9 +1794,9 @@ static MagickBooleanType WriteDPXImage(const ImageInfo *image_info,Image *image)
     Convert pixel packets to DPX raster image.
   */
   quantum_info=AcquireQuantumInfo(image_info,image);
-  quantum_info->quantum=32;
-  quantum_info->pack=dpx.image.image_element[0].packing == 0 ? MagickTrue :
-    MagickFalse;
+  SetQuantumQuantum(quantum_info,32);
+  SetQuantumPack(quantum_info,dpx.image.image_element[0].packing == 0 ?
+    MagickTrue : MagickFalse);
   quantum_type=RGBQuantum;
   if (image->matte != MagickFalse)
     quantum_type=RGBAQuantum;

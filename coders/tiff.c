@@ -1067,17 +1067,9 @@ static Image *ReadTIFFImage(const ImageInfo *image_info,
     else
       for (i=0; i < extra_samples; i++)
       {
-        if (sample_info[i] == EXTRASAMPLE_UNASSALPHA)
-          {
-            image->matte=MagickTrue;
-            associated_alpha=MagickFalse;
-          }
+        image->matte=MagickTrue;
         if (sample_info[i] == EXTRASAMPLE_ASSOCALPHA)
-          {
-            image->matte=MagickTrue;
-            associated_alpha=MagickTrue;
-            SetQuantumAlphaType(quantum_info,DisassociatedQuantumAlpha);
-          }
+          SetQuantumAlphaType(quantum_info,DisassociatedQuantumAlpha);
       }
     option=GetImageOption(image_info,"tiff:alpha");
     if (option != (const char *) NULL)
