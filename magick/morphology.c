@@ -108,12 +108,7 @@ static inline double MagickMax(const double x,const double y)
 
 /* Currently these are only internal to this module */
 static void
-  RotateKernelInfo(KernelInfo *, double),
-  ScaleKernelInfo(KernelInfo *, const double, const MagickStatusType);
-
-static KernelInfo
-  *CloneKernelInfo(const KernelInfo *);
-
+  RotateKernelInfo(KernelInfo *, double);
 
 /*
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -927,7 +922,7 @@ MagickExport KernelInfo *AcquireKernelBuiltIn(const KernelInfoType type,
 %                                                                             %
 %                                                                             %
 %                                                                             %
-+     C l o n e K e r n e l I n f o                                           %
+%     C l o n e K e r n e l I n f o                                           %
 %                                                                             %
 %                                                                             %
 %                                                                             %
@@ -946,8 +941,7 @@ MagickExport KernelInfo *AcquireKernelBuiltIn(const KernelInfoType type,
 %    o kernel: the Morphology/Convolution kernel to be cloned
 %
 */
-
-static KernelInfo *CloneKernelInfo(const KernelInfo *kernel)
+MagickExport KernelInfo *CloneKernelInfo(const KernelInfo *kernel)
 {
   register long
     i;
@@ -1027,11 +1021,11 @@ MagickExport KernelInfo *DestroyKernelInfo(KernelInfo *kernel)
 %
 %  The format of the MorphologyImage method is:
 %
-%      Image *MorphologyImage(const Image *image, MorphologyMethod method,
-%        const long iterations, KernelInfo *kernel, ExceptionInfo *exception)
+%      Image *MorphologyImage(const Image *image,MorphologyMethod method,
+%        const long iterations,KernelInfo *kernel,ExceptionInfo *exception)
 %      Image *MorphologyImageChannel(const Image *image, const ChannelType
-%        channel, MorphologyMethod method, const long iterations, KernelInfo
-%        *kernel, ExceptionInfo *exception)
+%        channel,MorphologyMethod method,const long iterations,
+%        KernelInfo *kernel,ExceptionInfo *exception)
 %
 %  A description of each parameter follows:
 %
@@ -1538,9 +1532,9 @@ MagickExport Image *MorphologyImage(const Image *image, const MorphologyMethod
 }
 
 
-MagickExport Image *MorphologyImageChannel(const Image *image, const
-  ChannelType channel, const MorphologyMethod method, const long
-  iterations, const KernelInfo *kernel, ExceptionInfo *exception)
+MagickExport Image *MorphologyImageChannel(const Image *image,
+  const ChannelType channel,const MorphologyMethod method,
+  const long iterations,const KernelInfo *kernel,ExceptionInfo *exception)
 {
   long
     count;
@@ -1922,7 +1916,7 @@ static void RotateKernelInfo(KernelInfo *kernel, double angle)
 %                                                                             %
 %                                                                             %
 %                                                                             %
-+     S c a l e K e r n e l I n f o                                           %
+%     S c a l e K e r n e l I n f o                                           %
 %                                                                             %
 %                                                                             %
 %                                                                             %
@@ -1993,8 +1987,8 @@ static void RotateKernelInfo(KernelInfo *kernel, double angle)
 % This function is internal to this module only at this time, but can be
 % exported to other modules if needed.
 */
-static void ScaleKernelInfo(KernelInfo *kernel, const double scaling_factor,
-     const GeometryFlags normalize_flags)
+MagickExport void ScaleKernelInfo(KernelInfo *kernel,
+  const double scaling_factor,const GeometryFlags normalize_flags)
 {
   register long
     i;
