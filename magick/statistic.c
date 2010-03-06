@@ -1132,40 +1132,34 @@ MagickExport ChannelStatistics *GetImageChannelStatistics(const Image *image,
 %                                                                             %
 %                                                                             %
 %                                                                             %
-%     I n t e n s i t y P r o j e c t i o n I m a g e s                       %
+%     M a x i m u m I m a g e s                                               %
 %                                                                             %
 %                                                                             %
 %                                                                             %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-%  IntensityProjectionImages() returns the maximum (or minimum) intensity
-%  projection of an image sequence.
+%  MaximumImages() returns the maximum intensity of an image sequence.
 %
-%  The format of the IntensityProjectionImages method is:
+%  The format of the MaxImages method is:
 %
-%      Image *IntensityProjectionImages(Image *images,
-%        const MagickBooleanType projection,ExceptionInfo *exception)
+%      Image *MaximumImages(Image *images,ExceptionInfo *exception)
 %
 %  A description of each parameter follows:
 %
 %    o images: the image sequence.
 %
-%    o projection: compute the minimum intensity projection for a value
-%      other than 0, otherwise compute the maximum.
-%
 %    o exception: return any errors or warnings in this structure.
 %
 */
-MagickExport Image *IntensityProjectionImages(const Image *images,
-  const MagickBooleanType projection,ExceptionInfo *exception)
+MagickExport Image *MaximumImages(const Image *images,ExceptionInfo *exception)
 {
-#define MIPImageTag  "MIP/Image"
+#define MaximumImageTag  "Maximum/Image"
 
   const Image
     *next;
 
   Image
-    *projection_image;
+    *maximum_image;
 
   MagickBooleanType
     status;
@@ -1193,30 +1187,29 @@ MagickExport Image *IntensityProjectionImages(const Image *images,
         return((Image *) NULL);
       }
   /*
-    Initialize projection_image next attributes.
+    Initialize maximum itensity image.
   */
-  projection_image=CloneImage(images,0,0,MagickTrue,exception);
-  if (projection_image == (Image *) NULL)
+  maximum_image=CloneImage(images,0,0,MagickTrue,exception);
+  if (maximum_image == (Image *) NULL)
     return((Image *) NULL);
-  if (SetImageStorageClass(projection_image,DirectClass) == MagickFalse)
+  if (SetImageStorageClass(maximum_image,DirectClass) == MagickFalse)
     {
-      InheritException(exception,&projection_image->exception);
-      projection_image=DestroyImage(projection_image);
+      InheritException(exception,&maximum_image->exception);
+      maximum_image=DestroyImage(maximum_image);
       return((Image *) NULL);
     }
   /*
-    Compute the maximum (or minimim) intensity projection.
+    Compute the maximum intensity of an image sequence.
   */
   i=0;
   number_images=GetImageListLength(images);
   for (next=images; next != (Image *) NULL; next=GetNextImageInList(next))
   {
-    status=CompositeImage(projection_image,projection != MagickFalse ?
-      DarkenCompositeOp : LightenCompositeOp,next,0,0);
+    status=CompositeImage(maximum_image,LightenCompositeOp,next,0,0);
     if (status == MagickFalse)
       {
-        InheritException(exception,&projection_image->exception);
-        projection_image=DestroyImage(projection_image);
+        InheritException(exception,&maximum_image->exception);
+        maximum_image=DestroyImage(maximum_image);
         break;
       }
     if (images->progress_monitor != (MagickProgressMonitor) NULL)
@@ -1225,11 +1218,109 @@ MagickExport Image *IntensityProjectionImages(const Image *images,
           proceed;
 
 #if defined(MAGICKCORE_OPENMP_SUPPORT)
-        #pragma omp critical (MagickCore_IntensityProjectionImages)
+        #pragma omp critical (MagickCore_MaximumImages)
 #endif
-        proceed=SetImageProgress(images,MIPImageTag,i++,
-          number_images);
+        proceed=SetImageProgress(images,MaximumImageTag,i++,number_images);
       }
   }
-  return(projection_image);
+  return(maximum_image);
+}
+
+/*
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                                             %
+%                                                                             %
+%                                                                             %
+%     M i n i m u m I m a g e s                                               %
+%                                                                             %
+%                                                                             %
+%                                                                             %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%  MinimumImages() returns the minimum intensity of an image sequence.
+%
+%  The format of the MinimumImages method is:
+%
+%      Image *MinimumImages(Image *images,ExceptionInfo *exception)
+%
+%  A description of each parameter follows:
+%
+%    o images: the image sequence.
+%
+%    o exception: return any errors or warnings in this structure.
+%
+*/
+MagickExport Image *MinimumImages(const Image *images,ExceptionInfo *exception)
+{
+#define MinimumImageTag  "Minimum/Image"
+
+  const Image
+    *next;
+
+  Image
+    *minimum_image;
+
+  MagickBooleanType
+    status;
+
+  register long
+    i;
+
+  unsigned long
+    number_images;
+
+  /*
+    Ensure the image are the same size.
+  */
+  assert(images != (Image *) NULL);
+  assert(images->signature == MagickSignature);
+  if (images->debug != MagickFalse)
+    (void) LogMagickEvent(TraceEvent,GetMagickModule(),"%s",images->filename);
+  assert(exception != (ExceptionInfo *) NULL);
+  assert(exception->signature == MagickSignature);
+  for (next=images; next != (Image *) NULL; next=GetNextImageInList(next))
+    if ((next->columns != images->columns) || (next->rows != images->rows))
+      {
+        (void) ThrowMagickException(exception,GetMagickModule(),OptionError,
+          "ImageWidthsOrHeightsDiffer","`%s'",images->filename);
+        return((Image *) NULL);
+      }
+  /*
+    Initialize minimum intensity image.
+  */
+  minimum_image=CloneImage(images,0,0,MagickTrue,exception);
+  if (minimum_image == (Image *) NULL)
+    return((Image *) NULL);
+  if (SetImageStorageClass(minimum_image,DirectClass) == MagickFalse)
+    {
+      InheritException(exception,&minimum_image->exception);
+      minimum_image=DestroyImage(minimum_image);
+      return((Image *) NULL);
+    }
+  /*
+    Compute the minimum intensity of an image sequence.
+  */
+  i=0;
+  number_images=GetImageListLength(images);
+  for (next=images; next != (Image *) NULL; next=GetNextImageInList(next))
+  {
+    status=CompositeImage(minimum_image,DarkenCompositeOp,next,0,0);
+    if (status == MagickFalse)
+      {
+        InheritException(exception,&minimum_image->exception);
+        minimum_image=DestroyImage(minimum_image);
+        break;
+      }
+    if (images->progress_monitor != (MagickProgressMonitor) NULL)
+      {
+        MagickBooleanType
+          proceed;
+
+#if defined(MAGICKCORE_OPENMP_SUPPORT)
+        #pragma omp critical (MagickCore_MaxImages)
+#endif
+        proceed=SetImageProgress(images,MinimumImageTag,i++,number_images);
+      }
+  }
+  return(minimum_image);
 }

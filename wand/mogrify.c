@@ -1223,15 +1223,27 @@ WandExport MagickBooleanType MogrifyImage(ImageInfo *image_info,const int argc,
           }
         if (LocaleCompare("convolve",option+1) == 0)
           {
+            double
+              gamma;
+
             Image
               *convolve_image;
 
             KernelInfo
               *kernel;
 
+            register long
+              j;
+
             kernel=AcquireKernelInfo(argv[i+1]);
             if (kernel == (KernelInfo *) NULL)
               break;
+            gamma=0.0;
+            for (j=0; j < (long) (kernel->width*kernel->height); j++)
+              gamma+=kernel->values[j];
+            gamma=1.0/(fabs((double) gamma) <= MagickEpsilon ? 1.0 : gamma);
+            for (j=0; j < (long) (kernel->width*kernel->width); j++)
+              kernel->values[j]*=gamma;
             convolve_image=FilterImageChannel(*image,channel,kernel,exception);
             kernel=DestroyKernelInfo(kernel);
             if (convolve_image == (Image *) NULL)
@@ -3796,8 +3808,8 @@ static MagickBooleanType MogrifyUsage(void)
       "-flatten             flatten a sequence of images",
       "-fx expression       apply mathematical expression to an image channel(s)",
       "-hald-clut           apply a Hald color lookup table to the image",
-      "-intensity-projection",
-      "                     the maximum (or minimum) intensity projection",
+      "-maximum             return the maximum intensity of an image sequence",
+      "-minimum             return the minimum intensity of an image sequence",
       "-morph value         morph an image sequence",
       "-mosaic              create a mosaic from an image sequence",
       "-process arguments   process the image with a custom image filter",
@@ -5073,8 +5085,6 @@ WandExport MagickBooleanType MogrifyImageCommand(ImageInfo *image_info,
               ThrowMogrifyInvalidArgumentException(option,argv[i]);
             break;
           }
-        if (LocaleCompare("intensity-projection",option+1) == 0)
-          break;
         if (LocaleCompare("intent",option+1) == 0)
           {
             long
@@ -5338,6 +5348,10 @@ WandExport MagickBooleanType MogrifyImageCommand(ImageInfo *image_info,
               ThrowMogrifyException(OptionError,"MissingArgument",option);
             break;
           }
+        if (LocaleCompare("maximum",option+1) == 0)
+          break;
+        if (LocaleCompare("minimum",option+1) == 0)
+          break;
         if (LocaleCompare("modulate",option+1) == 0)
           {
             if (*option == '+')
@@ -7903,23 +7917,6 @@ WandExport MagickBooleanType MogrifyImageList(ImageInfo *image_info,
             *images=GetFirstImageInList(q);
             break;
           }
-        if (LocaleCompare("intensity-projection",option+1) == 0)
-          {
-            Image
-              *projection_image;
-
-            (void) SyncImagesSettings(image_info,*images);
-            projection_image=IntensityProjectionImages(*images,*option == '+' ?
-              MagickTrue : MagickFalse,exception);
-            if (projection_image == (Image *) NULL)
-              {
-                status=MagickFalse;
-                break;
-              }
-            *images=DestroyImageList(*images);
-            *images=projection_image;
-            break;
-          }
         break;
       }
       case 'l':
@@ -8106,6 +8103,38 @@ WandExport MagickBooleanType MogrifyImageList(ImageInfo *image_info,
                 break;
               }
             i++;
+            break;
+          }
+        if (LocaleCompare("maximum",option+1) == 0)
+          {
+            Image
+              *maximum_image;
+
+            (void) SyncImagesSettings(image_info,*images);
+            maximum_image=MaximumImages(*images,exception);
+            if (maximum_image == (Image *) NULL)
+              {
+                status=MagickFalse;
+                break;
+              }
+            *images=DestroyImageList(*images);
+            *images=maximum_image;
+            break;
+          }
+        if (LocaleCompare("minimum",option+1) == 0)
+          {
+            Image
+              *minimum_image;
+
+            (void) SyncImagesSettings(image_info,*images);
+            minimum_image=MinimumImages(*images,exception);
+            if (minimum_image == (Image *) NULL)
+              {
+                status=MagickFalse;
+                break;
+              }
+            *images=DestroyImageList(*images);
+            *images=minimum_image;
             break;
           }
         if (LocaleCompare("morph",option+1) == 0)
