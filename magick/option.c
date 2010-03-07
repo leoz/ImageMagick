@@ -69,6 +69,7 @@
 #include "magick/quantum.h"
 #include "magick/resource_.h"
 #include "magick/splay-tree.h"
+#include "magick/statistic.h"
 #include "magick/string_.h"
 #include "magick/token.h"
 #include "magick/utility.h"
@@ -317,6 +318,8 @@ static const OptionInfo
     { "-equalize", 0L, MagickFalse },
     { "+evaluate", 0L, MagickFalse },
     { "-evaluate", 2L, MagickFalse },
+    { "+evaluate-sequence", 0L, MagickFalse },
+    { "-evaluate-sequence", 1L, MagickFalse },
     { "+extent", 0L, MagickFalse },
     { "-extent", 1L, MagickFalse },
     { "+extract", 0L, MagickFalse },
@@ -884,6 +887,7 @@ static const OptionInfo
     { "LeftShift", (long) LeftShiftEvaluateOperator, MagickFalse },
     { "Log", (long) LogEvaluateOperator, MagickFalse },
     { "Max", (long) MaxEvaluateOperator, MagickFalse },
+    { "Mean", (long) MeanEvaluateOperator, MagickFalse },
     { "Min", (long) MinEvaluateOperator, MagickFalse },
     { "MultiplicativeNoise", (long) MultiplicativeNoiseEvaluateOperator, MagickFalse },
     { "Multiply", (long) MultiplyEvaluateOperator, MagickFalse },
@@ -974,6 +978,7 @@ static const OptionInfo
     { "debug", MagickTrue, MagickFalse },
     { "deconstruct", MagickTrue, MagickFalse },
     { "delete", MagickTrue, MagickFalse },
+    { "evaluate-seqence", MagickTrue, MagickFalse },
     { "fft", MagickTrue, MagickFalse },
     { "flatten", MagickTrue, MagickFalse },
     { "fx", MagickTrue, MagickFalse },
