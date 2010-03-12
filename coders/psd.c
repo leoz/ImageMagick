@@ -392,8 +392,6 @@ static MagickBooleanType IsPSD(const unsigned char *magick,const size_t length)
     return(MagickFalse);
   if (LocaleNCompare((const char *) magick,"8BPS",4) == 0)
     return(MagickTrue);
-  if (LocaleNCompare((const char *) magick,"8BPB",4) == 0)
-    return(MagickTrue);
   return(MagickFalse);
 }
 
@@ -674,8 +672,7 @@ static Image *ReadPSDImage(const ImageInfo *image_info,ExceptionInfo *exception)
   */
   count=ReadBlob(image,4,(unsigned char *) psd_info.signature);
   psd_info.version=ReadBlobMSBShort(image);
-  if ((count == 0) || ((LocaleNCompare(psd_info.signature,"8BPS",4) != 0) &&
-      (LocaleNCompare(psd_info.signature,"8BPB",4) != 0)) ||
+  if ((count == 0) || (LocaleNCompare(psd_info.signature,"8BPS",4) != 0) ||
       ((psd_info.version != 1) && (psd_info.version != 2)))
     ThrowReaderException(CorruptImageError,"ImproperImageHeader");
   count=ReadBlob(image,6,psd_info.reserved);
@@ -1549,7 +1546,7 @@ ModuleExport void UnregisterPSDImage(void)
 %
 */
 
-static inline ssize_t SetPSDOffset(PSDInfo *psd_info,Image *image,
+static inline ssize_t SetPSDOffset(const PSDInfo *psd_info,Image *image,
   const size_t offset)
 {
   if (psd_info->version == 1)
@@ -1557,7 +1554,7 @@ static inline ssize_t SetPSDOffset(PSDInfo *psd_info,Image *image,
   return(WriteBlobMSBLong(image,offset));
 }
 
-static inline ssize_t SetPSDSize(PSDInfo *psd_info,Image *image,
+static inline ssize_t SetPSDSize(const PSDInfo *psd_info,Image *image,
   const MagickSizeType size)
 {
   if (psd_info->version == 1)
@@ -1727,6 +1724,7 @@ static void WriteOneChannel(const PSDInfo *psd_info,const ImageInfo *image_info,
     length,
     packet_size;
 
+  (void) psd_info;
   if ((compression_flag != MagickFalse) &&
       (tmp_image->compression == NoCompression))
     (void) WriteBlobMSBShort(image,0);
@@ -2039,8 +2037,7 @@ static MagickBooleanType WritePSDImage(const ImageInfo *image_info,Image *image)
   if ((LocaleCompare(image_info->magick,"PSB") == 0) ||
       (image->columns > 30000) || (image->rows > 30000))
     psd_info.version=2;
-  (void) WriteBlob(image,4,(const unsigned char *) (psd_info.version == 1 ?
-    "8BPS" : "8BPB"));
+  (void) WriteBlob(image,4,(const unsigned char *) "8BPS");
   (void) WriteBlobMSBShort(image,psd_info.version);  /* version */
   for (i=1; i <= 6; i++)
     (void) WriteBlobByte(image, 0);  /* 6 bytes of reserved */
@@ -2133,8 +2130,16 @@ compute_layer_info:
     channelLength=(unsigned long) (tmp_image->columns * tmp_image->rows *
       packet_size + 2);
     layer_info_size += (unsigned long) (4*4 + 2 + num_channels * 6 +
-      (psd_info.version == 1 ? 8 : 16) + 4 * 1 + 4 + 12 + num_channels *
+      (psd_info.version == 1 ? 8 : 16) + 4 * 1 + 4 + num_channels *
       channelLength);
+    theAttr=(const char *) GetImageProperty(tmp_image,"label");
+    if (!theAttr) 
+      layer_info_size += 16;
+    else
+      {
+        size_t length=strlen(theAttr);
+        layer_info_size += 8+length+(4-(length % 4))+1;
+      }
     layer_count++;
     tmp_image = GetNextImageInList(tmp_image);
   }
@@ -2226,22 +2231,21 @@ compute_layer_info:
       (void) WriteBlobByte(image, 1); /* BOGUS: layer attributes - visible, etc. */
       (void) WriteBlobByte(image, 0);
 
-      (void) WriteBlobMSBLong(image, 12);
-      (void) WriteBlobMSBLong(image, 0);
-      (void) WriteBlobMSBLong(image, 0);
 
       theAttr=(const char *) GetImageProperty(tmp_image,"label");
-      if (theAttr) {
-        WritePascalString( image, theAttr, 4 );
-        /*
-        sprintf((char *) &(layer_name[1]), "%4s", theAttr->value );
-        (void) WriteBlobByte(image, 3);
-        (void) WriteBlob(image, 3, &layer_name[1]);
-        */
-      } else {
-        (void) FormatMagickString((char *) layer_name,MaxTextExtent,"L%02ld",
+      if (!theAttr) {
+        (void) WriteBlobMSBLong(image, 16);
+        (void) WriteBlobMSBLong(image, 0);
+        (void) WriteBlobMSBLong(image, 0);
+        (void) FormatMagickString((char *) layer_name,MaxTextExtent,"L%06ld",
           layer_count++ );
         WritePascalString( image, (char*)layer_name, 4 );
+      } else {
+        size_t length=strlen(theAttr);
+        (void) WriteBlobMSBLong(image, length+(4-(length % 4))+1+8);
+        (void) WriteBlobMSBLong(image, 0);
+        (void) WriteBlobMSBLong(image, 0);
+        WritePascalString( image, theAttr, 4 );
       }
       tmp_image = GetNextImageInList(tmp_image);
     };

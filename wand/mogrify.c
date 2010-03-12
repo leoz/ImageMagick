@@ -126,6 +126,8 @@ WandExport MagickBooleanType MagickCommandGenesis(ImageInfo *image_info,
   unsigned long
     iterations;
 
+  (void) setlocale(LC_ALL,"");
+  (void) setlocale(LC_NUMERIC,"C");
   concurrent=MagickFalse;
   duration=(-1.0);
   iterations=1;
@@ -4534,6 +4536,7 @@ WandExport MagickBooleanType MogrifyImageCommand(ImageInfo *image_info,
             if (i == (long) argc)
               ThrowMogrifyException(OptionError,"MissingArgument",option);
 #if 1
+            (void) token;
             if (IsGeometry(argv[i]) == MagickFalse)
               ThrowMogrifyInvalidArgumentException(option,argv[i]);
 #else

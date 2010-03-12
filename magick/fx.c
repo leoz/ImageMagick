@@ -2278,9 +2278,9 @@ static MagickRealType FxEvaluateSubexpression(FxInfo *fx_info,
         {
           alpha=FxEvaluateSubexpression(fx_info,channel,x,y,expression+4,beta,
             exception);
-          if (alpha == 0.0)
-            return((MagickRealType) (MagickPI/4.0));
-          return((MagickRealType) j1((double) (MagickPI*alpha))/(2.0*alpha));
+          gamma=(MagickRealType) (2.0*j1((double) (MagickPI*alpha))/
+            (MagickPI*alpha));
+          return(gamma);
         }
       break;
     }
@@ -3769,7 +3769,7 @@ MagickExport Image *RecolorImage(const Image *image,const unsigned long order,
         status=MagickFalse;
         continue;
       }
-    indexes=GetCacheViewAuthenticIndexQueue(image_view);
+    indexes=GetCacheViewVirtualIndexQueue(image_view);
     recolor_indexes=GetCacheViewAuthenticIndexQueue(recolor_view);
     k=color_matrix;
     switch (order)

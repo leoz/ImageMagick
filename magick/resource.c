@@ -259,7 +259,7 @@ MagickExport MagickBooleanType AcquireMagickResource(const ResourceType type,
       break;
   }
   UnlockSemaphoreInfo(resource_semaphore);
-  (void) LogMagickEvent(ResourceEvent,GetMagickModule(),"%s: %s/%s/%s",
+  (void) LogMagickEvent(ResourceEvent,GetMagickModule(),"%s: %sB/%sB/%sB",
     MagickOptionToMnemonic(MagickResourceOptions,(long) type),resource_request,
     resource_current,resource_limit);
   return(status);
@@ -684,7 +684,7 @@ MagickExport MagickBooleanType ListMagickResourceInfo(FILE *file,
     "         Disk    Thread         Time\n");
   (void) fprintf(file,"--------------------------------------------------------"
     "-----------------------\n");
-  (void) fprintf(file,"%4lu  %11s  %11s  %11s  %11s    %6lu  %11s\n",
+  (void) fprintf(file,"%4lu  %10sB  %10sB  %10sB  %10sB    %6lu  %11s\n",
     (unsigned long) resource_info.file_limit,area_limit,memory_limit,map_limit,
     disk_limit,(unsigned long) resource_info.thread_limit,time_limit);
   (void) fflush(file);
@@ -798,7 +798,7 @@ MagickExport void RelinquishMagickResource(const ResourceType type,
       break;
   }
   UnlockSemaphoreInfo(resource_semaphore);
-  (void) LogMagickEvent(ResourceEvent,GetMagickModule(),"%s: %s/%s/%s",
+  (void) LogMagickEvent(ResourceEvent,GetMagickModule(),"%s: %sB/%sB/%sB",
     MagickOptionToMnemonic(MagickResourceOptions,(long) type),resource_request,
     resource_current,resource_limit);
 }

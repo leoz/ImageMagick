@@ -1153,7 +1153,7 @@ static MagickRealType BesselOrderOne(MagickRealType x)
 %
 %  DestroyResizeFilter() destroy the resize filter.
 %
-%  The format of the AcquireResizeFilter method is:
+%  The format of the DestroyResizeFilter method is:
 %
 %      ResizeFilter *DestroyResizeFilter(ResizeFilter *resize_filter)
 %
@@ -3012,6 +3012,7 @@ MagickExport Image *ThumbnailImage(const Image *image,
   (void) FormatMagickString(value,MaxTextExtent,"%ld",(long)
     attributes.st_mtime);
   (void) FormatMagickSize(GetBlobSize(image),MagickFalse,value);
+  (void) ConcatenateMagickString(value,"B",MaxTextExtent);
   (void) SetImageProperty(thumbnail_image,"Thumb::Size",value);
   (void) FormatMagickString(value,MaxTextExtent,"image/%s",image->magick);
   LocaleLower(value);
