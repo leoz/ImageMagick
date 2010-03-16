@@ -817,10 +817,13 @@ static MagickBooleanType RenderType(Image *image,const DrawInfo *draw_info,
           TypeWarning,"UnableToReadFont","`%s'",draw_info->family);
     }
   if (type_info == (const TypeInfo *) NULL)
-    type_info=GetTypeInfoByFamily("arial",draw_info->style,
+    type_info=GetTypeInfoByFamily("Utopia",draw_info->style,
       draw_info->stretch,draw_info->weight,&image->exception);
   if (type_info == (const TypeInfo *) NULL)
-    type_info=GetTypeInfoByFamily("helvetica",draw_info->style,
+    type_info=GetTypeInfoByFamily("Arial",draw_info->style,
+      draw_info->stretch,draw_info->weight,&image->exception);
+  if (type_info == (const TypeInfo *) NULL)
+    type_info=GetTypeInfoByFamily("Helvetica",draw_info->style,
       draw_info->stretch,draw_info->weight,&image->exception);
   if (type_info == (const TypeInfo *) NULL)
     type_info=GetTypeInfoByFamily((const char *) NULL,draw_info->style,

@@ -684,9 +684,6 @@ static Image *ReadPSDImage(const ImageInfo *image_info,ExceptionInfo *exception)
   if ((psd_info.version == 1) && ((psd_info.rows > 30000) ||
       (psd_info.columns > 30000)))
     ThrowReaderException(CorruptImageError,"ImproperImageHeader");
-  if ((psd_info.version == 1) && ((psd_info.rows > 300000) ||
-      (psd_info.columns > 300000)))
-    ThrowReaderException(CorruptImageError,"ImproperImageHeader");
   psd_info.depth=ReadBlobMSBShort(image);
   if ((psd_info.depth != 1) && (psd_info.depth != 8) && (psd_info.depth != 16))
     ThrowReaderException(CorruptImageError,"ImproperImageHeader");
@@ -1867,63 +1864,6 @@ static MagickBooleanType WriteImageChannels(const PSDInfo *psd_info,
   return(MagickTrue);
 }
 
-/* Write white background, RLE-compressed */
-
-static void WriteWhiteBackground(const PSDInfo *psd_info,Image *image )
-{
-  long       w8, w;
-  char       *d, scanline[256];
-
-  int numChannels = 3, dim = (int) (image->rows*numChannels);
-
-  register long
-    i;
-
-  size_t
-    length;
-
-  unsigned short
-    bytecount;
-
-  (void) WriteBlobMSBShort(image,1); /* RLE compressed */
-  w8 = (long) image->columns;
-  d = scanline;
-  /* Set up scanline */
-  for (w=w8; w > 128; w-=128)
-  {
-    *d++=(-127);
-    *d++=(char) 255;
-  }
-  switch (w)
-  {
-    case 0:
-      break;
-    case 1:
-      *d++=0;
-      *d++=(char) 255;
-      break;
-    default:
-      *d++=(char) (1-w);
-      *d++=(char) 255;
-      break;
-  }
-  bytecount = d - scanline;
-
-  /* Scanline counts (rows*channels) */
-  for (i=0; i < dim; i++)
-  {
-    (void) SetPSDOffset(psd_info,image,bytecount);
-  }
-
-  /* RLE compressed data  */
-  length = bytecount;
-  for (i=0; i < dim; i++)
-  {
-    (void) WriteBlob( image, length, (unsigned char *) scanline );
-  }
-
-}
-
 static void WritePascalString(Image* inImage,const char *inString,int inPad)
 {
   size_t
@@ -1989,7 +1929,6 @@ static MagickBooleanType WritePSDImage(const ImageInfo *image_info,Image *image)
     *profile;
 
   MagickBooleanType
-    force_white_background = image->matte,
     invert_layer_count = MagickFalse,
     status;
 
@@ -2016,7 +1955,7 @@ static MagickBooleanType WritePSDImage(const ImageInfo *image_info,Image *image)
 
   Image
     * tmp_image = (Image *) NULL,
-    * base_image = force_white_background ? image : GetNextImageInList(image);
+    * base_image = GetNextImageInList(image);
 
   /*
     Open output image file.
@@ -2041,20 +1980,15 @@ static MagickBooleanType WritePSDImage(const ImageInfo *image_info,Image *image)
   (void) WriteBlobMSBShort(image,psd_info.version);  /* version */
   for (i=1; i <= 6; i++)
     (void) WriteBlobByte(image, 0);  /* 6 bytes of reserved */
-  if ( force_white_background )
-    num_channels = 3;
+  if (image->storage_class == PseudoClass)
+    num_channels=(image->matte ? 2UL : 1UL);
   else
-  {
-    if (image->storage_class == PseudoClass)
-     num_channels=(image->matte ? 2UL : 1UL);
-    else
     {
-    if (image->colorspace != CMYKColorspace)
-      num_channels=(image->matte ? 4UL : 3UL);
-    else
-      num_channels=(image->matte ? 5UL : 4UL);
+      if (image->colorspace != CMYKColorspace)
+        num_channels=(image->matte ? 4UL : 3UL);
+      else
+        num_channels=(image->matte ? 5UL : 4UL);
     }
-  }
   (void) WriteBlobMSBShort(image,(unsigned short) num_channels);
   (void) WriteBlobMSBLong(image,image->rows);
   (void) WriteBlobMSBLong(image,image->columns);
@@ -2267,11 +2201,8 @@ compute_layer_info:
 
   }
 
-   /* now the background image data! */
-   if (force_white_background != MagickFalse)
-     WriteWhiteBackground(&psd_info,image);
-   else
-     status=WriteImageChannels(&psd_info,image_info,image,image,MagickFalse);
+  /* now the background image data! */
+  status=WriteImageChannels(&psd_info,image_info,image,image,MagickFalse);
 
   (void) CloseBlob(image);
   return(status);

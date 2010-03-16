@@ -1150,6 +1150,12 @@ MagickExport MagickBooleanType WriteImage(const ImageInfo *image_info,
             }
           if ((magick_info == (const MagickInfo *) NULL) ||
               (GetImageEncoder(magick_info) == (EncodeImageHandler *) NULL))
+            {
+              magick_info=GetMagickInfo(image->magick,&image->exception);
+              (void) CopyMagickString(image->filename,filename,MaxTextExtent);
+            }
+          if ((magick_info == (const MagickInfo *) NULL) ||
+              (GetImageEncoder(magick_info) == (EncodeImageHandler *) NULL))
             (void) ThrowMagickException(&image->exception,GetMagickModule(),
               MissingDelegateError,"NoEncodeDelegateForThisImageFormat","`%s'",
               image->filename);
