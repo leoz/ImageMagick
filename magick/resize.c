@@ -208,7 +208,7 @@ static MagickRealType CubicBC(const MagickRealType x,
     return(resize_filter->cubic[0]+x*(resize_filter->cubic[1]+x*
       (resize_filter->cubic[2]+x*resize_filter->cubic[3])));
   if (x < 2.0)
-    return(resize_filter->cubic[4] +x*(resize_filter->cubic[5]+x*
+    return(resize_filter->cubic[4]+x*(resize_filter->cubic[5]+x*
       (resize_filter->cubic[6] +x*resize_filter->cubic[7])));
   return(0.0);
 }
@@ -1811,8 +1811,8 @@ static MagickBooleanType HorizontalFilter(const ResizeFilter *resize_filter,
     if (status == MagickFalse)
       continue;
     center=(MagickRealType) (x+0.5)/x_factor;
-    start=(long) (MagickMax(center-support-MagickEpsilon,0.0)+0.5);
-    stop=(long) (MagickMin(center+support,(double) image->columns)+0.5);
+    start=(long) MagickMax(center-support+0.5,0.0);
+    stop=(long) MagickMin(center+support+0.5,(double) image->columns);
     density=0.0;
     contribution=contributions[GetOpenMPThreadId()];
     for (n=0; n < (stop-start); n++)
@@ -2053,8 +2053,8 @@ static MagickBooleanType VerticalFilter(const ResizeFilter *resize_filter,
     if (status == MagickFalse)
       continue;
     center=(MagickRealType) (y+0.5)/y_factor;
-    start=(long) (MagickMax(center-support-MagickEpsilon,0.0)+0.5);
-    stop=(long) (MagickMin(center+support,(double) image->rows)+0.5);
+    start=(long) MagickMax(center-support+0.5,0.0);
+    stop=(long) MagickMin(center+support+0.5,(double) image->rows);
     density=0.0;
     contribution=contributions[GetOpenMPThreadId()];
     for (n=0; n < (stop-start); n++)
