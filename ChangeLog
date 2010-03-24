@@ -1,4 +1,18 @@
-2010-01-20  6.6.0-8 Glenn Randers-Pehrson <glennrp@image...>
+2010-03-24  6.6.0-9 Glenn Randers-Pehrson <glennrp@image...>
+  * coders/png.c: Eliminated support of libpng versions older than 1.0.12.
+
+2010-03-23  6.6.0-9 Glenn Randers-Pehrson <glennrp@image...>
+  * coders/png.c: Reverted recent changes; they cause a segfault while
+  reading certain images.
+
+2010-03-21  6.6.0-9 Cristy  <quetzlzacatenango@image...>
+  * Windows does not support complex.h (reference
+    http://www.imagemagick.org/discourse-server/viewtopic.php?f=1&t=15808).
+  * Add support for monochrome PSD images.
+  * VignetteImage() no longer crashes when x and y arguments are both greater
+    than half the width (x) and height (y) of the image.
+
+2010-03-20  6.6.0-8 Glenn Randers-Pehrson <glennrp@image...>
   * Eliminated some of the deprecated direct references to members of
     the png_info structure.  This must be finished before we can build
     with libpng-1.5.
