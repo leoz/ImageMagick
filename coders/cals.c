@@ -66,11 +66,13 @@
 #include "magick/string_.h"
 #include "magick/module.h"
 
+#if defined(MAGICKCORE_TIFF_DELEGATE)
 /*
  Forward declarations.
 */
 static MagickBooleanType
   WriteCALSImage(const ImageInfo *,Image *);
+#endif
 
 /*
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -226,7 +228,7 @@ static Image *ReadCALSImage(const ImageInfo *image_info,
             if (pel_path == 90)
               orientation=5;
             else
-              if (pel_path == 90)
+              if (pel_path == 180)
                 orientation=3;
               else
                 if (pel_path == 270)
