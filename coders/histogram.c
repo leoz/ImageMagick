@@ -56,12 +56,14 @@
 #include "magick/memory_.h"
 #include "magick/monitor.h"
 #include "magick/monitor-private.h"
+#include "magick/option.h"
 #include "magick/resource_.h"
 #include "magick/quantum-private.h"
 #include "magick/static.h"
 #include "magick/statistic.h"
 #include "magick/string_.h"
 #include "magick/module.h"
+#include "magick/utility.h"
 
 /*
   Forward declarations.
@@ -183,20 +185,17 @@ static MagickBooleanType WriteHISTOGRAMImage(const ImageInfo *image_info,
   char
     filename[MaxTextExtent];
 
+  const char
+    *option;
+
   ExceptionInfo
     *exception;
-
-  FILE
-    *file;
 
   Image
     *histogram_image;
 
   ImageInfo
     *write_info;
-
-  int
-    unique_file;
 
   long
     y;
@@ -343,28 +342,38 @@ static MagickBooleanType WriteHISTOGRAMImage(const ImageInfo *image_info,
     Relinquish resources.
   */
   histogram=(MagickPixelPacket *) RelinquishMagickMemory(histogram);
-  file=(FILE *) NULL;
-  unique_file=AcquireUniqueFileResource(filename);
-  if (unique_file != -1)
-    file=fdopen(unique_file,"wb");
-  if ((unique_file != -1) && (file != (FILE *) NULL))
+  option=GetImageOption(image_info,"histogram:unique-colors");
+  if ((option != (const char *) NULL) && (IsMagickTrue(option) != MagickFalse))
     {
-      char
-        *property;
+      FILE
+        *file;
+
+      int
+        unique_file;
 
       /*
-        Add a histogram as an image comment.
+        Add a unique colors as an image comment.
       */
-      (void) GetNumberColors(image,file,&image->exception);
-      (void) fclose(file);
-      property=FileToString(filename,~0UL,&image->exception);
-      if (property != (char *) NULL)
+      file=(FILE *) NULL;
+      unique_file=AcquireUniqueFileResource(filename);
+      if (unique_file != -1)
+        file=fdopen(unique_file,"wb");
+      if ((unique_file != -1) && (file != (FILE *) NULL))
         {
-          (void) SetImageProperty(histogram_image,"comment",property);
-          property=DestroyString(property);
+          char
+            *property;
+
+          (void) GetNumberColors(image,file,&image->exception);
+          (void) fclose(file);
+          property=FileToString(filename,~0UL,&image->exception);
+          if (property != (char *) NULL)
+            {
+              (void) SetImageProperty(histogram_image,"comment",property);
+              property=DestroyString(property);
+            }
         }
+      (void) RelinquishUniqueFileResource(filename);
     }
-  (void) RelinquishUniqueFileResource(filename);
   /*
     Write Histogram image.
   */
