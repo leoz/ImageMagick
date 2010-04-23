@@ -604,7 +604,7 @@ MagickExport Image *AppendImages(const Image *image,
       }
       sync=SyncCacheViewAuthenticPixels(append_view,exception);
       if (sync == MagickFalse)
-        continue;
+        status=MagickFalse;
     }
     image_view=DestroyCacheView(image_view);
     proceed=SetImageProgress(image,AppendImageTag,n,number_images);
@@ -3887,6 +3887,8 @@ MagickExport MagickBooleanType SyncImage(Image *image)
       q->red=pixel.red;
       q->green=pixel.green;
       q->blue=pixel.blue;
+      if (image->matte != MagickFalse)
+        q->opacity=pixel.opacity;
       q++;
     }
     if (SyncCacheViewAuthenticPixels(image_view,exception) == MagickFalse)
@@ -3961,6 +3963,9 @@ MagickExport MagickBooleanType SyncImageSettings(const ImageInfo *image_info,
 
   MagickStatusType
     flags;
+
+  ResolutionType
+    units;
 
   /*
     Sync image options.
@@ -4153,16 +4158,18 @@ MagickExport MagickBooleanType SyncImageSettings(const ImageInfo *image_info,
       option);
   option=GetImageOption(image_info,"units");
   if (option != (const char *) NULL)
-    image->units=(ResolutionType) ParseMagickOption(MagickResolutionOptions,
+    units=(ResolutionType) ParseMagickOption(MagickResolutionOptions,
       MagickFalse,option);
-  if (image_info->units != UndefinedResolution)
+  else
+    units = image_info->units;
+  if (units != UndefinedResolution)
     {
-      if (image->units != image_info->units)
+      if (image->units != units)
         switch (image->units)
         {
           case PixelsPerInchResolution:
           {
-            if (image_info->units == PixelsPerCentimeterResolution)
+            if (units == PixelsPerCentimeterResolution)
               {
                 image->x_resolution/=2.54;
                 image->y_resolution/=2.54;
@@ -4171,7 +4178,7 @@ MagickExport MagickBooleanType SyncImageSettings(const ImageInfo *image_info,
           }
           case PixelsPerCentimeterResolution:
           {
-            if (image_info->units == PixelsPerInchResolution)
+            if (units == PixelsPerInchResolution)
               {
                 image->x_resolution*=2.54;
                 image->y_resolution*=2.54;
@@ -4181,7 +4188,7 @@ MagickExport MagickBooleanType SyncImageSettings(const ImageInfo *image_info,
           default:
             break;
         }
-      image->units=image_info->units;
+      image->units=units;
     }
   option=GetImageOption(image_info,"white-point");
   if (option != (const char *) NULL)

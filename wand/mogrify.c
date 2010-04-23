@@ -3378,10 +3378,10 @@ WandExport MagickBooleanType MogrifyImage(ImageInfo *image_info,const int argc,
           {
             if (*option == '+')
               {
-                (void) DeleteImageArtifact(*image,"identify:unique");
+                (void) DeleteImageArtifact(*image,"identify:unique-colors");
                 break;
               }
-            (void) SetImageArtifact(*image,"identify:unique","true");
+            (void) SetImageArtifact(*image,"identify:unique-colors","true");
             break;
           }
         if (LocaleCompare("unique-colors",option+1) == 0)
@@ -5692,6 +5692,8 @@ WandExport MagickBooleanType MogrifyImageCommand(ImageInfo *image_info,
             if (IsGeometry(argv[i]) == MagickFalse)
               ThrowMogrifyInvalidArgumentException(option,argv[i]);
           }
+        if (LocaleCompare("regard-warnings",option+1) == 0)
+          break;
         if (LocaleCompare("region",option+1) == 0)
           {
             if (*option == '+')

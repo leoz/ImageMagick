@@ -55,8 +55,8 @@ typedef enum
 typedef enum
 {
   UndefinedDirection,
-  LeftToRightDirection,
-  RightToLeftDirection
+  RightToLeftDirection,
+  LeftToRightDirection
 } DirectionType;
 
 typedef enum
@@ -326,7 +326,9 @@ typedef struct _DrawInfo
   double
     kerning,
     interword_spacing,
-    interline_spacing,
+    interline_spacing;
+
+  DirectionType
     direction;
 } DrawInfo;
 

@@ -59,6 +59,7 @@
 #include "magick/semaphore.h"
 #include "magick/string_.h"
 #include "magick/string-private.h"
+#include "magick/token.h"
 #include "magick/utility.h"
 #if defined(MAGICKCORE_HAVE_MMAP_FILEIO) && !defined(__WINDOWS__)
 # include <sys/mman.h>
@@ -2330,7 +2331,8 @@ MagickExport MagickBooleanType OpenBlob(const ImageInfo *image_info,
   if (*type == 'w')
     {
       (void) CopyMagickString(filename,image->filename,MaxTextExtent);
-      if (image_info->adjoin == MagickFalse)
+      if ((image_info->adjoin == MagickFalse) ||
+          (IsGlob(filename) != MagickFalse))
         {
           /*
             Form filename for multi-part images.
