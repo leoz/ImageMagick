@@ -1,3 +1,62 @@
+2010-05-07  6.6.1-6 Anthony Thyssen <A.Thyssen@griffith...>
+  * Added % and ! modification flags to morphology distance kernel
+    scaling factor.
+  * Bug fix for compose math channel handling and morphology diff usage
+  * The -list option returns a 0 status as expected.
+
+2010-05-06  6.6.1-6 Cristy  <quetzlzacatenango@image...>
+  * Do not claim gray colorspace if gray image includes a non-gray pixel.
+  * Initialize BMP alpha channel to opaque for RGB images.
+  * Fixed under allocation for reound rectangles.
+
+2010-05-06  6.6.1-6 Anthony Thyssen <A.Thyssen@griffith...>
+  * Made use of new no-'sync' channel enabled mathematical compose methods
+    for the difference morphology methods.  These should now work correctly
+    for specific channels, and more importantally for alpha shaped morphology.
+
+2010-05-05  6.6.1-6 Glenn Randers-Pehrson <glennrp@image...>
+  * Fixed bugs with losing the opacity channel while writing some PNG images.
+    (bug reported by Anthony T.)
+
+2010-05-05  6.6.1-6 Glenn Randers-Pehrson <glennrp@image...>
+  * Simplified and corrected rowbytes calculation in coders/png.c and
+    added more logging.
+
+2010-05-05  6.6.1-6 Anthony Thyssen <A.Thyssen@griffith...>
+  * Rename of "Add" and "Subtract" compositions to "ModulusAdd" and
+    "ModulusSubtract" for more clarity of there functions. Old names
+    will continue to work as expected.
+  * Fix "Minus", "ModulusAdd", and "ModulusSubtract" to follow
+    normal SVG 'Over' blending specifications, (see next for override)
+    Note that this does NOT include the "Plus" composition method which has
+    SVG defintion for it to use a 'Plus' blending rather than 'Over' blending.
+
+  * By default mathematical compositions work as per SVG definition. That is
+    the results are syncronized with 'Over' alpha-blending (except "Plus"
+    which uses 'plus' alpha-blending).
+
+    By removing the default 'sync' flag from the -channel setting however
+    Break this inter-channel syncronization and do the mathematical operations
+    only on the individual channels as specified by the -channel setting.
+    That is do 'channel' math rather than 'SVG' composition.
+
+    With this change you can then use mathematical composition methods on
+    individual channels or even with the alpha channel of images.
+
+2010-04-28  6.6.1-6 Anthony Thyssen <A.Thyssen@griffith...>
+  * Special case handling in Barrel distortion (pixel at image center)
+  * Calculation of image for Barrel distortion (pixel vs image coords)
+  * Argument input (handling optional 'd' argument) for Barrel distortion
+
+2010-04-24  6.6.1-6 Cristy  <quetzlzacatenango@image...>
+  * Do not declare timestruct under MinGW.
+  * Respect -compose option for the montage utility (bug report by Anthony).
+  * A 256 column gradient produces a 256 color GIF image (bug report by
+    Anthony).
+  * Register / unregister CALS format in static.c (reference
+    http://www.imagemagick.org/discourse-server/viewtopic.php?f=2&t=16103).
+  * Add SetImageColor() method.
+
 2010-04-17  6.6.1-5 Cristy  <quetzlzacatenango@image...>
   * Only write one ICC profile to PSD image.
   * Sync image colormap for PNG tRNS chunks.

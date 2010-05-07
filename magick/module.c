@@ -628,7 +628,7 @@ static MagickBooleanType GetMagickModulePath(const char *filename,
       return(MagickTrue);
     }
 #else
-#if defined(__WINDOWS__)
+#if defined(MAGICKCORE_WINDOWS_SUPPORT)
     {
       const char
         *registery_key;
@@ -673,8 +673,8 @@ static MagickBooleanType GetMagickModulePath(const char *filename,
     }
 #endif
 #endif
-#if !defined(MAGICKCORE_CODER_PATH) && !defined(__WINDOWS__)
-# error MAGICKCORE_CODER_PATH or __WINDOWS__ must be defined when MAGICKCORE_INSTALLED_SUPPORT is defined
+#if !defined(MAGICKCORE_CODER_PATH) && !defined(MAGICKCORE_WINDOWS_SUPPORT)
+# error MAGICKCORE_CODER_PATH or MAGICKCORE_WINDOWS_SUPPORT must be defined when MAGICKCORE_INSTALLED_SUPPORT is defined
 #endif
 #else
   {
@@ -754,7 +754,7 @@ static MagickBooleanType GetMagickModulePath(const char *filename,
       if (IsPathAccessible(path) != MagickFalse)
         return(MagickTrue);
     }
-#if defined(__WINDOWS__)
+#if defined(MAGICKCORE_WINDOWS_SUPPORT)
   {
     /*
       Search module path.
@@ -988,6 +988,7 @@ MagickExport MagickBooleanType InvokeDynamicImageFilter(const char *tag,
   /*
     Execute the module.
   */
+  ClearMagickException(exception);
   image_filter=(ImageFilterHandler *) lt_dlsym(handle,name);
   if (image_filter == (ImageFilterHandler *) NULL)
     (void) ThrowMagickException(exception,GetMagickModule(),ModuleError,
@@ -1005,23 +1006,17 @@ MagickExport MagickBooleanType InvokeDynamicImageFilter(const char *tag,
         (void) LogMagickEvent(ModuleEvent,GetMagickModule(),"\"%s\" completes",
           tag);
       if (signature != MagickImageFilterSignature)
-        {
-          (void) ThrowMagickException(exception,GetMagickModule(),ModuleError,
-            "ImageFilterSignatureMismatch","`%s': %8lx != %8lx",tag,signature,
-            MagickImageFilterSignature);
-          return(MagickFalse);
-        }
+        (void) ThrowMagickException(exception,GetMagickModule(),ModuleError,
+          "ImageFilterSignatureMismatch","`%s': %8lx != %8lx",tag,signature,
+          MagickImageFilterSignature);
     }
   /*
     Close the module.
   */
   if (lt_dlclose(handle) != 0)
-    {
-      (void) ThrowMagickException(exception,GetMagickModule(),ModuleWarning,
-        "UnableToCloseModule","`%s': %s",name,lt_dlerror());
-      return(MagickFalse);
-    }
-  return(MagickTrue);
+    (void) ThrowMagickException(exception,GetMagickModule(),ModuleWarning,
+      "UnableToCloseModule","`%s': %s",name,lt_dlerror());
+  return(exception->severity < ErrorException ? MagickTrue : MagickFalse);
 }
 
 /*
@@ -1408,7 +1403,7 @@ static void TagToCoderModuleName(const char *tag,char *name)
   (void) FormatMagickString(name,MaxTextExtent,"%s.la",tag);
   (void) LocaleLower(name);
 #else
-#if defined(__WINDOWS__)
+#if defined(MAGICKCORE_WINDOWS_SUPPORT)
   if (LocaleNCompare("IM_MOD_",tag,7) == 0)
     (void) CopyMagickString(name,tag,MaxTextExtent);
   else

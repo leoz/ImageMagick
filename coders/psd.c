@@ -45,6 +45,7 @@
 #include "magick/blob.h"
 #include "magick/blob-private.h"
 #include "magick/cache.h"
+#include "magick/colormap.h"
 #include "magick/colorspace.h"
 #include "magick/constitute.h"
 #include "magick/enhance.h"
@@ -273,42 +274,42 @@ static ssize_t DecodePSDPixels(const size_t number_compact_pixels,
         length=256-length+1;
         pixel=(*compact_pixels++);
         packets--;
-        for (j=0; j < (long) length; j++)
+        for (j=0; j < (ssize_t) length; j++)
         {
           switch (depth)
           {
             case 1:
             {
-              *pixels++=(pixel >> 7) & 0x01 ? 0 : 255;
-              *pixels++=(pixel >> 6) & 0x01 ? 0 : 255;
-              *pixels++=(pixel >> 5) & 0x01 ? 0 : 255;
-              *pixels++=(pixel >> 4) & 0x01 ? 0 : 255;
-              *pixels++=(pixel >> 3) & 0x01 ? 0 : 255;
-              *pixels++=(pixel >> 2) & 0x01 ? 0 : 255;
-              *pixels++=(pixel >> 1) & 0x01 ? 0 : 255;
-              *pixels++=(pixel >> 0) & 0x01 ? 0 : 255;
+              *pixels++=(pixel >> 7) & 0x01 ? 0U : 255U;
+              *pixels++=(pixel >> 6) & 0x01 ? 0U : 255U;
+              *pixels++=(pixel >> 5) & 0x01 ? 0U : 255U;
+              *pixels++=(pixel >> 4) & 0x01 ? 0U : 255U;
+              *pixels++=(pixel >> 3) & 0x01 ? 0U : 255U;
+              *pixels++=(pixel >> 2) & 0x01 ? 0U : 255U;
+              *pixels++=(pixel >> 1) & 0x01 ? 0U : 255U;
+              *pixels++=(pixel >> 0) & 0x01 ? 0U : 255U;
               i+=8;
               break;
             }
             case 4:
             {
-              *pixels++=(pixel >> 4) & 0xff;
-              *pixels++=(pixel & 0x0f) & 0xff;
+              *pixels++=(unsigned char) ((pixel >> 4) & 0xff);
+              *pixels++=(unsigned char) ((pixel & 0x0f) & 0xff);
               i+=2;
               break;
             }
             case 2:
             {
-              *pixels++=(pixel >> 6) & 0x03;
-              *pixels++=(pixel >> 4) & 0x03;
-              *pixels++=(pixel >> 2) & 0x03;
-              *pixels++=(pixel & 0x03) & 0x03;
+              *pixels++=(unsigned char) ((pixel >> 6) & 0x03);
+              *pixels++=(unsigned char) ((pixel >> 4) & 0x03);
+              *pixels++=(unsigned char) ((pixel >> 2) & 0x03);
+              *pixels++=(unsigned char) ((pixel & 0x03) & 0x03);
               i+=4;
               break;
             }
             default:
             {
-              *pixels++=pixel;
+              *pixels++=(unsigned char) pixel;
               i++;
               break;
             }
@@ -317,20 +318,20 @@ static ssize_t DecodePSDPixels(const size_t number_compact_pixels,
         continue;
       }
     length++;
-    for (j=0; j < (long) length; j++)
+    for (j=0; j < (ssize_t) length; j++)
     {
       switch (depth)
       {
         case 1:
         {
-          *pixels++=(*compact_pixels >> 7) & 0x01 ? 0 : 255;
-          *pixels++=(*compact_pixels >> 6) & 0x01 ? 0 : 255;
-          *pixels++=(*compact_pixels >> 5) & 0x01 ? 0 : 255;
-          *pixels++=(*compact_pixels >> 4) & 0x01 ? 0 : 255;
-          *pixels++=(*compact_pixels >> 3) & 0x01 ? 0 : 255;
-          *pixels++=(*compact_pixels >> 2) & 0x01 ? 0 : 255;
-          *pixels++=(*compact_pixels >> 1) & 0x01 ? 0 : 255;
-          *pixels++=(*compact_pixels >> 0) & 0x01 ? 0 : 255;
+          *pixels++=(*compact_pixels >> 7) & 0x01 ? 0U : 255U;
+          *pixels++=(*compact_pixels >> 6) & 0x01 ? 0U : 255U;
+          *pixels++=(*compact_pixels >> 5) & 0x01 ? 0U : 255U;
+          *pixels++=(*compact_pixels >> 4) & 0x01 ? 0U : 255U;
+          *pixels++=(*compact_pixels >> 3) & 0x01 ? 0U : 255U;
+          *pixels++=(*compact_pixels >> 2) & 0x01 ? 0U : 255U;
+          *pixels++=(*compact_pixels >> 1) & 0x01 ? 0U : 255U;
+          *pixels++=(*compact_pixels >> 0) & 0x01 ? 0U : 255U;
           i+=8;
           break;
         }
@@ -568,7 +569,7 @@ static MagickBooleanType ReadPSDLayer(Image *image,
       length=0;
       for (y=0; y < (long) image->rows; y++)
         if ((MagickOffsetType) length < offsets[y])
-          length=offsets[y];
+          length=(size_t) offsets[y];
       compact_pixels=(unsigned char *) AcquireQuantumMemory(length,
         sizeof(*pixels));
       if (compact_pixels == (unsigned char *) NULL)
@@ -586,7 +587,7 @@ static MagickBooleanType ReadPSDLayer(Image *image,
         if (count != (ssize_t) offsets[y])
           break;
         count=DecodePSDPixels((size_t) offsets[y],compact_pixels,
-          image->depth,packet_size*image->columns,pixels);
+          (long) image->depth,packet_size*image->columns,pixels);
       }
     if (count < (ssize_t) (packet_size*image->columns))
       break;
@@ -1872,13 +1873,60 @@ static void WriteResolutionResourceBlock(Image *image)
   (void) WriteBlobMSBShort(image,units); /* height unit */
 }
 
+static void RemoveICCProfileFromResourceBlock(StringInfo *bim_profile)
+{
+  register const unsigned char
+    *p;
+
+  size_t
+    length;
+
+  unsigned char
+    *datum;
+
+  unsigned long
+    count,
+    long_sans;
+
+  unsigned short
+    id,
+    short_sans;
+
+  length=GetStringInfoLength(bim_profile);
+  if (length < 16)
+    return;
+  datum=GetStringInfoDatum(bim_profile);
+  for (p=datum; (p >= datum) && (p < (datum+length-16)); )
+  {
+    register unsigned char
+      *q;
+
+    q=(unsigned char *) p;
+    if (LocaleNCompare((const char *) p,"8BIM",4) != 0)
+      break;
+    p=PushLongPixel(MSBEndian,p,&long_sans);
+    p=PushShortPixel(MSBEndian,p,&id);
+    p=PushShortPixel(MSBEndian,p,&short_sans);
+    p=PushLongPixel(MSBEndian,p,&count);
+    if (id == 0x0000040f)
+      {
+        (void) CopyMagickMemory(q,q+PSDQuantum(count)+12,length-
+          (PSDQuantum(count)+12)-(q-datum));
+        SetStringInfoLength(bim_profile,length-(PSDQuantum(count)+12));
+        break;
+      }
+    p+=count;
+    if ((count & 0x01) != 0)
+      p++;
+  }
+}
+
 static MagickBooleanType WritePSDImage(const ImageInfo *image_info,Image *image)
 {
   const char
     *theAttr;
 
   const StringInfo
-    *bim_profile,
     *icc_profile;
 
   MagickBooleanType
@@ -1896,6 +1944,9 @@ static MagickBooleanType WritePSDImage(const ImageInfo *image_info,Image *image)
     num_channels,
     packet_size;
 
+  StringInfo
+    *bim_profile;
+
   unsigned char
     layer_name[4];
 
@@ -1907,8 +1958,8 @@ static MagickBooleanType WritePSDImage(const ImageInfo *image_info,Image *image)
     rounded_layer_info_size;
 
   Image
-    * tmp_image = (Image *) NULL,
-    * base_image = GetNextImageInList(image);
+    *tmp_image = (Image *) NULL,
+    *base_image = GetNextImageInList(image);
 
   /*
     Open image file.
@@ -1957,8 +2008,8 @@ static MagickBooleanType WritePSDImage(const ImageInfo *image_info,Image *image)
         Write depth & mode.
       */
       monochrome=IsMonochromeImage(image,&image->exception);
-      (void) WriteBlobMSBShort(image,monochrome != MagickFalse ? 1 :
-        image->depth > 8 ? 16 : 8);
+      (void) WriteBlobMSBShort(image,(unsigned short)
+        (monochrome != MagickFalse ? 1 : image->depth > 8 ? 16 : 8));
       (void) WriteBlobMSBShort(image,monochrome != MagickFalse ?
         BitmapMode : GrayscaleMode);
     }
@@ -2008,27 +2059,32 @@ static MagickBooleanType WritePSDImage(const ImageInfo *image_info,Image *image)
     Image resource block.
   */
   length=28; /* 0x03EB */
-  bim_profile=(StringInfo *) NULL;
+  bim_profile=(StringInfo *) GetImageProfile(image,"8bim");
   icc_profile=GetImageProfile(image,"icc");
-  if (icc_profile != (StringInfo *) NULL)
-    length+=PSDQuantum(GetStringInfoLength(icc_profile))+12;
-  else
-    {
-      bim_profile=GetImageProfile(image,"8bim");
-      if (bim_profile != (StringInfo *) NULL)
-        length+=GetStringInfoLength(bim_profile);
-    }
-  (void) WriteBlobMSBLong(image,length);
-  WriteResolutionResourceBlock(image);
   if (bim_profile != (StringInfo *) NULL)
-    (void) WriteBlob(image,GetStringInfoLength(bim_profile),GetStringInfoDatum(
-      bim_profile));
+    {
+      bim_profile=CloneStringInfo(bim_profile);
+      if (icc_profile != (StringInfo *) NULL)
+        RemoveICCProfileFromResourceBlock(bim_profile);
+      length+=PSDQuantum(GetStringInfoLength(bim_profile));
+    }
+  if (icc_profile != (const StringInfo *) NULL)
+    length+=PSDQuantum(GetStringInfoLength(icc_profile))+12;
+  (void) WriteBlobMSBLong(image,(unsigned int) length);
+  if (bim_profile != (StringInfo *) NULL)
+    {
+      (void) WriteBlob(image,GetStringInfoLength(bim_profile),
+        GetStringInfoDatum(bim_profile));
+      bim_profile=DestroyStringInfo(bim_profile);
+    }
+  WriteResolutionResourceBlock(image);
   if (icc_profile != (StringInfo *) NULL)
     {
       (void) WriteBlob(image,4,(const unsigned char *) "8BIM");
-      (void) WriteBlobMSBShort(image,0x040F);
+      (void) WriteBlobMSBShort(image,0x0000040F);
       (void) WriteBlobMSBShort(image,0);
-      (void) WriteBlobMSBLong(image,GetStringInfoLength(icc_profile));
+      (void) WriteBlobMSBLong(image,(unsigned int) GetStringInfoLength(
+        icc_profile));
       (void) WriteBlob(image,GetStringInfoLength(icc_profile),
         GetStringInfoDatum(icc_profile));
       if ((MagickOffsetType) GetStringInfoLength(icc_profile) !=

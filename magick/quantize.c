@@ -178,6 +178,7 @@
 #include "magick/cache-view.h"
 #include "magick/color.h"
 #include "magick/color-private.h"
+#include "magick/colormap.h"
 #include "magick/colorspace.h"
 #include "magick/enhance.h"
 #include "magick/exception.h"
@@ -2440,6 +2441,64 @@ static void PruneToCubeDepth(const Image *image,CubeInfo *cube_info,
 %    o image: the image.
 %
 */
+static MagickBooleanType DirectToColormapImage(Image *image,
+  ExceptionInfo *exception)
+{
+  CacheView
+    *image_view;
+
+  long
+    y;
+
+  MagickBooleanType
+    status;
+
+  register long
+    i;
+
+  unsigned long
+    number_colors;
+
+  status=MagickTrue;
+  number_colors=(unsigned long) (image->columns*image->rows);
+  if (AcquireImageColormap(image,number_colors) == MagickFalse)
+    ThrowBinaryException(ResourceLimitError,"MemoryAllocationFailed",
+      image->filename);
+  i=0;
+  image_view=AcquireCacheView(image);
+  for (y=0; y < (long) image->rows; y++)
+  {
+    MagickBooleanType
+      proceed;
+
+    register IndexPacket
+      *restrict indexes;
+
+    register PixelPacket
+      *restrict q;
+
+    register long
+      x;
+
+    q=GetCacheViewAuthenticPixels(image_view,0,y,image->columns,1,exception);
+    if (q == (const PixelPacket *) NULL)
+      break;
+    indexes=GetCacheViewAuthenticIndexQueue(image_view);
+    for (x=0; x < (long) image->columns; x++)
+    {
+      indexes[x]=i;
+      image->colormap[i++]=(*q++);
+    }
+    if (SyncCacheViewAuthenticPixels(image_view,exception) == MagickFalse)
+      break;
+    proceed=SetImageProgress(image,AssignImageTag,y,image->rows);
+    if (proceed == MagickFalse)
+      status=MagickFalse;
+  }
+  image_view=DestroyCacheView(image_view);
+  return(status);
+}
+
 MagickExport MagickBooleanType QuantizeImage(const QuantizeInfo *quantize_info,
   Image *image)
 {
@@ -2464,6 +2523,8 @@ MagickExport MagickBooleanType QuantizeImage(const QuantizeInfo *quantize_info,
     maximum_colors=MaxColormapSize;
   if (maximum_colors > MaxColormapSize)
     maximum_colors=MaxColormapSize;
+  if ((image->columns*image->rows) <= maximum_colors)
+    return(DirectToColormapImage(image,&image->exception));
   if ((IsGrayImage(image,&image->exception) != MagickFalse) &&
       (image->matte == MagickFalse))
     (void) SetGrayscaleImage(image);

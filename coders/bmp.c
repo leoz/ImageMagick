@@ -46,6 +46,7 @@
 #include "magick/cache.h"
 #include "magick/colormap-private.h"
 #include "magick/color-private.h"
+#include "magick/colormap.h"
 #include "magick/colorspace.h"
 #include "magick/exception.h"
 #include "magick/exception-private.h"
@@ -71,7 +72,7 @@
 #define BI_JPEG  4
 #undef BI_PNG
 #define BI_PNG  5
-#if !defined(__WINDOWS__) || defined(__MINGW32__)
+#if !defined(MAGICKCORE_WINDOWS_SUPPORT) || defined(__MINGW32__)
 #define BI_RGB  0
 #define BI_RLE8  1
 #define BI_RLE4  2
@@ -826,7 +827,9 @@ static Image *ReadBMPImage(const ImageInfo *image_info,ExceptionInfo *exception)
     image->columns=(unsigned long) MagickAbsoluteValue(bmp_info.width);
     image->rows=(unsigned long) MagickAbsoluteValue(bmp_info.height);
     image->depth=bmp_info.bits_per_pixel <= 8 ? bmp_info.bits_per_pixel : 8;
-    image->matte=bmp_info.alpha_mask != 0 ? MagickTrue : MagickFalse;
+    if ((bmp_info.bits_per_pixel == 16) ||
+        (bmp_info.bits_per_pixel == 32))
+      image->matte=bmp_info.alpha_mask != 0 ? MagickTrue : MagickFalse;
     if ((bmp_info.number_colors != 0) || (bmp_info.bits_per_pixel < 16))
       {
         image->storage_class=PseudoClass;
@@ -1177,6 +1180,7 @@ static Image *ReadBMPImage(const ImageInfo *image_info,ExceptionInfo *exception)
             q->blue=ScaleCharToQuantum(*p++);
             q->green=ScaleCharToQuantum(*p++);
             q->red=ScaleCharToQuantum(*p++);
+            SetOpacityPixelComponent(q,OpaqueOpacity);
             q++;
           }
           if (SyncAuthenticPixels(image,exception) == MagickFalse)

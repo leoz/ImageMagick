@@ -245,12 +245,13 @@ AC_PROG_LD
 AC_SUBST(LD)
 AC_PROG_CC_C99
 AM_PROG_CC_C_O
-AC_COMPILE_WARNINGS
+AX_CFLAGS_WARN_ALL
 AC_INCLUDES_DEFAULT
 AC_PROG_INSTALL
 AC_PROG_MAKE_SET
 AC_PROG_LN_S
 AM_WITH_DMALLOC
+AX_C___ATTRIBUTE__
 PKG_PROG_PKG_CONFIG
 
 #
@@ -272,6 +273,7 @@ fi
 #
 AC_EXEEXT
 AC_OBJEXT
+AX_LANG_COMPILER_MS
 
 GDI32_LIBS=''
 native_win32_build='no'
@@ -381,8 +383,8 @@ AC_ARG_WITH([threads],
 
 have_threads=no
 if test "$with_threads" != 'no'; then
-    ACX_PTHREAD()
-    if test "$acx_pthread_ok" = yes; then
+    AX_PTHREAD()
+    if test "$ax_pthread_ok" = yes; then
         have_threads=yes
         DEF_THREAD="$PTHREAD_CFLAGS"
         CFLAGS="$CFLAGS $DEF_THREAD"
@@ -698,7 +700,7 @@ AC_ARG_WITH([perl],
     [AC_HELP_STRING([--with-perl],
                     [enable build/install of PerlMagick])],
     [with_perl=$withval],
-    [with_perl=$libtool_build_shared_libs])
+    [with_perl='no'])
 
 # Options to pass when configuring PerlMagick
 AC_ARG_WITH([perl-options],
@@ -796,6 +798,7 @@ AC_C_STRINGIZE
 AC_HEADER_STAT
 AC_HEADER_TIME
 AC_STRUCT_TM
+AC_STRUCT_TIMEZONE
 AC_SYS_INTERPRETER
 
 # If the C compiler supports the keyword inline, do nothing. Otherwise
@@ -1052,9 +1055,9 @@ if test "$with_magick_plus_plus" = 'yes'; then
     # functional iomanip iosfwd iostream iterator list string strstream utility
     AC_LANG([C++])
     AC_PROG_CXX
-    AC_CXX_HAVE_BOOL
-    AC_CXX_HAVE_NAMESPACES
-    AC_CXX_HAVE_STD_NAMESPACE
+    AX_CXX_BOOL
+    AX_CXX_NAMESPACES
+    AX_CXX_NAMESPACE_STD
     AC_CXX_HAVE_STD_LIBS
     AC_CXX_HAVE_LSTRING
     AC_OPENMP([C++])
@@ -1062,11 +1065,11 @@ if test "$with_magick_plus_plus" = 'yes'; then
 
     AC_MSG_CHECKING([whether C++ compiler is sufficient for Magick++])
     if \
-        test $ac_cv_cxx_have_bool = 'yes' && \
+        test $ax_cv_cxx_bool = 'yes' && \
         test $ac_cv_cxx_have_lstring = 'yes' && \
-        test $ac_cv_cxx_have_namespaces = 'yes' && \
+        test $ax_cv_cxx_namespaces = 'yes' && \
         test $ac_cv_cxx_have_std_libs = 'yes' && \
-        test $ac_cv_cxx_have_std_namespace = 'yes'; then
+        test $ax_cv_cxx_have_std_namespace = 'yes'; then
         have_magick_plus_plus='yes'
     else
         have_magick_plus_plus='no (failed tests)'
@@ -3223,7 +3226,7 @@ if test "$have_perl" != 'no'; then
         with_perl_dynamic='yes'
     fi
     # Is PERL's MakeMaker new enough to support DESTDIR?
-    AC_PROG_PERL_VERSION(5.8.1,[PERL_SUPPORTS_DESTDIR='yes'],[PERL_SUPPORTS_DESTDIR='no'])
+    AX_PROG_PERL_VERSION(5.8.1,[PERL_SUPPORTS_DESTDIR='yes'],[PERL_SUPPORTS_DESTDIR='no'])
 fi
 AM_CONDITIONAL(WITH_PERL, test "$have_perl" != 'no')
 AM_CONDITIONAL(WITH_PERL_STATIC, test $with_perl_static = 'yes')

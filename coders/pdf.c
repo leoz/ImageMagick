@@ -124,7 +124,7 @@ static MagickBooleanType InvokePDFDelegate(const MagickBooleanType verbose,
   int
     status;
 
-#if defined(MAGICKCORE_GS_DELEGATE) || defined(__WINDOWS__)
+#if defined(MAGICKCORE_GS_DELEGATE) || defined(MAGICKCORE_WINDOWS_SUPPORT)
   char
     **argv;
 
@@ -141,7 +141,7 @@ static MagickBooleanType InvokePDFDelegate(const MagickBooleanType verbose,
   register long
     i;
 
-#if defined(__WINDOWS__)
+#if defined(MAGICKCORE_WINDOWS_SUPPORT)
   ghost_info=NTGhostscriptDLLVectors();
 #else
   GhostInfo
@@ -182,7 +182,7 @@ static MagickBooleanType InvokePDFDelegate(const MagickBooleanType verbose,
       0,&code);
   (ghost_info->exit)(interpreter);
   (ghost_info->delete_instance)(interpreter);
-#if defined(__WINDOWS__)
+#if defined(MAGICKCORE_WINDOWS_SUPPORT)
   NTGhostscriptUnLoadDLL();
 #endif
   for (i=0; i < (long) argc; i++)
@@ -290,7 +290,6 @@ static Image *ReadPDFImage(const ImageInfo *image_info,ExceptionInfo *exception)
 {
 #define CropBox  "CropBox"
 #define DeviceCMYK  "DeviceCMYK"
-#define ICCBased  "ICCBased"
 #define MediaBox  "MediaBox"
 #define RenderPostscriptText  "Rendering Postscript...  "
 #define PDFRotate  "Rotate"
@@ -443,8 +442,6 @@ static Image *ReadPDFImage(const ImageInfo *image_info,ExceptionInfo *exception)
       Is this a CMYK document?
     */
     if (LocaleNCompare(DeviceCMYK,command,strlen(DeviceCMYK)) == 0)
-      cmyk=MagickTrue;
-    if (LocaleNCompare(ICCBased,command,strlen(ICCBased)) == 0)
       cmyk=MagickTrue;
     if (LocaleNCompare(SpotColor,command,strlen(SpotColor)) == 0)
       {
@@ -1253,8 +1250,8 @@ static MagickBooleanType WritePDFImage(const ImageInfo *image_info,Image *image)
       }
     if (image->units == PixelsPerCentimeterResolution)
       {
-        resolution.x*=2.54;
-        resolution.y*=2.54;
+        resolution.x=(unsigned long) (100.0*2.54*resolution.x+0.5)/100.0;
+        resolution.y=(unsigned long) (100.0*2.54*resolution.y+0.5)/100.0;
       }
     SetGeometry(image,&geometry);
     (void) FormatMagickString(page_geometry,MaxTextExtent,"%lux%lu",

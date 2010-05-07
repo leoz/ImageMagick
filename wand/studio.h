@@ -22,39 +22,11 @@
 extern "C" {
 #endif
 
-#if defined(__CYGWIN32__)
-#  if !defined(__CYGWIN__)
-#    define __CYGWIN__ __CYGWIN32__
-#  endif
-#endif
-
-#if defined(_WIN32) || defined(WIN32)
-#  if !defined(__WINDOWS__)
-#    if defined(_WIN32)
-#      define __WINDOWS__ _WIN32
-#    else
-#      if defined(WIN32)
-#        define __WINDOWS__ WIN32
-#      endif
-#    endif
-#  endif
-#endif
-
-#if defined(_WIN64) || defined(WIN64)
-#  if !defined(__WINDOWS__)
-#    if defined(_WIN64)
-#      define __WINDOWS__ _WIN64
-#    else
-#      if defined(WIN64)
-#        define __WINDOWS__ WIN64
-#      endif
-#    endif
-#  endif
-#endif
-
-#if !defined(vms) && !defined(macintosh) && !defined(__WINDOWS__)
-# define MAGICKCORE_POSIX_SUPPORT
-#endif
+#if defined(WIN32) || defined(WIN64)
+#  define MAGICKCORE_WINDOWS_SUPPORT
+#else
+#  define MAGICKCORE_POSIX_SUPPORT
+#endif 
 
 #define MAGICKWAND_IMPLEMENTATION  1
 
@@ -92,7 +64,7 @@ extern "C" {
 #  define _MAGICKLIB_
 #endif
 
-#if defined(__WINDOWS__)
+#if defined(MAGICKCORE_WINDOWS_SUPPORT) && !defined(__CYGWIN__) && !defined(__MINGW32__)
 # if defined(_MT) && defined(_DLL) && !defined(_MAGICKDLL_) && !defined(_LIB)
 #  define _MAGICKDLL_
 # endif
@@ -188,20 +160,20 @@ extern "C" {
 #if defined(MAGICKCORE_HAVE_UNISTD_H)
 # include <unistd.h>
 #endif
-#if defined(__WINDOWS__) && defined(_DEBUG)
+#if defined(MAGICKCORE_WINDOWS_SUPPORT) && defined(_DEBUG)
 #define _CRTDBG_MAP_ALLOC
 #endif
-#if defined(__WINDOWS__)
+#if defined(MAGICKCORE_WINDOWS_SUPPORT)
 # include <direct.h>
 # if !defined(MAGICKCORE_HAVE_STRERROR)
 #  define HAVE_STRERROR
 # endif
 #endif
 
-#if defined(__WINDOWS__) && defined(_DEBUG)
+#if defined(MAGICKCORE_WINDOWS_SUPPORT) && defined(_DEBUG)
 #define _CRTDBG_MAP_ALLOC
 #endif
-#if defined(__WINDOWS__)
+#if defined(MAGICKCORE_WINDOWS_SUPPORT)
 # include <direct.h>
 # if !defined(MAGICKCORE_HAVE_STRERROR)
 #  define HAVE_STRERROR
@@ -220,7 +192,7 @@ extern "C" {
 
 #if defined(MAGICKCORE_HAVE_PTHREAD)
 # include <pthread.h>
-#elif defined(__WINDOWS__)
+#elif defined(MAGICKCORE_WINDOWS_SUPPORT)
 #  define MAGICKCORE_HAVE_WINTHREADS  1
 #include <windows.h>
 #endif
@@ -262,25 +234,15 @@ extern size_t strlcpy(char *,const char *,size_t);
 extern int vsnprintf(char *,size_t,const char *,va_list);
 #endif
 
-#if !defined(wand_attribute)
-#  if (defined(__GNUC__) && (__GNUC__ >= 3))
-#    define wand_attribute  __attribute__
-#  else
-#    define wand_attribute(x)  /* nothing */
-#  endif
+#if defined(MAGICKCORE_HAVE___ATTRIBUTE__)
+#  define wand_attribute  __attribute__
+#  define wand_unused(x)  wand_unused_ ## x __attribute__((unused))
+#else
+#  define wand_attribute(x)  /* nothing */
+#  define wand_unused(x) x
 #endif
 
-#if !defined(wand_unused)
-#  if (defined(__GNUC__) && (__GNUC__ >= 3))
-#    define wand_unused(x)  wand_unused_ ## x __attribute__((unused))
-#  elif defined(__LCLINT__)
-#    define wand_unused(x) /*@unused@*/ x
-#  else
-#    define wand_unused(x) x
-#  endif
-#endif
-
-#if defined(__WINDOWS__) || defined(MAGICKCORE_POSIX_SUPPORT)
+#if defined(MAGICKCORE_WINDOWS_SUPPORT) || defined(MAGICKCORE_POSIX_SUPPORT)
 # include <sys/types.h>
 # include <sys/stat.h>
 # if defined(MAGICKCORE_HAVE_FTIME)
@@ -313,7 +275,7 @@ extern int vsnprintf(char *,size_t,const char *,va_list);
 #  define S_ISREG(mode) (((mode) & S_IFMT) == S_IFREG)
 # endif
 # include "wand/MagickWand.h"
-# if !defined(__WINDOWS__)
+# if !defined(MAGICKCORE_WINDOWS_SUPPORT)
 #  include <sys/time.h>
 # if defined(MAGICKCORE_HAVE_SYS_TIMES_H)
 #  include <sys/times.h>
@@ -337,13 +299,13 @@ extern int vsnprintf(char *,size_t,const char *,va_list);
 
 #if defined(S_IRUSR) && defined(S_IWUSR)
 # define S_MODE (S_IRUSR | S_IWUSR)
-#elif defined (__WINDOWS__)
+#elif defined (MAGICKCORE_WINDOWS_SUPPORT)
 # define S_MODE (_S_IREAD | _S_IWRITE)
 #else
 # define S_MODE  0600
 #endif
 
-#if defined(__WINDOWS__)
+#if defined(MAGICKCORE_WINDOWS_SUPPORT)
 # include "magick/nt-base.h"
 #endif
 #if defined(macintosh)
@@ -426,7 +388,7 @@ extern int vsnprintf(char *,size_t,const char *,va_list);
      SetWarningHandler(MACWarningHandler)
 #  endif
 # endif
-# if defined(__WINDOWS__)
+# if defined(MAGICKCORE_WINDOWS_SUPPORT)
 #  define DirectorySeparator  "\\"
 #  define DirectoryListSeparator  ';'
 #  define EditorOptions ""
@@ -467,7 +429,7 @@ extern int vsnprintf(char *,size_t,const char *,va_list);
 /*
   I/O defines.
 */
-#if defined(__WINDOWS__) && !defined(Windows95) && !defined(__BORLANDC__)
+#if defined(MAGICKCORE_WINDOWS_SUPPORT) && !defined(Windows95) && !defined(__BORLANDC__)
 #define MagickSeek(file,offset,whence)  _lseeki64(file,offset,whence)
 #define MagickTell(file)  _telli64(file)
 #else

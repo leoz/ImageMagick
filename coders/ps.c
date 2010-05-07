@@ -116,7 +116,7 @@ static MagickBooleanType InvokePostscriptDelegate(
   int
     status;
 
-#if defined(MAGICKCORE_GS_DELEGATE) || defined(__WINDOWS__)
+#if defined(MAGICKCORE_GS_DELEGATE) || defined(MAGICKCORE_WINDOWS_SUPPORT)
   char
     **argv;
 
@@ -133,7 +133,7 @@ static MagickBooleanType InvokePostscriptDelegate(
   register long
     i;
 
-#if defined(__WINDOWS__)
+#if defined(MAGICKCORE_WINDOWS_SUPPORT)
   ghost_info=NTGhostscriptDLLVectors();
 #else
   GhostInfo
@@ -174,7 +174,7 @@ static MagickBooleanType InvokePostscriptDelegate(
       0,&code);
   (ghost_info->exit)(interpreter);
   (ghost_info->delete_instance)(interpreter);
-#if defined(__WINDOWS__)
+#if defined(MAGICKCORE_WINDOWS_SUPPORT)
   NTGhostscriptUnLoadDLL();
 #endif
   for (i=0; i < (long) argc; i++)
@@ -323,7 +323,6 @@ static Image *ReadPSImage(const ImageInfo *image_info,ExceptionInfo *exception)
 #define DocumentCustomColors  "DocumentCustomColors:"
 #define DocumentProcessColors  "DocumentProcessColors:"
 #define EndDocument  "EndDocument:"
-#define ICCBased  "ICCBased"
 #define HiResBoundingBox  "HiResBoundingBox:"
 #define ImageData  "ImageData:"
 #define PageBoundingBox  "PageBoundingBox:"
@@ -607,8 +606,6 @@ static Image *ReadPSImage(const ImageInfo *image_info,ExceptionInfo *exception)
     if (LocaleNCompare(CMYKCustomColor,command,strlen(CMYKCustomColor)) == 0)
       cmyk=MagickTrue;
     if (LocaleNCompare(CMYKProcessColor,command,strlen(CMYKProcessColor)) == 0)
-      cmyk=MagickTrue;
-    if (LocaleNCompare(ICCBased,command,strlen(ICCBased)) == 0)
       cmyk=MagickTrue;
     length=strlen(DocumentCustomColors);
     if ((LocaleNCompare(DocumentCustomColors,command,length) == 0) ||
@@ -1422,8 +1419,8 @@ static MagickBooleanType WritePSImage(const ImageInfo *image_info,Image *image)
       }
     if (image->units == PixelsPerCentimeterResolution)
       {
-        resolution.x*=2.54;
-        resolution.y*=2.54;
+        resolution.x=(unsigned long) (100.0*2.54*resolution.x+0.5)/100.0;
+        resolution.y=(unsigned long) (100.0*2.54*resolution.y+0.5)/100.0;
       }
     SetGeometry(image,&geometry);
     (void) FormatMagickString(page_geometry,MaxTextExtent,"%lux%lu",

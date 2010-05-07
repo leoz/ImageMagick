@@ -268,92 +268,6 @@ MagickExport Image *AcquireImage(const ImageInfo *image_info)
 %                                                                             %
 %                                                                             %
 %                                                                             %
-%   A c q u i r e I m a g e C o l o r m a p                                   %
-%                                                                             %
-%                                                                             %
-%                                                                             %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%
-%  AcquireImageColormap() allocates an image colormap and initializes
-%  it to a linear gray colorspace.  If the image already has a colormap,
-%  it is replaced.  AcquireImageColormap() returns MagickTrue if successful,
-%  otherwise MagickFalse if there is not enough memory.
-%
-%  The format of the AcquireImageColormap method is:
-%
-%      MagickBooleanType AcquireImageColormap(Image *image,
-%        const unsigned long colors)
-%
-%  A description of each parameter follows:
-%
-%    o image: the image.
-%
-%    o colors: the number of colors in the image colormap.
-%
-*/
-
-static inline unsigned long MagickMax(const unsigned long x,
-  const unsigned long y)
-{
-  if (x > y)
-    return(x);
-  return(y);
-}
-
-static inline unsigned long MagickMin(const unsigned long x,
-  const unsigned long y)
-{
-  if (x < y)
-    return(x);
-  return(y);
-}
-
-MagickExport MagickBooleanType AcquireImageColormap(Image *image,
-  const unsigned long colors)
-{
-  register long
-    i;
-
-  size_t
-    length;
-
-  /*
-    Allocate image colormap.
-  */
-  assert(image != (Image *) NULL);
-  assert(image->signature == MagickSignature);
-  if (image->debug != MagickFalse)
-    (void) LogMagickEvent(TraceEvent,GetMagickModule(),"%s",image->filename);
-  image->colors=colors;
-  length=(size_t) colors;
-  if (image->colormap == (PixelPacket *) NULL)
-    image->colormap=(PixelPacket *) AcquireQuantumMemory(length,
-      sizeof(*image->colormap));
-  else
-    image->colormap=(PixelPacket *) ResizeQuantumMemory(image->colormap,length,
-      sizeof(*image->colormap));
-  if (image->colormap == (PixelPacket *) NULL)
-    ThrowBinaryException(ResourceLimitError,"MemoryAllocationFailed",
-      image->filename);
-  for (i=0; i < (long) image->colors; i++)
-  {
-    unsigned long
-      pixel;
-
-    pixel=(unsigned long) (i*(QuantumRange/MagickMax(colors-1,1)));
-    image->colormap[i].red=(Quantum) pixel;
-    image->colormap[i].green=(Quantum) pixel;
-    image->colormap[i].blue=(Quantum) pixel;
-    image->colormap[i].opacity=OpaqueOpacity;
-  }
-  return(SetImageStorageClass(image,PseudoClass));
-}
-
-/*
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%                                                                             %
-%                                                                             %
-%                                                                             %
 %   A c q u i r e I m a g e I n f o                                           %
 %                                                                             %
 %                                                                             %
@@ -2740,7 +2654,7 @@ MagickExport MagickBooleanType SetImageAlphaChannel(Image *image,
       image->matte=MagickFalse;
       break;
     }
-    case ResetAlphaChannel:
+    case ResetAlphaChannel: /* deprecated */
     case OpaqueAlphaChannel:
     {
       status=SetImageOpacity(image,OpaqueOpacity);
@@ -2866,6 +2780,93 @@ MagickExport MagickBooleanType SetImageBackgroundColor(Image *image)
         for (x=0; x < (long) image->columns; x++)
           indexes[x]=index;
       }
+    if (SyncCacheViewAuthenticPixels(image_view,exception) == MagickFalse)
+      status=MagickFalse;
+  }
+  image_view=DestroyCacheView(image_view);
+  return(status);
+}
+
+/*
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                                             %
+%                                                                             %
+%                                                                             %
+%   S e t I m a g e C o l o r                                                 %
+%                                                                             %
+%                                                                             %
+%                                                                             %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%  SetImageColor() set the entire image canvas to the specified color.
+%
+%  The format of the SetImageColor method is:
+%
+%      MagickBooleanType SetImageColor(Image *image,
+%        const MagickPixelPacket *color)
+%
+%  A description of each parameter follows:
+%
+%    o image: the image.
+%
+%    o background: the image color.
+%
+*/
+MagickExport MagickBooleanType SetImageColor(Image *image,
+  const MagickPixelPacket *color)
+{
+  CacheView
+    *image_view;
+
+  ExceptionInfo
+    *exception;
+
+  long
+    y;
+
+  MagickBooleanType
+    status;
+
+  assert(image != (Image *) NULL);
+  if (image->debug != MagickFalse)
+    (void) LogMagickEvent(TraceEvent,GetMagickModule(),"...");
+  assert(image->signature == MagickSignature);
+  assert(color != (const MagickPixelPacket *) NULL);
+  image->colorspace=color->colorspace;
+  image->matte=color->matte;
+  image->fuzz=color->fuzz;
+  image->depth=color->depth;
+  status=MagickTrue;
+  exception=(&image->exception);
+  image_view=AcquireCacheView(image);
+#if defined(MAGICKCORE_OPENMP_SUPPORT)
+  #pragma omp parallel for schedule(dynamic,4) shared(status)
+#endif
+  for (y=0; y < (long) image->rows; y++)
+  {
+    register IndexPacket
+      *restrict indexes;
+
+    register long
+      x;
+
+    register PixelPacket
+      *restrict q;
+
+    if (status == MagickFalse)
+      continue;
+    q=QueueCacheViewAuthenticPixels(image_view,0,y,image->columns,1,exception);
+    if (q == (PixelPacket *) NULL)
+      {
+        status=MagickFalse;
+        continue;
+      }
+    indexes=GetCacheViewAuthenticIndexQueue(image_view);
+    for (x=0; x < (long) image->columns; x++)
+    {
+      SetPixelPacket(image,color,q,indexes+x);
+      q++;
+    }
     if (SyncCacheViewAuthenticPixels(image_view,exception) == MagickFalse)
       status=MagickFalse;
   }
@@ -4180,8 +4181,10 @@ MagickExport MagickBooleanType SyncImageSettings(const ImageInfo *image_info,
           {
             if (units == PixelsPerInchResolution)
               {
-                image->x_resolution*=2.54;
-                image->y_resolution*=2.54;
+                image->x_resolution=(double) ((unsigned long) (100.0*2.54*
+                  image->x_resolution+0.5))/100.0;
+                image->y_resolution=(double) ((unsigned long) (100.0*2.54*
+                  image->y_resolution+0.5))/100.0;
               }
             break;
           }

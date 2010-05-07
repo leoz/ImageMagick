@@ -47,6 +47,7 @@
 #include "magick/client.h"
 #include "magick/color.h"
 #include "magick/color-private.h"
+#include "magick/colormap.h"
 #include "magick/composite.h"
 #include "magick/display.h"
 #include "magick/exception.h"
@@ -1777,7 +1778,7 @@ MagickExport void XDelay(Display *display,const unsigned long milliseconds)
   (void) XFlush(display);
   if (milliseconds == 0)
     return;
-#if defined(__WINDOWS__)
+#if defined(MAGICKCORE_WINDOWS_SUPPORT)
   Sleep(milliseconds);
 #elif defined(vms)
   {
@@ -5142,7 +5143,7 @@ MagickExport XWindows *XInitializeWindows(Display *display,
   windows->im_retain_colors=XInternAtom(display,"IM_RETAIN_COLORS",MagickFalse);
   windows->im_exit=XInternAtom(display,"IM_EXIT",MagickFalse);
   windows->dnd_protocols=XInternAtom(display,"DndProtocol",MagickFalse);
-#if defined(__WINDOWS__)
+#if defined(MAGICKCORE_WINDOWS_SUPPORT)
   (void) XSynchronize(display,IsWindows95());
 #endif
   if (IsEventLogging())

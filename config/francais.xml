@@ -328,6 +328,9 @@
           </message>
         </fatalerror>
         <warning>
+          <message name="InsufficientImageDataInFile">
+            Pas assez de données d'image dans le fichier
+          </message>
           <message name="SkipToSyncByte">
             Image PCD corrompue, saut à l'octet de synchronisation
           </message>
@@ -822,7 +825,7 @@
         <message name="MissingAnImageFilename">
           nom de fichier d'image absent
         </message>
-        <message name="TruncatedFilename">
+        <message name="FilenameTruncated">
           image filename truncated
         </message>
         <message name="UnrecognizedColormapType">

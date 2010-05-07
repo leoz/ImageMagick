@@ -39,7 +39,7 @@
   Include declarations.
 */
 #include "magick/studio.h"
-#if defined(__WINDOWS__)
+#if defined(MAGICKCORE_WINDOWS_SUPPORT)
 #include "magick/client.h"
 #include "magick/log.h"
 #include "magick/magick.h"
@@ -82,7 +82,7 @@ static void
 /*
   External declarations.
 */
-#if !defined(__WINDOWS__)
+#if !defined(MAGICKCORE_WINDOWS_SUPPORT)
 extern "C" BOOL WINAPI
   DllMain(HINSTANCE handle,DWORD reason,LPVOID lpvReserved);
 #endif
@@ -236,6 +236,7 @@ MagickExport int Exit(int status)
   return(0);
 }
 
+#if !defined(__MINGW32__)
 /*
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                                                                             %
@@ -300,6 +301,7 @@ MagickExport int gettimeofday (struct timeval *time_value,
     }
   return(0);
 }
+#endif
 
 /*
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

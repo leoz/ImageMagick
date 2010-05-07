@@ -794,6 +794,7 @@ MagickExport MagickBooleanType ExpandFilenames(int *number_arguments,
             for (j=0; j < (long) number_files; j++)
               filelist[j]=filelist[j+1];
           }
+        count--;
       }
     if (filelist == (char **) NULL)
       continue;
@@ -816,13 +817,34 @@ MagickExport MagickBooleanType ExpandFilenames(int *number_arguments,
       return(MagickFalse);
     for (j=0; j < (long) number_files; j++)
     {
+      option=filelist[j];
+      parameters=ParseMagickOption(MagickCommandOptions,MagickFalse,option);
+      if (parameters > 0)
+        {
+          long
+            k;
+
+          /*
+            Do not expand command option parameters.
+          */
+          vector[count++]=ConstantString(option);
+          for (k=0; k < parameters; k++)
+          {
+            j++;
+            if (j == (long) number_files)
+              break;
+            option=filelist[j];
+            vector[count++]=ConstantString(option);
+          }
+          continue;
+        }
       (void) CopyMagickString(filename,path,MaxTextExtent);
       if (*path != '\0')
         (void) ConcatenateMagickString(filename,DirectorySeparator,
           MaxTextExtent);
       (void) ConcatenateMagickString(filename,filelist[j],MaxTextExtent);
       filelist[j]=DestroyString(filelist[j]);
-      if (strlen(filename) >= MaxTextExtent)
+      if (strlen(filename) >= (MaxTextExtent-1))
         ThrowFatalException(OptionFatalError,"FilenameTruncated");
       if (IsPathDirectory(filename) <= 0)
         {
@@ -963,7 +985,7 @@ MagickExport MagickBooleanType GetExecutionPath(char *path,const size_t extent)
       }
   }
 #endif
-#if defined(__WINDOWS__)
+#if defined(MAGICKCORE_WINDOWS_SUPPORT)
   NTGetExecutionPath(path,extent);
 #endif
 #if defined(__GNU__)
@@ -1168,7 +1190,7 @@ static wchar_t *ConvertUTF8ToUTF16(const unsigned char *source)
       /*
         Not UTF-8, just copy.
       */
-      length=strlen(source);
+      length=strlen((const char *) source);
       utf16=(wchar_t *) AcquireQuantumMemory(length+1,sizeof(*utf16));
       if (utf16 == (wchar_t *) NULL)
         return((wchar_t *) NULL);
@@ -1202,7 +1224,7 @@ MagickExport MagickBooleanType GetPathAttributes(const char *path,
     wchar_t
       *unicode_path;
 
-    unicode_path=ConvertUTF8ToUTF16(path);
+    unicode_path=ConvertUTF8ToUTF16((const unsigned char *) path);
     if (unicode_path == (wchar_t *) NULL)
       return(MagickFalse);
     status=wstat(unicode_path,(struct stat *) attributes) == 0 ? MagickTrue :
@@ -1685,7 +1707,7 @@ MagickExport char **ListFiles(const char *directory,const char *pattern,
     if (*entry->d_name == '.')
       continue;
     if ((IsPathDirectory(entry->d_name) > 0) ||
-#if defined(__WINDOWS__)
+#if defined(MAGICKCORE_WINDOWS_SUPPORT)
         (GlobExpression(entry->d_name,pattern,MagickTrue) != MagickFalse))
 #else
         (GlobExpression(entry->d_name,pattern,MagickFalse) != MagickFalse))
@@ -1816,10 +1838,10 @@ MagickExport FILE *OpenMagickStream(const char *path,const char *mode)
       *unicode_mode,
       *unicode_path;
 
-    unicode_path=ConvertUTF8ToUTF16(path);
+    unicode_path=ConvertUTF8ToUTF16((const unsigned char *) path);
     if (unicode_path == (wchar_t *) NULL)
       return((FILE *) NULL);
-    unicode_mode=ConvertUTF8ToUTF16(mode);
+    unicode_mode=ConvertUTF8ToUTF16((const unsigned char *) mode);
     if (unicode_mode == (wchar_t *) NULL)
       {
         unicode_path=(wchar_t *) RelinquishMagickMemory(unicode_path);
@@ -1961,7 +1983,7 @@ MagickExport int SystemCommand(const MagickBooleanType asynchronous,
           }
     }
 #endif
-#elif defined(__WINDOWS__)
+#elif defined(MAGICKCORE_WINDOWS_SUPPORT)
   {
     int
       mode;
@@ -1969,7 +1991,7 @@ MagickExport int SystemCommand(const MagickBooleanType asynchronous,
     mode=_P_WAIT;
     if (asynchronous != MagickFalse)
       mode=_P_NOWAIT;
-    status=spawnvp(mode,arguments[1],arguments+1);
+    status=spawnvp(mode,arguments[1],(const char **) (arguments+1));
   }
 #elif defined(macintosh)
   status=MACSystemCommand(shell_command);
