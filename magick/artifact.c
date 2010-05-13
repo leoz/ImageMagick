@@ -248,6 +248,8 @@ MagickExport void DestroyImageArtifacts(Image *image)
 %
 %  GetImageArtifact() gets a value associated with an image artifact.
 %
+%  Note, the artifact is a constant.  Do not attempt to free it.
+%
 %  The format of the GetImageArtifact method is:
 %
 %      const char *GetImageArtifact(const Image *image,const char *key)

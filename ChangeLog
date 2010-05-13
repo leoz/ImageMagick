@@ -1,5 +1,24 @@
+2010-05-12  6.6.1-8 Cristy  <quetzlzacatenango@image...>
+  * Increase the estimated # points for the path drawing primitive.
+
+2010-05-12  6.6.1-8 Anthony Thyssen <A.Thyssen@griffith...>
+  * Implementation of Pattern Matching Morphology methods
+    HitAndMiss, Thicken, Thinning
+  * Reporting of Kernel Strinsg that fail to parse (though not why)
+  * Parsing of Multiple Kernel Strings, generating a list of kernels
+  * Union of results from Multiple Kernels for HitAndMiss method
+  * Interated Multiple Kernels for all other morphology methods
+  * Added many new kernels for HitAndMiss and Convolution
+    Sobel, Laplacian, Cross, Peaks, Corners, LineEnds, LineJunctions,
+    ConvexHull (for Thicken), Skeleton (for Thinning)
+
+2010-05-08  6.6.1-8 Glenn Randers-Pehrson <glennrp@image...>
+  * Use proper background.index when writing indexed PNG, if the background
+    color is in the palette.
+
 2010-05-08  6.6.1-7 Cristy  <quetzlzacatenango@image...>
   * Fix improper 'invalid colormap index' PNG bug.
+  * Fix PerlMagick compile exception.
 
 2010-05-07  6.6.1-6 Anthony Thyssen <A.Thyssen@griffith...>
   * Added % and ! modification flags to morphology distance kernel

@@ -90,19 +90,14 @@ typedef unsigned int Quantum;
 #define MaxColormapSize  65536UL
 #define MaxMap  65535UL
 
+#define MAGICKCORE_HDRI_SUPPORT  1
 typedef long double MagickRealType;
-#if defined(MAGICKCORE_HDRI_SUPPORT)
 typedef double Quantum;
 #define QuantumRange  18446744073709551615.0
 #define QuantumFormat  "%g"
 #else
-typedef unsigned long long Quantum;
-#define QuantumRange  MagickULLConstant(18446744073709551615)
-#define QuantumFormat  "%llu"
-#endif
-#else
 #if !defined(_CH_)
-# error "Specified value of MAGICKCORE_QUANTUM_DEPTH is not supported"
+# error "MAGICKCORE_QUANTUM_DEPTH must be one of 8, 16, 32, or 64"
 #endif
 #endif
 #define MaxRGB  QuantumRange  /* deprecated */

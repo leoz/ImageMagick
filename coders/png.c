@@ -1453,8 +1453,7 @@ static void PNGWarningHandler(png_struct *ping,png_const_charp message)
   image=(Image *) png_get_error_ptr(ping);
   if (image->debug != MagickFalse)
     (void) LogMagickEvent(CoderEvent,GetMagickModule(),
-      "  libpng-%s warning: %s", PNG_LIBPNG_VER_STRING,
-      message);
+      "  libpng-%s warning: %s", PNG_LIBPNG_VER_STRING,message);
   (void) ThrowMagickException(&image->exception,GetMagickModule(),CoderWarning,
     message,"`%s'",image->filename);
 }
@@ -7063,12 +7062,13 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
     else
       if (mng_info->IsPalette)
       {
+        unsigned long
+           number_colors;
+
+        number_colors=image_colors;
+
         if (image_depth <= 8)
           {
-            unsigned long
-               number_colors;
-
-            number_colors=image_colors;
             /*
               Set image palette.
             */
@@ -7212,13 +7212,6 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
               }
             }
 
-            /*
-              Identify which colormap entry is the background color.
-            */
-            for (i=0; i < (long) MagickMax(1L*number_colors-1L,1L); i++)
-              if (IsPNGColorEqual(ping_background,image->colormap[i]))
-                break;
-            ping_background.index=(png_byte) i;
           }
       }
     else
@@ -7260,6 +7253,31 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
          ping_trans_color.gray=(png_uint_16) (QuantumScale*(maxval*
            ping_trans_color.gray));
       }
+
+    if ((int) ping_color_type == PNG_COLOR_TYPE_PALETTE)
+      {
+        /*
+           Identify which colormap entry is the background color.
+        */
+
+        unsigned long
+           number_colors;
+
+        number_colors=image_colors;
+
+        for (i=0; i < (long) MagickMax(1L*number_colors-1L,1L); i++)
+          if (IsPNGColorEqual(ping_background,image->colormap[i]))
+            break;
+
+        ping_background.index=(png_byte) i;
+
+        if (logging)
+          (void) LogMagickEvent(CoderEvent,GetMagickModule(),
+            "  Setting up bKGD chunk with index=%d",(int) i);
+
+        png_set_bKGD(ping,ping_info,&ping_background);
+      }
+
   if (logging != MagickFalse)
     (void) LogMagickEvent(CoderEvent,GetMagickModule(),
       "    PNG color type: %d",ping_color_type);

@@ -1671,10 +1671,10 @@ static char *TracePSClippath(const unsigned char *blob,size_t length,
           xx=ReadPropertyMSBLong(&blob,&length);
           x=(long) xx;
           if (xx > 2147483647)
-            x=xx-4294967295-1;
+            x=(long) xx-4294967295-1;
           y=(long) yy;
           if (yy > 2147483647)
-            y=yy-4294967295-1;
+            y=(long) yy-4294967295-1;
           point[i].x=(double) x/4096/4096;
           point[i].y=1.0-(double) y/4096/4096;
         }
@@ -1868,10 +1868,10 @@ static char *TraceSVGClippath(const unsigned char *blob,size_t length,
           xx=ReadPropertyMSBLong(&blob,&length);
           x=(long) xx;
           if (xx > 2147483647)
-            x=xx-4294967295-1;
+            x=(long) xx-4294967295-1;
           y=(long) yy;
           if (yy > 2147483647)
-            y=yy-4294967295-1;
+            y=(long) yy-4294967295-1;
           point[i].x=(double) x*columns/4096/4096;
           point[i].y=(double) y*rows/4096/4096;
         }
@@ -2147,7 +2147,7 @@ MagickExport const char *GetMagickProperty(const ImageInfo *image_info,
     filename[MaxTextExtent];
 
   *value='\0';
-  switch (*(property))
+  switch (*property)
   {
     case 'b':
     {
@@ -3066,6 +3066,7 @@ MagickExport char *InterpretImageProperties(const ImageInfo *image_info,
               }
             (void) CopyMagickString(q,value,extent);
             q+=length;
+            break;
           }
         if (image_info == (ImageInfo *) NULL)
           break;
@@ -3084,6 +3085,7 @@ MagickExport char *InterpretImageProperties(const ImageInfo *image_info,
               }
             (void) CopyMagickString(q,value,extent);
             q+=length;
+            break;
           }
         break;
       }
