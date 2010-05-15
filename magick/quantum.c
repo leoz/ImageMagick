@@ -255,6 +255,9 @@ static void DestroyQuantumPixels(QuantumInfo *quantum_info)
   assert(quantum_info->pixels != (unsigned char **) NULL);
   for (i=0; i < (long) quantum_info->number_threads; i++)
   {
+    /*
+      Did we overrun our quantum buffer?
+    */
     assert(quantum_info->pixels[i][quantum_info->extent] == QuantumSignature);
     quantum_info->pixels[i]=(unsigned char *) RelinquishMagickMemory(
       quantum_info->pixels[i]);
@@ -565,8 +568,8 @@ MagickExport MagickBooleanType SetQuantumDepth(const Image *image,
     }
   if (quantum_info->pixels != (unsigned char **) NULL)
     DestroyQuantumPixels(quantum_info);
-  status=AcquireQuantumPixels(quantum_info,(quantum_info->pad+5)*image->columns*
-    ((quantum_info->depth+7)/8));
+  status=AcquireQuantumPixels(quantum_info,(6+quantum_info->pad)*image->columns*
+    ((quantum_info->depth+7)/8));  /* allow for CMYKA + RLE byte + pad */
   return(status);
 }
 
