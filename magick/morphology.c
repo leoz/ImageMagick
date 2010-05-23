@@ -109,7 +109,7 @@ static inline double MagickMax(const double x,const double y)
 /* Currently these are only internal to this module */
 static void
   CalcKernelMetaData(KernelInfo *),
-  ExpandKernelInfo(KernelInfo *, double),
+  ExpandKernelInfo(KernelInfo *, const double),
   RotateKernelInfo(KernelInfo *, double);
 
 
@@ -364,6 +364,9 @@ static KernelInfo *ParseKernelArray(const char *kernel_string)
 
 static KernelInfo *ParseKernelName(const char *kernel_string)
 {
+  KernelInfo
+    *kernel;
+
   char
     token[MaxTextExtent];
 
@@ -447,7 +450,17 @@ static KernelInfo *ParseKernelName(const char *kernel_string)
       break;
   }
 
-  return(AcquireKernelBuiltIn((KernelInfoType)type, &args));
+  kernel = AcquireKernelBuiltIn((KernelInfoType)type, &args);
+
+  /* global expand to rotated kernel list - only for single kernels */
+  if ( kernel->next == (KernelInfo *) NULL ) {
+    if ( (flags & AreaValue) != 0 )         /* '@' symbol in kernel args */
+      ExpandKernelInfo(kernel, 45.0);
+    else if ( (flags & MinimumValue) != 0 ) /* '^' symbol in kernel args */
+      ExpandKernelInfo(kernel, 90.0);
+  }
+
+  return(kernel);
 }
 
 MagickExport KernelInfo *AcquireKernelInfo(const char *kernel_string)
@@ -1850,19 +1863,19 @@ static MagickBooleanType SameKernelInfo(const KernelInfo *kernel1,
 static void ExpandKernelInfo(KernelInfo *kernel, const double angle)
 {
   KernelInfo
-    *new,
+    *clone,
     *last;
 
   last = kernel;
   while(1) {
-    new = CloneKernelInfo(last);
-    RotateKernelInfo(new, angle);
-    if ( SameKernelInfo(kernel, new) == MagickTrue )
+    clone = CloneKernelInfo(last);
+    RotateKernelInfo(clone, angle);
+    if ( SameKernelInfo(kernel, clone) == MagickTrue )
       break;
-    last->next = new;
-    last = new;
+    last->next = clone;
+    last = clone;
   }
-  new = DestroyKernelInfo(new); /* This was the same as the first - junk */
+  clone = DestroyKernelInfo(clone); /* This was the same as the first - junk */
   return;
 }
 
