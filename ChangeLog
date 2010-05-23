@@ -1,3 +1,39 @@
+2010-05-23  6.6.2.0 Anthony Thyssen <A.Thyssen@griffith...>
+  * Third Re-write of MorphologyApply() to better handle compound methods.
+  * Implemented  -set option:morphology:compose for merging results of
+    multiple kernels. "None" means re-iterate results with next kernel.
+    While "Undefined" means to use the internal default for a method.
+    Thinning, Thickening, HitAndMiss, Convolve, Correlate defaults to "None"
+    while HitAndMiss defaults to "Lighten" (union of all kernel results).
+    Other morphology methods defaults still to be decided.
+  * Added HitAndMiss Kernel: Ridges  (find ridges and pixel width lines)
+  * ExpandKernelInfo() (rotation expand) now groks symmetrical kernels.
+
+2010-05-18  6.6.2.0 Anthony Thyssen <A.Thyssen@griffith...>
+  * Separation of internal function MorphologyAppy() from
+    MorphologyImageChannel() to calls to convolve without user settings.
+  * Rewrite of MorphologyApply() to output better 'verbose' messages
+  * Better handling of Gaussian tyle filters (bug fixes)
+  * Bug fix and optimization of kernel size calculations in "gem.c"
+  * Allow kernel rotation flags in 'user defined' kernels
+    EG: -set option:showkernel 1 -morphology Thinning  '3@: 0,1,0 0,1,0 0,0,0'
+  * Allow a scaled unity kernel to be added to kernel (EdgeDet->Sharpen)
+    EG: -set option:convolve:scale [kernel_scale][^!],[unity_scale][%]
+  * Addition of "Laplacian of Gauussian" (LOG), also known as Mexician Hat
+    EG: -morphology convolve LOG:0x1
+  * Added FreiChen, Kirsch  Convolution kernels
+  * Added Descrete 'Laplacian of Gaussian' kernels (Laplacian type 15 and 19)
+  * Added Edges HitAndMiss Kernel
+
+2010-05-17  6.6.2-0 Cristy  <quetzlzacatenango@image...>
+  * PSD images require a proper layer to support an alpha channel.
+  * Enable PFM endian support.
+  * Add context to -border for montage.  Inside the parenthesis it adds a border
+    to the image otherwise it sets the border for the layout manager.
+  * 24-bit BMP images are not colormapped even if header colors != 0.
+  * Set DPX user data like this: -set profile dpx:userdata.txt.
+  * Make sure Lab => RGB => Lab survives the round trip.
+
 2010-05-15  6.6.1-10 Cristy  <quetzlzacatenango@image...>
   * Use ScaleCharToQuantum() in coders/src.c (reference
     http://www.imagemagick.org/discourse-server/viewtopic.php?f=3&t=16229).
@@ -10,7 +46,10 @@
 2010-05-14  6.6.1-9 Anthony Thyssen <A.Thyssen@griffith...>
   * Addition of more Morphological/Convolution Kernels.
     DOG (Difference of Gaussians) and DOB (Difference of Blurs),
-    Prewitt, Roberts, Compass, and Ring
+    EG:    -morphology convolve DOG:0x1,3
+           -morphology convolve DOB:0x1,3,90
+  * Added Prewitt, Roberts, Compass  Convolution Kernels
+  * Ring Symbol Kernel (subtraction of Disk from a Disk)
 
 2010-05-13  6.6.1-9 Cristy  <quetzlzacatenango@image...>
   * The pixel buffer was underallocated for some image formats when streaming.

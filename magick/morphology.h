@@ -26,17 +26,21 @@ extern "C" {
 
 typedef enum
 {
-  UndefinedKernel,    /* also the 'no-op' kernel */
+  UndefinedKernel,    /* equivelent to UnityKernel */
+  UnityKernel,        /* The no-op or 'original image' kernel */
   GaussianKernel,     /* Convolution Kernels, Gaussian Based */
   DOGKernel,
+  LOGKernel,
   BlurKernel,
   DOBKernel,
   CometKernel,
   LaplacianKernel,    /* Convolution Kernels, by Name */
   SobelKernel,
+  FreiChenKernel,
   RobertsKernel,
   PrewittKernel,
   CompassKernel,
+  KirschKernel,
   DiamondKernel,      /* Shape Kernels */
   SquareKernel,
   RectangleKernel,
@@ -45,11 +49,11 @@ typedef enum
   CrossKernel,
   RingKernel,
   PeaksKernel,         /* Hit And Miss Kernels */
+  EdgesKernel,
   CornersKernel,
+  RidgesKernel,
   LineEndsKernel,
   LineJunctionsKernel,
-  ThickenKernel,
-  ThinningKernel,
   ConvexHullKernel,
   SkeletonKernel,
   ChebyshevKernel,    /* Distance Measuring Kernels */
@@ -75,6 +79,7 @@ typedef enum
   CloseMorphology,             /* Erode then Dilate */
   OpenIntensityMorphology,     /* Pixel Pick using GreyScale Open */
   CloseIntensityMorphology,    /* Pixel Pick using GreyScale Close */
+  SmoothMorphology,            /* Open then Close */
 /* Difference Morphology methods */
   EdgeInMorphology,            /* Dilate difference from Original */
   EdgeOutMorphology,           /* Erode difference from Original */
@@ -105,7 +110,8 @@ typedef struct KernelInfo
     minimum,
     maximum,
     negative_range,
-    positive_range;
+    positive_range,
+    angle;
 
   struct KernelInfo
     *next;
@@ -113,6 +119,7 @@ typedef struct KernelInfo
   unsigned long
     signature;
 } KernelInfo;
+
 
 extern MagickExport KernelInfo
   *AcquireKernelInfo(const char *),
@@ -127,7 +134,7 @@ extern MagickExport Image
     const MorphologyMethod,const long,const KernelInfo *,ExceptionInfo *);
 
 extern MagickExport void
-  ScaleKernelInfo(KernelInfo *,const double,const GeometryFlags),
+  ScaleGeometryKernelInfo(KernelInfo *,const char *),
   ShowKernelInfo(KernelInfo *);
 
 #if defined(__cplusplus) || defined(c_plusplus)

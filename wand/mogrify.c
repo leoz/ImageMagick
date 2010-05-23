@@ -2212,23 +2212,24 @@ WandExport MagickBooleanType MogrifyImage(ImageInfo *image_info,const int argc,
           }
         if (LocaleCompare("morphology",option+1) == 0)
           {
-            MorphologyMethod
-              method;
-
-            KernelInfo
-              *kernel;
-
             char
               token[MaxTextExtent];
 
             const char
               *p;
 
+            Image
+              *morphology_image;
+
+            KernelInfo
+              *kernel;
+
             long
               iterations;
 
-            Image
-              *morphology_image;
+            MorphologyMethod
+              method;
+
             /*
               Morphological Image Operation
             */
@@ -2245,14 +2246,12 @@ WandExport MagickBooleanType MogrifyImage(ImageInfo *image_info,const int argc,
               iterations=StringToLong(p);
             kernel=AcquireKernelInfo(argv[i+2]);
             if (kernel == (KernelInfo *) NULL)
-            {
-              (void) ThrowMagickException(exception,GetMagickModule(),
-                OptionError,"UnabletoParseKernel","morphology");
-              status=MagickFalse;
-              break;
-            }
-            if ( GetImageArtifact(*image,"showkernel") != (const char *) NULL)
-              ShowKernelInfo(kernel);  /* display the kernel to stderr */
+              {
+                (void) ThrowMagickException(exception,GetMagickModule(),
+                  OptionError,"UnabletoParseKernel","morphology");
+                status=MagickFalse;
+                break;
+              }
             morphology_image=MorphologyImageChannel(*image,channel,method,
               iterations,kernel,exception);
             kernel=DestroyKernelInfo(kernel);
@@ -3700,7 +3699,6 @@ static MagickBooleanType MogrifyUsage(void)
       "-paint radius        simulate an oil painting",
       "-polaroid angle      simulate a Polaroid picture",
       "-posterize levels    reduce the image to a limited number of color levels",
-      "-print string        interpret string and print to console",
       "-profile filename    add, delete, or apply an image profile",
       "-quantize colorspace reduce colors in this colorspace",
       "-radial-blur angle   radial blur the image",
@@ -3771,6 +3769,7 @@ static MagickBooleanType MogrifyUsage(void)
       "-hald-clut           apply a Hald color lookup table to the image",
       "-morph value         morph an image sequence",
       "-mosaic              create a mosaic from an image sequence",
+      "-print string        interpret string and print to console",
       "-process arguments   process the image with a custom image filter",
       "-reverse             reverse image sequence",
       "-separate            separate an image channel into a grayscale image",
