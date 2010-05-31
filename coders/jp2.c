@@ -79,11 +79,11 @@
 #if !defined(uint)
 #define uint  unsigned int
 #endif
-#if !defined(longlong)
-#define longlong  long long
+#if !defined(ssize_tssize_t)
+#define ssize_tssize_t  long long
 #endif
-#if !defined(ulonglong)
-#define ulonglong  unsigned long long
+#if !defined(ussize_tssize_t)
+#define ussize_tssize_t  unsigned long long
 #endif
 
 #undef PACKAGE_NAME
@@ -346,7 +346,7 @@ static Image *ReadJP2Image(const ImageInfo *image_info,ExceptionInfo *exception)
   jas_stream_t
     *jp2_stream;
 
-  long
+  ssize_t
     components[4],
     y;
 
@@ -357,14 +357,14 @@ static Image *ReadJP2Image(const ImageInfo *image_info,ExceptionInfo *exception)
     pixel,
     range[4];
 
-  register long
+  register ssize_t
     i,
     x;
 
   register PixelPacket
     *q;
 
-  unsigned long
+  size_t
     maximum_component_depth,
     number_components,
     x_step[4],
@@ -464,15 +464,15 @@ static Image *ReadJP2Image(const ImageInfo *image_info,ExceptionInfo *exception)
   image->columns=jas_image_width(jp2_image);
   image->rows=jas_image_height(jp2_image);
   image->compression=JPEG2000Compression;
-  for (i=0; i < (long) number_components; i++)
+  for (i=0; i < (ssize_t) number_components; i++)
   {
-    unsigned long
+    size_t
       height,
       width;
 
-    width=(unsigned long) (jas_image_cmptwidth(jp2_image,components[i])*
+    width=(size_t) (jas_image_cmptwidth(jp2_image,components[i])*
       jas_image_cmpthstep(jp2_image,components[i]));
-    height=(unsigned long) (jas_image_cmptheight(jp2_image,components[i])*
+    height=(size_t) (jas_image_cmptheight(jp2_image,components[i])*
       jas_image_cmptvstep(jp2_image,components[i]));
     x_step[i]=(unsigned int) jas_image_cmpthstep(jp2_image,components[i]);
     y_step[i]=(unsigned int) jas_image_cmptvstep(jp2_image,components[i]);
@@ -492,7 +492,7 @@ static Image *ReadJP2Image(const ImageInfo *image_info,ExceptionInfo *exception)
   */
   image->matte=number_components > 3 ? MagickTrue : MagickFalse;
   maximum_component_depth=0;
-  for (i=0; i < (long) number_components; i++)
+  for (i=0; i < (ssize_t) number_components; i++)
   {
     maximum_component_depth=(unsigned int) MagickMax((size_t)
       jas_image_cmptprec(jp2_image,components[i]),(size_t)
@@ -513,18 +513,18 @@ static Image *ReadJP2Image(const ImageInfo *image_info,ExceptionInfo *exception)
       jas_image_destroy(jp2_image);
       return(GetFirstImageInList(image));
     }
-  for (i=0; i < (long) number_components; i++)
-    range[i]=GetQuantumRange((unsigned long) jas_image_cmptprec(jp2_image,
+  for (i=0; i < (ssize_t) number_components; i++)
+    range[i]=GetQuantumRange((size_t) jas_image_cmptprec(jp2_image,
       components[i]));
-  for (y=0; y < (long) image->rows; y++)
+  for (y=0; y < (ssize_t) image->rows; y++)
   {
     q=GetAuthenticPixels(image,0,y,image->columns,1,exception);
     if (q == (PixelPacket *) NULL)
       break;
-    for (i=0; i < (long) number_components; i++)
+    for (i=0; i < (ssize_t) number_components; i++)
       (void) jas_image_readcmpt(jp2_image,(short) components[i],0,
-        ((unsigned int) y)/y_step[i],((unsigned int) image->columns)/x_step[i],
-        1,pixels[i]);
+        (jas_image_coord_t) (y/y_step[i]),(jas_image_coord_t) (image->columns/
+        x_step[i]),1,pixels[i]);
     switch (number_components)
     {
       case 1:
@@ -532,7 +532,7 @@ static Image *ReadJP2Image(const ImageInfo *image_info,ExceptionInfo *exception)
         /*
           Grayscale.
         */
-        for (x=0; x < (long) image->columns; x++)
+        for (x=0; x < (ssize_t) image->columns; x++)
         {
           pixel=(QuantumAny) jas_matrix_getv(pixels[0],x/x_step[0]);
           q->red=(Quantum) ScaleAnyToQuantum((QuantumAny) pixel,range[0]);
@@ -547,7 +547,7 @@ static Image *ReadJP2Image(const ImageInfo *image_info,ExceptionInfo *exception)
         /*
           RGB.
         */
-        for (x=0; x < (long) image->columns; x++)
+        for (x=0; x < (ssize_t) image->columns; x++)
         {
           pixel=(QuantumAny) jas_matrix_getv(pixels[0],x/x_step[0]);
           q->red=(Quantum) ScaleAnyToQuantum((QuantumAny) pixel,range[0]);
@@ -564,7 +564,7 @@ static Image *ReadJP2Image(const ImageInfo *image_info,ExceptionInfo *exception)
         /*
           RGBA.
         */
-        for (x=0; x < (long) image->columns; x++)
+        for (x=0; x < (ssize_t) image->columns; x++)
         {
           pixel=(QuantumAny) jas_matrix_getv(pixels[0],x/x_step[0]);
           q->red=(Quantum) ScaleAnyToQuantum((QuantumAny) pixel,range[0]);
@@ -582,7 +582,8 @@ static Image *ReadJP2Image(const ImageInfo *image_info,ExceptionInfo *exception)
     }
     if (SyncAuthenticPixels(image,exception) == MagickFalse)
       break;
-    status=SetImageProgress(image,LoadImageTag,y,image->rows);
+    status=SetImageProgress(image,LoadImageTag,(MagickOffsetType) y,
+                image->rows);
     if (status == MagickFalse)
       break;
   }
@@ -627,7 +628,7 @@ static Image *ReadJP2Image(const ImageInfo *image_info,ExceptionInfo *exception)
     }
   (void) jas_stream_close(jp2_stream);
   jas_image_destroy(jp2_image);
-  for (i=0; i < (long) number_components; i++)
+  for (i=0; i < (ssize_t) number_components; i++)
     jas_matrix_destroy(pixels[i]);
   return(GetFirstImageInList(image));
 }
@@ -652,10 +653,10 @@ static Image *ReadJP2Image(const ImageInfo *image_info,ExceptionInfo *exception)
 %
 %  The format of the RegisterJP2Image method is:
 %
-%      unsigned long RegisterJP2Image(void)
+%      size_t RegisterJP2Image(void)
 %
 */
-ModuleExport unsigned long RegisterJP2Image(void)
+ModuleExport size_t RegisterJP2Image(void)
 {
   MagickInfo
     *entry;
@@ -800,7 +801,7 @@ static MagickBooleanType WriteJP2Image(const ImageInfo *image_info,Image *image)
   const char
     *option;
 
-  long
+  ssize_t
     format,
     y;
 
@@ -825,11 +826,11 @@ static MagickBooleanType WriteJP2Image(const ImageInfo *image_info,Image *image)
   register const PixelPacket
     *p;
 
-  register long
+  register ssize_t
     i,
     x;
 
-  unsigned long
+  size_t
     number_components;
 
   /*
@@ -860,7 +861,7 @@ static MagickBooleanType WriteJP2Image(const ImageInfo *image_info,Image *image)
       (image->rows != (unsigned int) image->rows))
     ThrowWriterException(ImageError,"WidthOrHeightExceedsLimit");
   (void) ResetMagickMemory(&component_info,0,sizeof(component_info));
-  for (i=0; i < (long) number_components; i++)
+  for (i=0; i < (ssize_t) number_components; i++)
   {
     component_info[i].tlx=0;
     component_info[i].tly=0;
@@ -902,7 +903,7 @@ static MagickBooleanType WriteJP2Image(const ImageInfo *image_info,Image *image)
   /*
     Convert to JPEG 2000 pixels.
   */
-  for (i=0; i < (long) number_components; i++)
+  for (i=0; i < (ssize_t) number_components; i++)
   {
     pixels[i]=jas_matrix_create(1,(int) image->columns);
     if (pixels[i] == (jas_matrix_t *) NULL)
@@ -913,13 +914,13 @@ static MagickBooleanType WriteJP2Image(const ImageInfo *image_info,Image *image)
         ThrowWriterException(ResourceLimitError,"MemoryAllocationFailed");
       }
   }
-  range=GetQuantumRange((unsigned long) component_info[0].prec);
-  for (y=0; y < (long) image->rows; y++)
+  range=GetQuantumRange((size_t) component_info[0].prec);
+  for (y=0; y < (ssize_t) image->rows; y++)
   {
     p=GetVirtualPixels(image,0,y,image->columns,1,&image->exception);
     if (p == (const PixelPacket *) NULL)
       break;
-    for (x=0; x < (long) image->columns; x++)
+    for (x=0; x < (ssize_t) image->columns; x++)
     {
       if (number_components == 1)
         jas_matrix_setv(pixels[0],x,(jas_seqent_t) ScaleQuantumToAny(
@@ -938,10 +939,11 @@ static MagickBooleanType WriteJP2Image(const ImageInfo *image_info,Image *image)
         }
       p++;
     }
-    for (i=0; i < (long) number_components; i++)
+    for (i=0; i < (ssize_t) number_components; i++)
       (void) jas_image_writecmpt(jp2_image,(short) i,0,(unsigned int) y,
         (unsigned int) image->columns,1,pixels[i]);
-    status=SetImageProgress(image,SaveImageTag,y,image->rows);
+    status=SetImageProgress(image,SaveImageTag,(MagickOffsetType) y,
+                image->rows);
     if (status == MagickFalse)
       break;
   }
@@ -1000,7 +1002,7 @@ static MagickBooleanType WriteJP2Image(const ImageInfo *image_info,Image *image)
   status=jas_image_encode(jp2_image,jp2_stream,format,options) != 0 ?
     MagickTrue : MagickFalse;
   (void) jas_stream_close(jp2_stream);
-  for (i=0; i < (long) number_components; i++)
+  for (i=0; i < (ssize_t) number_components; i++)
     jas_matrix_destroy(pixels[i]);
   jas_image_destroy(jp2_image);
   if (status != MagickFalse)

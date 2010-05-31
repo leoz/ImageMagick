@@ -101,10 +101,10 @@ static Image *ReadCLIPBOARDImage(const ImageInfo *image_info,
   Image
     *image;
 
-  long
+  ssize_t
     y;
 
-  register long
+  register ssize_t
     x;
 
   register PixelPacket
@@ -164,8 +164,8 @@ static Image *ReadCLIPBOARDImage(const ImageInfo *image_info,
       */
       (void) ResetMagickMemory(&DIBinfo,0,sizeof(BITMAPINFO));
       DIBinfo.bmiHeader.biSize=sizeof(BITMAPINFOHEADER);
-      DIBinfo.bmiHeader.biWidth=image->columns;
-      DIBinfo.bmiHeader.biHeight=(-1)*image->rows;
+      DIBinfo.bmiHeader.biWidth=(LONG) image->columns;
+      DIBinfo.bmiHeader.biHeight=(-1)*(LONG) image->rows;
       DIBinfo.bmiHeader.biPlanes=1;
       DIBinfo.bmiHeader.biBitCount=32;
       DIBinfo.bmiHeader.biCompression=BI_RGB;
@@ -198,15 +198,15 @@ static Image *ReadCLIPBOARDImage(const ImageInfo *image_info,
         RealizePalette(hDC);
       }
       /* bitblt from the memory to the DIB-based one */
-      BitBlt(hDC,0,0,image->columns,image->rows,hMemDC,0,0,SRCCOPY);
+      BitBlt(hDC,0,0,(int) image->columns,(int) image->rows,hMemDC,0,0,SRCCOPY);
       /* finally copy the pixels! */
       pBits=ppBits;
-      for (y=0; y < (long) image->rows; y++)
+      for (y=0; y < (ssize_t) image->rows; y++)
       {
         q=QueueAuthenticPixels(image,0,y,image->columns,1,exception);
         if (q == (PixelPacket *) NULL)
           break;
-        for (x=0; x < (long) image->columns; x++)
+        for (x=0; x < (ssize_t) image->columns; x++)
         {
           q->red=ScaleCharToQuantum(pBits->rgbRed);
           q->green=ScaleCharToQuantum(pBits->rgbGreen);
@@ -247,10 +247,10 @@ static Image *ReadCLIPBOARDImage(const ImageInfo *image_info,
 %
 %  The format of the RegisterCLIPBOARDImage method is:
 %
-%      unsigned long RegisterCLIPBOARDImage(void)
+%      size_t RegisterCLIPBOARDImage(void)
 %
 */
-ModuleExport unsigned long RegisterCLIPBOARDImage(void)
+ModuleExport size_t RegisterCLIPBOARDImage(void)
 {
   MagickInfo
     *entry;

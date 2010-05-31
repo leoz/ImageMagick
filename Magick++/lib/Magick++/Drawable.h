@@ -475,7 +475,7 @@ public:
   /*virtual*/ DrawableBase* copy() const;
 
 private:
-  int   _dummy;
+  ssize_t   _dummy;
 };
 
 // Push (create) Clip path definition
@@ -934,7 +934,7 @@ public:
 
   DrawableFont ( const std::string &family_,
                  StyleType style_,
-                 const unsigned long weight_,
+                 const size_t weight_,
                  StretchType stretch_ );
   DrawableFont ( const DrawableFont& original_ );
 
@@ -959,7 +959,7 @@ private:
   std::string   _font;
   std::string   _family;
   StyleType     _style;
-  unsigned long _weight;
+  unsigned int _weight;
   StretchType   _stretch;
 };
 
@@ -1255,7 +1255,7 @@ public:
   /*virtual*/ DrawableBase* copy() const;
 
 private:
-  int   _dummy;
+  ssize_t   _dummy;
 };
 
 // Push Graphic Context
@@ -1276,7 +1276,7 @@ public:
   /*virtual*/ DrawableBase* copy() const;
 
 private:
-  int   _dummy;
+  ssize_t   _dummy;
 };
 
 // Pop (terminate) Pattern definition
@@ -1297,15 +1297,15 @@ public:
   /*virtual*/ DrawableBase* copy() const;
 
 private:
-  int   _dummy;
+  ssize_t   _dummy;
 };
 
 // Push (create) Pattern definition
 class MagickDLLDecl DrawablePushPattern : public DrawableBase
 {
 public:
-  DrawablePushPattern ( const std::string &id_, long x_, long y_,
-                        long width_, long height_ );
+  DrawablePushPattern ( const std::string &id_, ssize_t x_, ssize_t y_,
+                        size_t width_, size_t height_ );
 
   DrawablePushPattern ( const DrawablePushPattern& original_ );
 
@@ -1319,10 +1319,10 @@ public:
 
 private:
   std::string         _id;
-  long		_x;
-  long		_y;
-  long		_width;
-  long		_height;
+  ssize_t		_x;
+  ssize_t		_y;
+  size_t		_width;
+  size_t		_height;
 };
 
 // Rectangle
@@ -1606,7 +1606,7 @@ class MagickDLLDecl DrawableDashArray : public DrawableBase
 {
 public:
   DrawableDashArray( const double* dasharray_ );
-  DrawableDashArray( const unsigned int* dasharray_ ); // Deprecated
+  DrawableDashArray( const size_t* dasharray_ ); // Deprecated
   DrawableDashArray( const Magick::DrawableDashArray &original_ );
 
   /*virtual*/ ~DrawableDashArray( void );
@@ -1618,7 +1618,7 @@ public:
   /*virtual*/ DrawableBase* copy() const;
 
   void dasharray( const double* dasharray_ );
-  void dasharray( const unsigned int* dasharray_ ); // Deprecated
+  void dasharray( const size_t* dasharray_ ); // Deprecated
 
   const double* dasharray( void ) const
     {
@@ -1723,7 +1723,7 @@ private:
 class MagickDLLDecl DrawableMiterLimit : public DrawableBase
 {
 public:
-  DrawableMiterLimit ( unsigned int miterlimit_ )
+  DrawableMiterLimit ( size_t miterlimit_ )
     : _miterlimit(miterlimit_)
     { }
 
@@ -1735,17 +1735,17 @@ public:
   // Return polymorphic copy of object
   /*virtual*/ DrawableBase* copy() const;
 
-  void miterlimit( unsigned int miterlimit_ )
+  void miterlimit( size_t miterlimit_ )
     {
       _miterlimit = miterlimit_;
     }
-  unsigned int miterlimit( void ) const
+  size_t miterlimit( void ) const
     {
       return _miterlimit;
     }
 
 private:
-  unsigned int _miterlimit;
+  size_t _miterlimit;
 };
 
 
@@ -2055,8 +2055,8 @@ private:
 class MagickDLLDecl DrawableViewbox : public DrawableBase
 {
 public:
-  DrawableViewbox(unsigned long x1_, unsigned long y1_,
-                  unsigned long x2_, unsigned long y2_)
+  DrawableViewbox(ssize_t x1_, ssize_t y1_,
+                  ssize_t x2_, ssize_t y2_)
     : _x1(x1_),
       _y1(y1_),
       _x2(x2_),
@@ -2071,47 +2071,47 @@ public:
   /*virtual*/
   DrawableBase* copy() const;
 
-  void x1( unsigned long x1_ )
+  void x1( ssize_t x1_ )
     {
       _x1 = x1_;
     }
-  unsigned long x1( void ) const
+  ssize_t x1( void ) const
     {
       return _x1;
     }
 
-  void y1( unsigned long y1_ )
+  void y1( ssize_t y1_ )
     {
       _y1 = y1_;
     }
-  unsigned long y1( void ) const
+  ssize_t y1( void ) const
     {
       return _y1;
     }
 
-  void x2( unsigned long x2_ )
+  void x2( ssize_t x2_ )
     {
       _x2 = x2_;
     }
-  unsigned long x2( void ) const
+  ssize_t x2( void ) const
     {
       return _x2;
     }
 
-  void y2( unsigned long y2_ )
+  void y2( ssize_t y2_ )
     {
       _y2 = y2_;
     }
-  unsigned long y2( void ) const
+  ssize_t y2( void ) const
     {
       return _y2;
     }
 
 private:
-  unsigned long _x1;
-  unsigned long _y1;
-  unsigned long _x2;
-  unsigned long _y2;
+  ssize_t _x1;
+  ssize_t _y1;
+  ssize_t _x2;
+  ssize_t _y2;
 };
 
 //
@@ -2295,7 +2295,7 @@ public:
   /*virtual*/ VPathBase* copy() const;
 
 private:
-  int   _dummy;
+  ssize_t   _dummy;
 };
 
 //

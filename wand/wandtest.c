@@ -397,11 +397,8 @@ int main(int argc,char **argv)
     *fill,
     **pixels;
 
-  register long
+  register ssize_t
     i;
-
-  size_t
-    length;
 
   unsigned char
     *profile;
@@ -409,9 +406,10 @@ int main(int argc,char **argv)
   unsigned int
     status;
 
-  unsigned long
+  size_t
     columns,
     delay,
+    length,
     number_options,
     number_profiles,
     number_properties,
@@ -454,12 +452,14 @@ int main(int argc,char **argv)
   (void) fprintf(stdout,"Iterate forward...\n");
   MagickResetIterator(magick_wand);
   while (MagickNextImage(magick_wand) != MagickFalse)
-    (void) fprintf(stdout,"index %ld scene %lu\n",
-      MagickGetIteratorIndex(magick_wand),MagickGetImageScene(magick_wand));
+    (void) fprintf(stdout,"index %ld scene %lu\n",(long)
+      MagickGetIteratorIndex(magick_wand),(unsigned long)
+      MagickGetImageScene(magick_wand));
   (void) fprintf(stdout,"Iterate reverse...\n");
   while (MagickPreviousImage(magick_wand) != MagickFalse)
-    (void) fprintf(stdout,"index %ld scene %lu\n",
-      MagickGetIteratorIndex(magick_wand),MagickGetImageScene(magick_wand));
+    (void) fprintf(stdout,"index %ld scene %lu\n",(long)
+      MagickGetIteratorIndex(magick_wand),(unsigned long)
+      MagickGetImageScene(magick_wand));
   (void) fprintf(stdout,"Remove scene 1...\n");
   (void) MagickSetIteratorIndex(magick_wand,1);
   clone_wand=MagickGetImage(magick_wand);
@@ -468,8 +468,9 @@ int main(int argc,char **argv)
     ThrowAPIException(magick_wand);
   MagickResetIterator(magick_wand);
   while (MagickNextImage(magick_wand) != MagickFalse)
-    (void) fprintf(stdout,"index %ld scene %lu\n",
-      MagickGetIteratorIndex(magick_wand),MagickGetImageScene(magick_wand));
+    (void) fprintf(stdout,"index %ld scene %lu\n",(long)
+      MagickGetIteratorIndex(magick_wand),(unsigned long)
+      MagickGetImageScene(magick_wand));
   (void) fprintf(stdout,"Insert scene 1 back in sequence...\n");
   (void) MagickSetIteratorIndex(magick_wand,0);
   status=MagickAddImage(magick_wand,clone_wand);
@@ -477,8 +478,9 @@ int main(int argc,char **argv)
     ThrowAPIException(magick_wand);
   MagickResetIterator(magick_wand);
   while (MagickNextImage(magick_wand) != MagickFalse)
-    (void) fprintf(stdout,"index %ld scene %lu\n",
-      MagickGetIteratorIndex(magick_wand),MagickGetImageScene(magick_wand));
+    (void) fprintf(stdout,"index %ld scene %lu\n",(long)
+      MagickGetIteratorIndex(magick_wand),(unsigned long)
+      MagickGetImageScene(magick_wand));
   (void) fprintf(stdout,"Set scene 2 to scene 1...\n");
   (void) MagickSetIteratorIndex(magick_wand,2);
   status=MagickSetImage(magick_wand,clone_wand);
@@ -487,8 +489,9 @@ int main(int argc,char **argv)
     ThrowAPIException(magick_wand);
   MagickResetIterator(magick_wand);
   while (MagickNextImage(magick_wand) != MagickFalse)
-    (void) fprintf(stdout,"index %ld scene %lu\n",
-      MagickGetIteratorIndex(magick_wand),MagickGetImageScene(magick_wand));
+    (void) fprintf(stdout,"index %ld scene %lu\n",(long)
+      MagickGetIteratorIndex(magick_wand),(unsigned long)
+      MagickGetImageScene(magick_wand));
   (void) fprintf(stdout,"Apply image processing options...\n");
   status=MagickCropImage(magick_wand,60,60,10,10);
   if (status == MagickFalse)
@@ -567,8 +570,8 @@ int main(int argc,char **argv)
   MagickResetIterator(magick_wand);
   while (MagickNextImage(magick_wand) != MagickFalse)
   {
-    MagickSetImageDepth(magick_wand,8);
-    MagickSetImageCompression(magick_wand,RLECompression);
+    (void) MagickSetImageDepth(magick_wand,8);
+    (void) MagickSetImageCompression(magick_wand,RLECompression);
   }
   MagickResetIterator(magick_wand);
   (void) MagickSetIteratorIndex(magick_wand,4);
@@ -623,7 +626,7 @@ int main(int argc,char **argv)
   options=MagickGetOptions(magick_wand,"*",&number_options);
   if (options != (char **) NULL)
     {
-      for (i=0; i < (long) number_options; i++)
+      for (i=0; i < (ssize_t) number_options; i++)
       {
         (void) fprintf(stdout,"  %s\n",options[i]);
         options[i]=(char *) MagickRelinquishMemory(options[i]);
@@ -649,7 +652,7 @@ int main(int argc,char **argv)
   properties=MagickGetImageProperties(magick_wand,"*",&number_properties);
   if (properties != (char **) NULL)
     {
-      for (i=0; i < (long) number_properties; i++)
+      for (i=0; i < (ssize_t) number_properties; i++)
       {
         (void) fprintf(stdout,"  %s\n",properties[i]);
         properties[i]=(char *) MagickRelinquishMemory(properties[i]);
@@ -675,7 +678,7 @@ int main(int argc,char **argv)
   profiles=MagickGetImageProfiles(magick_wand,"*",&number_profiles);
   if (profiles != (char **) NULL)
     {
-      for (i=0; i < (long) number_profiles; i++)
+      for (i=0; i < (ssize_t) number_profiles; i++)
       {
         (void) fprintf(stdout,"  %s\n",profiles[i]);
         profiles[i]=(char *) MagickRelinquishMemory(profiles[i]);

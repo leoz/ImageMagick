@@ -120,10 +120,10 @@ static MagickBooleanType IsHTML(const unsigned char *magick,const size_t length)
 %
 %  The format of the RegisterHTMLImage method is:
 %
-%      unsigned long RegisterHTMLImage(void)
+%      size_t RegisterHTMLImage(void)
 %
 */
-ModuleExport unsigned long RegisterHTMLImage(void)
+ModuleExport size_t RegisterHTMLImage(void)
 {
   MagickInfo
     *entry;
@@ -341,7 +341,8 @@ static MagickBooleanType WriteHTMLImage(const ImageInfo *image_info,
         {
           (void) FormatMagickString(buffer,MaxTextExtent,
             "%s\" shape=\"rect\" coords=\"0,0,%lu,%lu\" alt=\"\" />\n",
-            image->filename,geometry.width-1,geometry.height-1);
+            image->filename,(unsigned long) geometry.width-1,(unsigned long)
+            geometry.height-1);
           (void) WriteBlobString(image,buffer);
         }
       else
@@ -352,8 +353,8 @@ static MagickBooleanType WriteHTMLImage(const ImageInfo *image_info,
             {
               (void) FormatMagickString(buffer,MaxTextExtent,
                 "\" shape=\"rect\" coords=\"%ld,%ld,%ld,%ld\" alt=\"\" />\n",
-                geometry.x,geometry.y,geometry.x+(long) geometry.width-1,
-                geometry.y+(long) geometry.height-1);
+                (long) geometry.x,(long) geometry.y,(long) (geometry.x+
+                geometry.width-1),(long) (geometry.y+geometry.height-1));
               (void) WriteBlobString(image,buffer);
               if (*(p+1) != '\0')
                 {
@@ -361,11 +362,11 @@ static MagickBooleanType WriteHTMLImage(const ImageInfo *image_info,
                     "  <area href=%s\"",url);
                   (void) WriteBlobString(image,buffer);
                 }
-              geometry.x+=geometry.width;
-              if ((geometry.x+4) >= (long) image->columns)
+              geometry.x+=(ssize_t) geometry.width;
+              if ((geometry.x+4) >= (ssize_t) image->columns)
                 {
                   geometry.x=0;
-                  geometry.y+=geometry.height;
+                  geometry.y+=(ssize_t) geometry.height;
                 }
             }
       (void) WriteBlobString(image,"</map>\n");
@@ -416,7 +417,8 @@ static MagickBooleanType WriteHTMLImage(const ImageInfo *image_info,
     {
       (void) FormatMagickString(buffer,MaxTextExtent,
         "%s\" shape=\"rect\" coords=\"0,0,%lu,%lu\" alt=\"\" />\n",
-        image->filename,geometry.width-1,geometry.height-1);
+        image->filename,(unsigned long) geometry.width-1,(unsigned long)
+        geometry.height-1);
       (void) WriteBlobString(image,buffer);
     }
   else
@@ -427,8 +429,8 @@ static MagickBooleanType WriteHTMLImage(const ImageInfo *image_info,
         {
           (void) FormatMagickString(buffer,MaxTextExtent,
             "\" shape=\"rect\" coords=\"%ld,%ld,%ld,%ld\" alt=\"\" />\n",
-            geometry.x,geometry.y,geometry.x+(long) geometry.width-1,
-            geometry.y+(long) geometry.height-1);
+            (long) geometry.x,(long) geometry.y,geometry.x+(long)
+            geometry.width-1,geometry.y+(long) geometry.height-1);
           (void) WriteBlobString(image,buffer);
           if (*(p+1) != '\0')
             {
@@ -436,11 +438,11 @@ static MagickBooleanType WriteHTMLImage(const ImageInfo *image_info,
                 "  <area href=%s\"",url);
               (void) WriteBlobString(image,buffer);
             }
-          geometry.x+=geometry.width;
-          if ((geometry.x+4) >= (long) image->columns)
+          geometry.x+=(ssize_t) geometry.width;
+          if ((geometry.x+4) >= (ssize_t) image->columns)
             {
               geometry.x=0;
-              geometry.y+=geometry.height;
+              geometry.y+=(ssize_t) geometry.height;
             }
         }
   (void) WriteBlobString(image,"</map>\n");

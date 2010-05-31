@@ -97,11 +97,11 @@ struct _ThresholdMap
     *map_id,
     *description;
 
-  unsigned long
+  size_t
     width,
     height;
 
-  long
+  ssize_t
     divisor,
     *levels;
 };
@@ -125,8 +125,8 @@ struct _ThresholdMap
 %  The format of the AdaptiveThresholdImage method is:
 %
 %      Image *AdaptiveThresholdImage(const Image *image,
-%        const unsigned long width,const unsigned long height,
-%        const long offset,ExceptionInfo *exception)
+%        const size_t width,const size_t height,
+%        const ssize_t offset,ExceptionInfo *exception)
 %
 %  A description of each parameter follows:
 %
@@ -142,7 +142,7 @@ struct _ThresholdMap
 %
 */
 MagickExport Image *AdaptiveThresholdImage(const Image *image,
-  const unsigned long width,const unsigned long height,const long offset,
+  const size_t width,const size_t height,const ssize_t offset,
   ExceptionInfo *exception)
 {
 #define ThresholdImageTag  "Threshold/Image"
@@ -154,18 +154,20 @@ MagickExport Image *AdaptiveThresholdImage(const Image *image,
   Image
     *threshold_image;
 
-  long
-    progress,
-    y;
-
   MagickBooleanType
     status;
+
+  MagickOffsetType
+    progress;
 
   MagickPixelPacket
     zero;
 
   MagickRealType
     number_pixels;
+
+  ssize_t
+    y;
 
   assert(image != (const Image *) NULL);
   assert(image->signature == MagickSignature);
@@ -196,7 +198,7 @@ MagickExport Image *AdaptiveThresholdImage(const Image *image,
 #if defined(MAGICKCORE_OPENMP_SUPPORT)
   #pragma omp parallel for schedule(dynamic,4) shared(progress,status)
 #endif
-  for (y=0; y < (long) image->rows; y++)
+  for (y=0; y < (ssize_t) image->rows; y++)
   {
     MagickBooleanType
       sync;
@@ -210,7 +212,7 @@ MagickExport Image *AdaptiveThresholdImage(const Image *image,
     register IndexPacket
       *restrict threshold_indexes;
 
-    register long
+    register ssize_t
       x;
 
     register PixelPacket
@@ -218,8 +220,8 @@ MagickExport Image *AdaptiveThresholdImage(const Image *image,
 
     if (status == MagickFalse)
       continue;
-    p=GetCacheViewVirtualPixels(image_view,-((long) width/2L),y-height/2L,
-      image->columns+width,height,exception);
+    p=GetCacheViewVirtualPixels(image_view,-((ssize_t) width/2L),y-(ssize_t)
+      height/2L,image->columns+width,height,exception);
     q=GetCacheViewAuthenticPixels(threshold_view,0,y,threshold_image->columns,1,
       exception);
     if ((p == (const PixelPacket *) NULL) || (q == (PixelPacket *) NULL))
@@ -229,9 +231,9 @@ MagickExport Image *AdaptiveThresholdImage(const Image *image,
       }
     indexes=GetCacheViewVirtualIndexQueue(image_view);
     threshold_indexes=GetCacheViewAuthenticIndexQueue(threshold_view);
-    for (x=0; x < (long) image->columns; x++)
+    for (x=0; x < (ssize_t) image->columns; x++)
     {
-      long
+      ssize_t
         v;
 
       MagickPixelPacket
@@ -241,15 +243,15 @@ MagickExport Image *AdaptiveThresholdImage(const Image *image,
       register const PixelPacket
         *r;
 
-      register long
+      register ssize_t
         u;
 
       pixel=zero;
       mean=zero;
       r=p;
-      for (v=0; v < (long) height; v++)
+      for (v=0; v < (ssize_t) height; v++)
       {
-        for (u=0; u < (long) width; u++)
+        for (u=0; u < (ssize_t) width; u++)
         {
           pixel.red+=r[u].red;
           pixel.green+=r[u].green;
@@ -367,12 +369,14 @@ MagickExport MagickBooleanType BilevelImageChannel(Image *image,
   ExceptionInfo
     *exception;
 
-  long
-    progress,
-    y;
-
   MagickBooleanType
     status;
+
+  MagickOffsetType
+    progress;
+
+  ssize_t
+    y;
 
   assert(image != (Image *) NULL);
   assert(image->signature == MagickSignature);
@@ -390,12 +394,12 @@ MagickExport MagickBooleanType BilevelImageChannel(Image *image,
 #if defined(MAGICKCORE_OPENMP_SUPPORT)
   #pragma omp parallel for schedule(dynamic,4) shared(progress,status)
 #endif
-  for (y=0; y < (long) image->rows; y++)
+  for (y=0; y < (ssize_t) image->rows; y++)
   {
     register IndexPacket
       *restrict indexes;
 
-    register long
+    register ssize_t
       x;
 
     register PixelPacket
@@ -412,7 +416,7 @@ MagickExport MagickBooleanType BilevelImageChannel(Image *image,
     indexes=GetCacheViewAuthenticIndexQueue(image_view);
     if (channel == DefaultChannels)
       {
-        for (x=0; x < (long) image->columns; x++)
+        for (x=0; x < (ssize_t) image->columns; x++)
         {
           q->red=(Quantum) ((MagickRealType) PixelIntensityToQuantum(q) <=
             threshold ? 0 : QuantumRange);
@@ -422,7 +426,7 @@ MagickExport MagickBooleanType BilevelImageChannel(Image *image,
         }
       }
     else
-      for (x=0; x < (long) image->columns; x++)
+      for (x=0; x < (ssize_t) image->columns; x++)
       {
         if ((channel & RedChannel) != 0)
           q->red=(Quantum) ((MagickRealType) q->red <= threshold ? 0 :
@@ -523,18 +527,20 @@ MagickExport MagickBooleanType BlackThresholdImageChannel(Image *image,
   GeometryInfo
     geometry_info;
 
-  long
-    progress,
-    y;
-
   MagickBooleanType
     status;
+
+  MagickOffsetType
+    progress;
 
   MagickPixelPacket
     threshold;
 
   MagickStatusType
     flags;
+
+  ssize_t
+    y;
 
   assert(image != (Image *) NULL);
   assert(image->signature == MagickSignature);
@@ -576,12 +582,12 @@ MagickExport MagickBooleanType BlackThresholdImageChannel(Image *image,
 #if defined(MAGICKCORE_OPENMP_SUPPORT)
   #pragma omp parallel for schedule(dynamic,4) shared(progress,status)
 #endif
-  for (y=0; y < (long) image->rows; y++)
+  for (y=0; y < (ssize_t) image->rows; y++)
   {
     register IndexPacket
       *restrict indexes;
 
-    register long
+    register ssize_t
       x;
 
     register PixelPacket
@@ -596,7 +602,7 @@ MagickExport MagickBooleanType BlackThresholdImageChannel(Image *image,
         continue;
       }
     indexes=GetCacheViewAuthenticIndexQueue(image_view);
-    for (x=0; x < (long) image->columns; x++)
+    for (x=0; x < (ssize_t) image->columns; x++)
     {
       if (channel != DefaultChannels)
         {
@@ -710,12 +716,14 @@ MagickExport MagickBooleanType ClampImageChannel(Image *image,
   ExceptionInfo
     *exception;
 
-  long
-    progress,
-    y;
-
   MagickBooleanType
     status;
+
+  MagickOffsetType
+    progress;
+
+  ssize_t
+    y;
 
   assert(image != (Image *) NULL);
   assert(image->signature == MagickSignature);
@@ -723,14 +731,14 @@ MagickExport MagickBooleanType ClampImageChannel(Image *image,
     (void) LogMagickEvent(TraceEvent,GetMagickModule(),"%s",image->filename);
   if (image->storage_class == PseudoClass)
     {
-      register long
+      register ssize_t
         i;
 
       register PixelPacket
         *restrict q;
 
       q=image->colormap;
-      for (i=0; i < (long) image->colors; i++)
+      for (i=0; i < (ssize_t) image->colors; i++)
       {
         q->red=ClampToUnsignedQuantum(q->red);
         q->green=ClampToUnsignedQuantum(q->green);
@@ -750,12 +758,12 @@ MagickExport MagickBooleanType ClampImageChannel(Image *image,
 #if defined(MAGICKCORE_OPENMP_SUPPORT)
   #pragma omp parallel for schedule(dynamic,4) shared(progress,status)
 #endif
-  for (y=0; y < (long) image->rows; y++)
+  for (y=0; y < (ssize_t) image->rows; y++)
   {
     register IndexPacket
       *restrict indexes;
 
-    register long
+    register ssize_t
       x;
 
     register PixelPacket
@@ -770,7 +778,7 @@ MagickExport MagickBooleanType ClampImageChannel(Image *image,
         continue;
       }
     indexes=GetCacheViewAuthenticIndexQueue(image_view);
-    for (x=0; x < (long) image->columns; x++)
+    for (x=0; x < (ssize_t) image->columns; x++)
     {
       if ((channel & RedChannel) != 0)
         q->red=ClampToUnsignedQuantum(q->red);
@@ -834,8 +842,8 @@ MagickExport ThresholdMap *DestroyThresholdMap(ThresholdMap *map)
     map->map_id=DestroyString(map->map_id);
   if (map->description != (char *) NULL)
     map->description=DestroyString(map->description);
-  if (map->levels != (long *) NULL)
-    map->levels=(long *) RelinquishMagickMemory(map->levels);
+  if (map->levels != (ssize_t *) NULL)
+    map->levels=(ssize_t *) RelinquishMagickMemory(map->levels);
   map=(ThresholdMap *) RelinquishMagickMemory(map);
   return(map);
 }
@@ -930,7 +938,7 @@ MagickExport ThresholdMap *GetThresholdMapFile(const char *xml,
     ThrowFatalException(ResourceLimitFatalError,"UnableToAcquireThresholdMap");
   map->map_id = (char *)NULL;
   map->description = (char *)NULL;
-  map->levels = (long *) NULL;
+  map->levels = (ssize_t *) NULL;
 
   /* Assign Basic Attributes */
   attr = GetXMLTreeAttribute(threshold, "map");
@@ -1001,15 +1009,15 @@ MagickExport ThresholdMap *GetThresholdMapFile(const char *xml,
     map = DestroyThresholdMap(map);
     return(map);
   }
-  map->levels=(long *) AcquireQuantumMemory((size_t) map->width,map->height*
+  map->levels=(ssize_t *) AcquireQuantumMemory((size_t) map->width,map->height*
     sizeof(*map->levels));
-  if ( map->levels == (long *)NULL )
+  if ( map->levels == (ssize_t *)NULL )
     ThrowFatalException(ResourceLimitFatalError,"UnableToAcquireThresholdMap");
   { /* parse levels into integer array */
-    int i;
+    ssize_t i;
     char *p;
-    for( i=0; i< (long) (map->width*map->height); i++) {
-      map->levels[i] = (int)strtol(content, &p, 10);
+    for( i=0; i< (ssize_t) (map->width*map->height); i++) {
+      map->levels[i] = (ssize_t)strtol(content, &p, 10);
       if ( p == content ) {
         (void) ThrowMagickException(exception,GetMagickModule(),OptionError,
           "XmlInvalidContent", "<level> too few values, map \"%s\"", map_id);
@@ -1020,7 +1028,7 @@ MagickExport ThresholdMap *GetThresholdMapFile(const char *xml,
       if ( map->levels[i] < 0 || map->levels[i] > map->divisor ) {
         (void) ThrowMagickException(exception,GetMagickModule(),OptionError,
           "XmlInvalidContent", "<level> %ld out of range, map \"%s\"",
-          map->levels[i], map_id);
+          (long) map->levels[i],map_id);
         thresholds = DestroyXMLTree(thresholds);
         map = DestroyThresholdMap(map);
         return(map);
@@ -1353,15 +1361,17 @@ MagickExport MagickBooleanType OrderedPosterizeImageChannel(Image *image,
   CacheView
     *image_view;
 
-  long
-    progress,
-    y;
-
   LongPixelPacket
     levels;
 
   MagickBooleanType
     status;
+
+  MagickOffsetType
+    progress;
+
+  ssize_t
+    y;
 
   ThresholdMap
     *map;
@@ -1410,7 +1420,7 @@ MagickExport MagickBooleanType OrderedPosterizeImageChannel(Image *image,
 
     p = strchr((char *) threshold_map,',');
     if ( p != (char *)NULL && isdigit((int) ((unsigned char) *(++p))) )
-      levels.index = (unsigned long) strtol(p, &p, 10);
+      levels.index = (unsigned int) strtoul(p, &p, 10);
     else
       levels.index = 2;
 
@@ -1426,15 +1436,15 @@ MagickExport MagickBooleanType OrderedPosterizeImageChannel(Image *image,
       p=strchr((char *) threshold_map,',');
       p++;
       if ((channel & RedChannel) != 0)
-        levels.red = (unsigned long) strtol(p, &p, 10),   (void)(*p == ',' && p++);
+        levels.red = (unsigned int) strtoul(p, &p, 10),   (void)(*p == ',' && p++);
       if ((channel & GreenChannel) != 0)
-        levels.green = (unsigned long) strtol(p, &p, 10), (void)(*p == ',' && p++);
+        levels.green = (unsigned int) strtoul(p, &p, 10), (void)(*p == ',' && p++);
       if ((channel & BlueChannel) != 0)
-        levels.blue = (unsigned long) strtol(p, &p, 10),  (void)(*p == ',' && p++);
+        levels.blue = (unsigned int) strtoul(p, &p, 10),  (void)(*p == ',' && p++);
       if ((channel & IndexChannel) != 0 && image->colorspace == CMYKColorspace)
-        levels.index=(unsigned long) strtol(p, &p, 10), (void)(*p == ',' && p++);
+        levels.index=(unsigned int) strtoul(p, &p, 10), (void)(*p == ',' && p++);
       if ((channel & OpacityChannel) != 0)
-        levels.opacity = (unsigned long) strtol(p, &p, 10), (void)(*p == ',' && p++);
+        levels.opacity = (unsigned int) strtoul(p, &p, 10), (void)(*p == ',' && p++);
     }
   }
 #else
@@ -1446,7 +1456,7 @@ MagickExport MagickBooleanType OrderedPosterizeImageChannel(Image *image,
    * EG  -channel BA  -ordered-dither map,2,3
    * will need to map  g.rho -> l.blue, and g.sigma -> l.opacity
    * A simpler way is needed, probably converting geometry to a temporary
-   * array, then using channel to advance the index into long pixel packet.
+   * array, then using channel to advance the index into ssize_t pixel packet.
    */
 #endif
 
@@ -1456,7 +1466,7 @@ printf("DEBUG levels  r=%ld g=%ld b=%ld a=%ld i=%ld\n",
 #endif
 
   { /* Do the posterized ordered dithering of the image */
-    int
+    ssize_t
       d;
 
     /* d = number of psuedo-level divisions added between color levels */
@@ -1480,12 +1490,12 @@ printf("DEBUG levels  r=%ld g=%ld b=%ld a=%ld i=%ld\n",
 #if defined(MAGICKCORE_OPENMP_SUPPORT)
   #pragma omp parallel for schedule(dynamic,4) shared(progress,status)
 #endif
-    for (y=0; y < (long) image->rows; y++)
+    for (y=0; y < (ssize_t) image->rows; y++)
     {
       register IndexPacket
         *restrict indexes;
 
-      register long
+      register ssize_t
         x;
 
       register PixelPacket
@@ -1500,9 +1510,9 @@ printf("DEBUG levels  r=%ld g=%ld b=%ld a=%ld i=%ld\n",
           continue;
         }
       indexes=GetCacheViewAuthenticIndexQueue(image_view);
-      for (x=0; x < (long) image->columns; x++)
+      for (x=0; x < (ssize_t) image->columns; x++)
       {
-        register int
+        register ssize_t
           threshold,
           t,
           l;
@@ -1525,28 +1535,28 @@ printf("DEBUG levels  r=%ld g=%ld b=%ld a=%ld i=%ld\n",
               Opacity is inverted so 'off' represents transparent.
         */
         if (levels.red) {
-          t = (int) (QuantumScale*q->red*(levels.red*d+1));
+          t = (ssize_t) (QuantumScale*q->red*(levels.red*d+1));
           l = t/d;  t = t-l*d;
           q->red=(Quantum) ((l+(t >= threshold))*QuantumRange/levels.red);
         }
         if (levels.green) {
-          t = (int) (QuantumScale*q->green*(levels.green*d+1));
+          t = (ssize_t) (QuantumScale*q->green*(levels.green*d+1));
           l = t/d;  t = t-l*d;
           q->green=(Quantum) ((l+(t >= threshold))*QuantumRange/levels.green);
         }
         if (levels.blue) {
-          t = (int) (QuantumScale*q->blue*(levels.blue*d+1));
+          t = (ssize_t) (QuantumScale*q->blue*(levels.blue*d+1));
           l = t/d;  t = t-l*d;
           q->blue=(Quantum) ((l+(t >= threshold))*QuantumRange/levels.blue);
         }
         if (levels.opacity) {
-          t = (int) ((1.0-QuantumScale*q->opacity)*(levels.opacity*d+1));
+          t = (ssize_t) ((1.0-QuantumScale*q->opacity)*(levels.opacity*d+1));
           l = t/d;  t = t-l*d;
           q->opacity=(Quantum) ((1.0-l-(t >= threshold))*QuantumRange/
             levels.opacity);
         }
         if (levels.index) {
-          t = (int) (QuantumScale*indexes[x]*(levels.index*d+1));
+          t = (ssize_t) (QuantumScale*indexes[x]*(levels.index*d+1));
           l = t/d;  t = t-l*d;
           indexes[x]=(IndexPacket) ((l+(t>=threshold))*QuantumRange/
             levels.index);
@@ -1636,12 +1646,11 @@ MagickExport MagickBooleanType RandomThresholdImageChannel(Image *image,
   MagickStatusType
     flags;
 
-  long
-    progress,
-    y;
-
   MagickBooleanType
     status;
+
+  MagickOffsetType
+    progress;
 
   MagickPixelPacket
     threshold;
@@ -1652,6 +1661,9 @@ MagickExport MagickBooleanType RandomThresholdImageChannel(Image *image,
 
   RandomInfo
     **restrict random_info;
+
+  ssize_t
+    y;
 
   assert(image != (Image *) NULL);
   assert(image->signature == MagickSignature);
@@ -1699,7 +1711,7 @@ MagickExport MagickBooleanType RandomThresholdImageChannel(Image *image,
 #if defined(MAGICKCORE_OPENMP_SUPPORT)
   #pragma omp parallel for schedule(dynamic,4) shared(progress,status)
 #endif
-      for (y=0; y < (long) image->rows; y++)
+      for (y=0; y < (ssize_t) image->rows; y++)
       {
         MagickBooleanType
           sync;
@@ -1707,7 +1719,7 @@ MagickExport MagickBooleanType RandomThresholdImageChannel(Image *image,
         register IndexPacket
           *restrict indexes;
 
-        register long
+        register ssize_t
           id,
           x;
 
@@ -1725,7 +1737,7 @@ MagickExport MagickBooleanType RandomThresholdImageChannel(Image *image,
           }
         indexes=GetCacheViewAuthenticIndexQueue(image_view);
         id=GetOpenMPThreadId();
-        for (x=0; x < (long) image->columns; x++)
+        for (x=0; x < (ssize_t) image->columns; x++)
         {
           IndexPacket
             index;
@@ -1743,7 +1755,7 @@ MagickExport MagickBooleanType RandomThresholdImageChannel(Image *image,
               GetPseudoRandomValue(random_info[id]));
           index=(IndexPacket) (intensity <= threshold.index ? 0 : 1);
           indexes[x]=index;
-          *q++=image->colormap[(long) index];
+          *q++=image->colormap[(ssize_t) index];
         }
         sync=SyncCacheViewAuthenticPixels(image_view,exception);
         if (sync == MagickFalse)
@@ -1776,12 +1788,12 @@ MagickExport MagickBooleanType RandomThresholdImageChannel(Image *image,
 #if defined(MAGICKCORE_OPENMP_SUPPORT)
   #pragma omp parallel for schedule(dynamic,4) shared(progress,status)
 #endif
-  for (y=0; y < (long) image->rows; y++)
+  for (y=0; y < (ssize_t) image->rows; y++)
   {
     register IndexPacket
       *restrict indexes;
 
-    register long
+    register ssize_t
       id,
       x;
 
@@ -1798,7 +1810,7 @@ MagickExport MagickBooleanType RandomThresholdImageChannel(Image *image,
       }
     indexes=GetCacheViewAuthenticIndexQueue(image_view);
     id=GetOpenMPThreadId();
-    for (x=0; x < (long) image->columns; x++)
+    for (x=0; x < (ssize_t) image->columns; x++)
     {
       if ((channel & RedChannel) != 0)
         {
@@ -1944,12 +1956,11 @@ MagickExport MagickBooleanType WhiteThresholdImageChannel(Image *image,
 {
 #define ThresholdImageTag  "Threshold/Image"
 
+  CacheView
+    *image_view;
+
   GeometryInfo
     geometry_info;
-
-  long
-    progress,
-    y;
 
   MagickBooleanType
     status;
@@ -1957,11 +1968,14 @@ MagickExport MagickBooleanType WhiteThresholdImageChannel(Image *image,
   MagickPixelPacket
     threshold;
 
+  MagickOffsetType
+    progress;
+
   MagickStatusType
     flags;
 
-  CacheView
-    *image_view;
+  ssize_t
+    y;
 
   assert(image != (Image *) NULL);
   assert(image->signature == MagickSignature);
@@ -2003,12 +2017,12 @@ MagickExport MagickBooleanType WhiteThresholdImageChannel(Image *image,
 #if defined(MAGICKCORE_OPENMP_SUPPORT)
   #pragma omp parallel for schedule(dynamic,4) shared(progress,status)
 #endif
-  for (y=0; y < (long) image->rows; y++)
+  for (y=0; y < (ssize_t) image->rows; y++)
   {
     register IndexPacket
       *restrict indexes;
 
-    register long
+    register ssize_t
       x;
 
     register PixelPacket
@@ -2023,7 +2037,7 @@ MagickExport MagickBooleanType WhiteThresholdImageChannel(Image *image,
         continue;
       }
     indexes=GetCacheViewAuthenticIndexQueue(image_view);
-    for (x=0; x < (long) image->columns; x++)
+    for (x=0; x < (ssize_t) image->columns; x++)
     {
       if (channel != DefaultChannels)
         {

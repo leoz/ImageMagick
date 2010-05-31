@@ -260,7 +260,7 @@ MagickExport MagickBooleanType AcquireMagickResource(const ResourceType type,
   }
   UnlockSemaphoreInfo(resource_semaphore);
   (void) LogMagickEvent(ResourceEvent,GetMagickModule(),"%s: %sB/%sB/%sB",
-    MagickOptionToMnemonic(MagickResourceOptions,(long) type),resource_request,
+    MagickOptionToMnemonic(MagickResourceOptions,(ssize_t) type),resource_request,
     resource_current,resource_limit);
   return(status);
 }
@@ -424,7 +424,7 @@ MagickExport int AcquireUniqueFileResource(char *path)
   register char
     *p;
 
-  register long
+  register ssize_t
     i;
 
   static const char
@@ -442,7 +442,7 @@ MagickExport int AcquireUniqueFileResource(char *path)
   if (random_info == (RandomInfo *) NULL)
     random_info=AcquireRandomInfo();
   file=(-1);
-  for (i=0; i < TMP_MAX; i++)
+  for (i=0; i < (ssize_t) TMP_MAX; i++)
   {
     /*
       Get temporary pathname.
@@ -799,7 +799,7 @@ MagickExport void RelinquishMagickResource(const ResourceType type,
   }
   UnlockSemaphoreInfo(resource_semaphore);
   (void) LogMagickEvent(ResourceEvent,GetMagickModule(),"%s: %sB/%sB/%sB",
-    MagickOptionToMnemonic(MagickResourceOptions,(long) type),resource_request,
+    MagickOptionToMnemonic(MagickResourceOptions,(ssize_t) type),resource_request,
     resource_current,resource_limit);
 }
 
@@ -873,8 +873,8 @@ MagickExport MagickBooleanType RelinquishUniqueFileResource(const char *path)
 %
 */
 
-static inline unsigned long MagickMax(const unsigned long x,
-  const unsigned long y)
+static inline size_t MagickMax(const size_t x,
+  const size_t y)
 {
   if (x > y)
     return(x);
@@ -898,7 +898,7 @@ MagickExport MagickBooleanType ResourceComponentGenesis(void)
   char
     *limit;
 
-  long
+  ssize_t
     files,
     pages,
     pagesize;
@@ -913,7 +913,7 @@ MagickExport MagickBooleanType ResourceComponentGenesis(void)
   pagesize=GetMagickPageSize();
   pages=(-1);
 #if defined(MAGICKCORE_HAVE_SYSCONF) && defined(_SC_PHYS_PAGES)
-  pages=sysconf(_SC_PHYS_PAGES);
+  pages=(ssize_t) sysconf(_SC_PHYS_PAGES);
 #endif
   memory=(MagickSizeType) pages*pagesize;
   if ((pagesize <= 0) || (pages <= 0))
@@ -959,7 +959,7 @@ MagickExport MagickBooleanType ResourceComponentGenesis(void)
     }
   files=(-1);
 #if defined(MAGICKCORE_HAVE_SYSCONF) && defined(_SC_OPEN_MAX)
-  files=sysconf(_SC_OPEN_MAX);
+  files=(ssize_t) sysconf(_SC_OPEN_MAX);
 #endif
 #if defined(MAGICKCORE_HAVE_GETRLIMIT) && defined(RLIMIT_NOFILE)
   if (files < 0)
@@ -968,7 +968,7 @@ MagickExport MagickBooleanType ResourceComponentGenesis(void)
         resources;
 
       if (getrlimit(RLIMIT_NOFILE,&resources) != -1)
-        files=(long) resources.rlim_cur;
+        files=(ssize_t) resources.rlim_cur;
   }
 #endif
 #if defined(MAGICKCORE_HAVE_GETDTABLESIZE) && defined(MAGICKCORE_POSIX_SUPPORT)
@@ -977,7 +977,7 @@ MagickExport MagickBooleanType ResourceComponentGenesis(void)
 #endif
   if (files < 0)
     files=64;
-  (void) SetMagickResourceLimit(FileResource,MagickMax((unsigned long)
+  (void) SetMagickResourceLimit(FileResource,MagickMax((size_t)
     (3*files/4),64));
   limit=GetEnvironmentValue("MAGICK_FILE_LIMIT");
   if (limit == (char *) NULL)
@@ -993,7 +993,7 @@ MagickExport MagickBooleanType ResourceComponentGenesis(void)
     limit=GetPolicyValue("thread");
   if (limit != (char *) NULL)
     {
-      SetOpenMPMaximumThreads(StringToUnsignedLong(limit));
+      SetOpenMPMaximumThreads((int) StringToUnsignedLong(limit));
       (void) SetMagickResourceLimit(ThreadResource,StringToSizeType(limit,
         100.0));
       limit=DestroyString(limit);
@@ -1100,7 +1100,7 @@ MagickExport MagickBooleanType SetMagickResourceLimit(const ResourceType type,
     }
     case ThreadResource:
     {
-      SetOpenMPMaximumThreads((unsigned long) limit);
+      SetOpenMPMaximumThreads((int) limit);
       resource_info.thread_limit=GetOpenMPMaximumThreads();
       break;
     }

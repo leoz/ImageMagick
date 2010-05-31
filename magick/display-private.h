@@ -26,8 +26,7 @@ extern "C" {
 #include "magick/xwindow-private.h"
 
 extern MagickExport Image
-  *XDisplayImage(Display *,XResourceInfo *,char **,int,Image **,
-    unsigned long *);
+  *XDisplayImage(Display *,XResourceInfo *,char **,int,Image **,size_t *);
 
 extern MagickExport MagickBooleanType XDisplayBackgroundImage(Display *,
   XResourceInfo *,Image *);

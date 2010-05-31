@@ -500,7 +500,7 @@ MagickExport char *Base64Encode(const unsigned char *blob,
   remainder=blob_length % 3;
   if (remainder != 0)
     {
-      long
+      ssize_t
         j;
 
       unsigned char
@@ -509,7 +509,7 @@ MagickExport char *Base64Encode(const unsigned char *blob,
       code[0]='\0';
       code[1]='\0';
       code[2]='\0';
-      for (j=0; j < (long) remainder; j++)
+      for (j=0; j < (ssize_t) remainder; j++)
         code[j]=(*p++);
       encode[i++]=Base64[(int) (code[0] >> 2)];
       encode[i++]=Base64[(int) (((code[0] & 0x03) << 4)+(code[1] >> 4))];
@@ -540,7 +540,7 @@ MagickExport char *Base64Encode(const unsigned char *blob,
 %
 %  The format of the ChopPathComponents method is:
 %
-%      ChopPathComponents(char *path,unsigned long components)
+%      ChopPathComponents(char *path,size_t components)
 %
 %  A description of each parameter follows:
 %
@@ -549,12 +549,12 @@ MagickExport char *Base64Encode(const unsigned char *blob,
 %    o components:  The number of components to chop.
 %
 */
-MagickExport void ChopPathComponents(char *path,const unsigned long components)
+MagickExport void ChopPathComponents(char *path,const size_t components)
 {
-  register long
+  register ssize_t
     i;
 
-  for (i=0; i < (long) components; i++)
+  for (i=0; i < (ssize_t) components; i++)
     GetPathComponent(path,HeadPath,path);
 }
 
@@ -680,15 +680,15 @@ MagickExport MagickBooleanType ExpandFilenames(int *number_arguments,
     home_directory[MaxTextExtent],
     **vector;
 
-  long
+  ssize_t
     count,
     parameters;
 
-  register long
+  register ssize_t
     i,
     j;
 
-  unsigned long
+  size_t
     number_files;
 
   /*
@@ -706,7 +706,7 @@ MagickExport MagickBooleanType ExpandFilenames(int *number_arguments,
   */
   *home_directory='\0';
   count=0;
-  for (i=0; i < (long) *number_arguments; i++)
+  for (i=0; i < (ssize_t) *number_arguments; i++)
   {
     char
       **filelist,
@@ -735,7 +735,7 @@ MagickExport MagickBooleanType ExpandFilenames(int *number_arguments,
         for (j=0; j < parameters; j++)
         {
           i++;
-          if (i == (long) *number_arguments)
+          if (i == (ssize_t) *number_arguments)
             break;
           option=(*arguments)[i];
           vector[count++]=ConstantString(option);
@@ -787,23 +787,23 @@ MagickExport MagickBooleanType ExpandFilenames(int *number_arguments,
         StripString(files);
         filelist=StringToArgv(files,&number_images);
         files=DestroyString(files);
-        number_files=(unsigned long) number_images;
+        number_files=(size_t) number_images;
         if (filelist != (char **) NULL)
           {
             number_files--;
-            for (j=0; j < (long) number_files; j++)
+            for (j=0; j < (ssize_t) number_files; j++)
               filelist[j]=filelist[j+1];
           }
         count--;
       }
     if (filelist == (char **) NULL)
       continue;
-    for (j=0; j < (long) number_files; j++)
+    for (j=0; j < (ssize_t) number_files; j++)
       if (IsPathDirectory(filelist[j]) <= 0)
         break;
-    if (j == (long) number_files)
+    if (j == (ssize_t) number_files)
       {
-        for (j=0; j < (long) number_files; j++)
+        for (j=0; j < (ssize_t) number_files; j++)
           filelist[j]=DestroyString(filelist[j]);
         filelist=(char **) RelinquishMagickMemory(filelist);
         continue;
@@ -815,13 +815,13 @@ MagickExport MagickBooleanType ExpandFilenames(int *number_arguments,
       count+number_files+1,sizeof(*vector));
     if (vector == (char **) NULL)
       return(MagickFalse);
-    for (j=0; j < (long) number_files; j++)
+    for (j=0; j < (ssize_t) number_files; j++)
     {
       option=filelist[j];
       parameters=ParseMagickOption(MagickCommandOptions,MagickFalse,option);
       if (parameters > 0)
         {
-          long
+          ssize_t
             k;
 
           /*
@@ -831,7 +831,7 @@ MagickExport MagickBooleanType ExpandFilenames(int *number_arguments,
           for (k=0; k < parameters; k++)
           {
             j++;
-            if (j == (long) number_files)
+            if (j == (ssize_t) number_files)
               break;
             option=filelist[j];
             vector[count++]=ConstantString(option);
@@ -994,7 +994,7 @@ MagickExport MagickBooleanType GetExecutionPath(char *path,const size_t extent)
       *program_name,
       *execution_path;
 
-    long
+    ssize_t
       count;
 
     count=0;
@@ -1042,21 +1042,21 @@ MagickExport MagickBooleanType GetExecutionPath(char *path,const size_t extent)
 %
 %  The format of the GetMagickPageSize method is:
 %
-%      long GetMagickPageSize()
+%      ssize_t GetMagickPageSize()
 %
 */
-MagickExport long GetMagickPageSize(void)
+MagickExport ssize_t GetMagickPageSize(void)
 {
-  static long
+  static ssize_t
     page_size = -1;
 
   if (page_size > 0)
     return(page_size);
 #if defined(MAGICKCORE_HAVE_SYSCONF) && defined(_SC_PAGE_SIZE)
-  page_size=sysconf(_SC_PAGE_SIZE);
+  page_size=(ssize_t) sysconf(_SC_PAGE_SIZE);
 #else
 #if defined(MAGICKCORE_HAVE_GETPAGESIZE)
-  page_size=getpagesize();
+  page_size=(ssize_t) getpagesize();
 #endif
 #endif
   if (page_size <= 0)
@@ -1184,7 +1184,7 @@ static wchar_t *ConvertUTF8ToUTF16(const unsigned char *source)
   length=UTF8ToUTF16(source,(wchar_t *) NULL);
   if (length == 0)
     {
-      register long
+      register ssize_t
         i;
 
       /*
@@ -1194,7 +1194,7 @@ static wchar_t *ConvertUTF8ToUTF16(const unsigned char *source)
       utf16=(wchar_t *) AcquireQuantumMemory(length+1,sizeof(*utf16));
       if (utf16 == (wchar_t *) NULL)
         return((wchar_t *) NULL);
-      for (i=0; i <= (long) length; i++)
+      for (i=0; i <= (ssize_t) length; i++)
         utf16[i]=source[i];
       return(utf16);
     }
@@ -1288,6 +1288,16 @@ MagickExport void GetPathComponent(const char *path,PathType type,
   if (path[1] != ":")
 #endif
   for (p=component; *p != '\0'; p++)
+  {
+    if ((*p == '%') && (*(p+1) == '['))
+      {
+        /*
+          Skip over %[...].
+        */
+        for (p++; (*p != ']') && (*p != '\0'); p++) ;
+        if (*p == '\0')
+          break;
+      }
     if ((*p == ':') && (IsPathDirectory(path) < 0) &&
         (IsPathAccessible(path) == MagickFalse))
       {
@@ -1302,6 +1312,7 @@ MagickExport void GetPathComponent(const char *path,PathType type,
             *q=(*++p);
         break;
       }
+  }
   *subimage='\0';
   p=component;
   if (*p != '\0')
@@ -1416,7 +1427,7 @@ MagickExport void GetPathComponent(const char *path,PathType type,
 %  The format of the GetPathComponents method is:
 %
 %      char **GetPathComponents(const char *path,
-%        unsigned long *number_componenets)
+%        size_t *number_componenets)
 %
 %  A description of each parameter follows:
 %
@@ -1426,7 +1437,7 @@ MagickExport void GetPathComponent(const char *path,PathType type,
 %
 */
 MagickExport char **GetPathComponents(const char *path,
-  unsigned long *number_components)
+  size_t *number_components)
 {
   char
     **components;
@@ -1435,7 +1446,7 @@ MagickExport char **GetPathComponents(const char *path,
     *p,
     *q;
 
-  register long
+  register ssize_t
     i;
 
   if (path == (char *) NULL)
@@ -1449,7 +1460,7 @@ MagickExport char **GetPathComponents(const char *path,
   if (components == (char **) NULL)
     ThrowFatalException(ResourceLimitFatalError,"MemoryAllocationFailed");
   p=path;
-  for (i=0; i < (long) *number_components; i++)
+  for (i=0; i < (ssize_t) *number_components; i++)
   {
     for (q=p; *q != '\0'; q++)
       if (IsBasenameSeparator(*q))
@@ -1607,7 +1618,7 @@ MagickExport MagickBooleanType IsMagickTrue(const char *value)
 %  The format of the ListFiles function is:
 %
 %      char **ListFiles(const char *directory,const char *pattern,
-%        long *number_entries)
+%        ssize_t *number_entries)
 %
 %  A description of each parameter follows:
 %
@@ -1658,7 +1669,7 @@ static inline int MagickReadDirectory(DIR *directory,struct dirent *entry,
 }
 
 MagickExport char **ListFiles(const char *directory,const char *pattern,
-  unsigned long *number_entries)
+  size_t *number_entries)
 {
   char
     **filelist;
@@ -1670,7 +1681,7 @@ MagickExport char **ListFiles(const char *directory,const char *pattern,
     *buffer,
     *entry;
 
-  unsigned long
+  size_t
     max_entries;
 
   /*
@@ -1679,7 +1690,7 @@ MagickExport char **ListFiles(const char *directory,const char *pattern,
   assert(directory != (const char *) NULL);
   (void) LogMagickEvent(TraceEvent,GetMagickModule(),"%s",directory);
   assert(pattern != (const char *) NULL);
-  assert(number_entries != (unsigned long *) NULL);
+  assert(number_entries != (size_t *) NULL);
   *number_entries=0;
   current_directory=opendir(directory);
   if (current_directory == (DIR *) NULL)
@@ -1772,7 +1783,7 @@ MagickExport char **ListFiles(const char *directory,const char *pattern,
 %
 %  The format of the MultilineCenus method is:
 %
-%      unsigned long MultilineCensus(const char *label)
+%      size_t MultilineCensus(const char *label)
 %
 %  A description of each parameter follows.
 %
@@ -1780,9 +1791,9 @@ MagickExport char **ListFiles(const char *directory,const char *pattern,
 %
 %
 */
-MagickExport unsigned long MultilineCensus(const char *label)
+MagickExport size_t MultilineCensus(const char *label)
 {
-  unsigned long
+  size_t
     number_lines;
 
   /*
@@ -1907,7 +1918,7 @@ MagickExport int SystemCommand(const MagickBooleanType asynchronous,
   PolicyRights
     rights;
 
-  register long
+  register ssize_t
     i;
 
   status=(-1);
@@ -1921,7 +1932,7 @@ MagickExport int SystemCommand(const MagickBooleanType asynchronous,
       errno=EPERM;
       (void) ThrowMagickException(exception,GetMagickModule(),PolicyError,
         "NotAuthorized","`%s'",arguments[1]);
-      for (i=0; i < number_arguments; i++)
+      for (i=0; i < (ssize_t) number_arguments; i++)
         arguments[i]=DestroyString(arguments[i]);
       arguments=(char **) RelinquishMagickMemory(arguments);
       return(-1);
@@ -2005,7 +2016,7 @@ MagickExport int SystemCommand(const MagickBooleanType asynchronous,
       "`%s' (%d)",command,status);
   if (shell_command != command)
     shell_command=DestroyString(shell_command);
-  for (i=0; i < number_arguments; i++)
+  for (i=0; i < (ssize_t) number_arguments; i++)
     arguments[i]=DestroyString(arguments[i]);
   arguments=(char **) RelinquishMagickMemory(arguments);
   return(status);

@@ -107,7 +107,7 @@ MagickExport MagickBooleanType InvokeStaticImageFilter(const char *tag,
   (void) exception;
 #else
   {
-    extern unsigned long
+    extern size_t
       analyzeImage(Image **,const int,char **,ExceptionInfo *);
 
     ImageFilterHandler
@@ -118,7 +118,7 @@ MagickExport MagickBooleanType InvokeStaticImageFilter(const char *tag,
       image_filter=(ImageFilterHandler *) analyzeImage;
     if (image_filter != (ImageFilterHandler *) NULL)
       {
-        unsigned long
+        size_t
           signature;
 
         if ((*image)->debug != MagickFalse)
@@ -131,7 +131,8 @@ MagickExport MagickBooleanType InvokeStaticImageFilter(const char *tag,
         if (signature != MagickImageFilterSignature)
           {
             (void) ThrowMagickException(exception,GetMagickModule(),ModuleError,
-              "ImageFilterSignatureMismatch","`%s': %8lx != %8lx",tag,signature,
+              "ImageFilterSignatureMismatch","`%s': %8lx != %8lx",tag,
+              (unsigned long) signature,(unsigned long)
               MagickImageFilterSignature);
             return(MagickFalse);
           }

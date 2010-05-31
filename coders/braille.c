@@ -86,10 +86,10 @@ static MagickBooleanType
 %
 %  The format of the RegisterBRAILLEImage method is:
 %
-%      unsigned long RegisterBRAILLEImage(void)
+%      size_t RegisterBRAILLEImage(void)
 %
 */
-ModuleExport unsigned long RegisterBRAILLEImage(void)
+ModuleExport size_t RegisterBRAILLEImage(void)
 {
   MagickInfo
     *entry;
@@ -179,7 +179,7 @@ static MagickBooleanType WriteBRAILLEImage(const ImageInfo *image_info,
     unicode = 0,
     iso_11548_1 = 0;
 
-  long
+  ssize_t
     y;
 
   MagickBooleanType
@@ -194,10 +194,10 @@ static MagickBooleanType WriteBRAILLEImage(const ImageInfo *image_info,
   IndexPacket
     polarity;
 
-  register long
+  register ssize_t
     x;
 
-  unsigned long
+  size_t
     cell_height = 4;
 
   /*
@@ -228,21 +228,21 @@ static MagickBooleanType WriteBRAILLEImage(const ImageInfo *image_info,
       }
       if (image->page.x)
       {
-        (void) FormatMagickString(buffer,MaxTextExtent,"X: %ld\n",
+        (void) FormatMagickString(buffer,MaxTextExtent,"X: %ld\n",(long) 
           image->page.x);
         (void) WriteBlobString(image,buffer);
       }
       if (image->page.y)
       {
-        (void) FormatMagickString(buffer,MaxTextExtent,"Y: %ld\n",
+        (void) FormatMagickString(buffer,MaxTextExtent,"Y: %ld\n",(long) 
           image->page.y);
         (void) WriteBlobString(image,buffer);
       }
       (void) FormatMagickString(buffer,MaxTextExtent,"Width: %lu\n",
-        image->columns+(image->columns % 2));
+        (unsigned long) (image->columns+(image->columns % 2)));
       (void) WriteBlobString(image,buffer);
       (void) FormatMagickString(buffer,MaxTextExtent,"Height: %lu\n",
-        image->rows);
+        (unsigned long) image->rows);
       (void) WriteBlobString(image,buffer);
       (void) WriteBlobString(image,"\n");
     }
@@ -256,19 +256,19 @@ static MagickBooleanType WriteBRAILLEImage(const ImageInfo *image_info,
         (PixelIntensityToQuantum(&image->colormap[0]) >=
          PixelIntensityToQuantum(&image->colormap[1]));
   }
-  for (y=0; y < (long) image->rows; y+=cell_height)
+  for (y=0; y < (ssize_t) image->rows; y+=(ssize_t) cell_height)
   {
     if ((y+cell_height) > image->rows)
-      cell_height = (unsigned long) (image->rows-y);
+      cell_height = (size_t) (image->rows-y);
 
     p=GetVirtualPixels(image,0,y,image->columns,cell_height,&image->exception);
     if (p == (const PixelPacket *) NULL)
       break;
     indexes=GetVirtualIndexQueue(image);
-    for (x=0; x < (long) image->columns; x+=2)
+    for (x=0; x < (ssize_t) image->columns; x+=2)
     {
       unsigned char cell = 0;
-      int two_columns = x+1 < (long) image->columns;
+      int two_columns = x+1 < (ssize_t) image->columns;
 
       do
       {
@@ -334,7 +334,8 @@ static MagickBooleanType WriteBRAILLEImage(const ImageInfo *image_info,
     }
     if (!iso_11548_1)
       (void) WriteBlobByte(image,'\n');
-    status=SetImageProgress(image,SaveImageTag,y,image->rows);
+    status=SetImageProgress(image,SaveImageTag,(MagickOffsetType) y,
+                image->rows);
     if (status == MagickFalse)
       break;
   }

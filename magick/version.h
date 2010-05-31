@@ -30,11 +30,11 @@ extern "C" {
 #define MagickLibVersion  0x662
 #define MagickLibVersionText  "6.6.2"
 #define MagickLibVersionNumber  3,0,0
-#define MagickLibAddendum  "-0"
+#define MagickLibAddendum  "-1"
 #define MagickLibInterface  3
 #define MagickLibMinInterface  3
-#define MagickReleaseDate  "2010-05-23"
-#define MagickChangeDate   "20100523"
+#define MagickReleaseDate  "2010-05-30"
+#define MagickChangeDate   "20100528"
 #define MagickAuthoritativeURL  "http://www.imagemagick.org"
 #define MagickHomeURL  "file:///usr/local/share/doc/ImageMagick-6.6.2/index.html"
 #if (MAGICKCORE_QUANTUM_DEPTH == 8)
@@ -81,10 +81,10 @@ extern MagickExport const char
   *GetMagickCopyright(void),
   *GetMagickFeatures(void),
   *GetMagickPackageName(void),
-  *GetMagickQuantumDepth(unsigned long *),
-  *GetMagickQuantumRange(unsigned long *),
+  *GetMagickQuantumDepth(size_t *),
+  *GetMagickQuantumRange(size_t *),
   *GetMagickReleaseDate(void),
-  *GetMagickVersion(unsigned long *);
+  *GetMagickVersion(size_t *);
 
 #if defined(__cplusplus) || defined(c_plusplus)
 }

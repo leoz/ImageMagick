@@ -23,8 +23,8 @@ int main( int /*argc*/, char ** argv)
 
   try {
 
-    unsigned int columns = 640;
-    unsigned int rows = 480;
+    size_t columns = 640;
+    size_t rows = 480;
     Geometry geometry(columns,rows);
     Color canvasColor( "red" );
     Image image( geometry, canvasColor);
@@ -691,7 +691,7 @@ int main( int /*argc*/, char ** argv)
       {
 	++failures;
 	cout << "Line: " << __LINE__ << ", fileSize ("
-	     << static_cast<long>(image.fileSize())
+	     << static_cast<ssize_t>(image.fileSize())
 	     << ") is not zero as expected" << endl;
       }
 

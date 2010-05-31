@@ -803,7 +803,7 @@ MagickExport StringInfo *DestroyStringInfo(StringInfo *string_info)
 */
 MagickExport char **DestroyStringList(char **list)
 {
-  register long
+  register ssize_t
     i;
 
   assert(list != (char **) NULL);
@@ -990,7 +990,7 @@ MagickExport StringInfo *FileToStringInfo(const char *filename,
 %
 %  The format of the FormatMagickSize method is:
 %
-%      long FormatMagickSize(const MagickSizeType size,char *format)
+%      ssize_t FormatMagickSize(const MagickSizeType size,char *format)
 %
 %  A description of each parameter follows:
 %
@@ -1001,7 +1001,7 @@ MagickExport StringInfo *FileToStringInfo(const char *filename,
 %    o format:  human readable format.
 %
 */
-MagickExport long FormatMagickSize(const MagickSizeType size,
+MagickExport ssize_t FormatMagickSize(const MagickSizeType size,
   const MagickBooleanType bi,char *format)
 {
   const char
@@ -1011,10 +1011,10 @@ MagickExport long FormatMagickSize(const MagickSizeType size,
     bytes,
     length;
 
-  long
+  ssize_t
     count;
 
-  register long
+  register ssize_t
     i,
     j;
 
@@ -1067,7 +1067,7 @@ MagickExport long FormatMagickSize(const MagickSizeType size,
 %
 %  The format of the FormatMagickString method is:
 %
-%      long FormatMagickString(char *string,const size_t length,
+%      ssize_t FormatMagickString(char *string,const size_t length,
 %        const char *format,...)
 %
 %  A description of each parameter follows.
@@ -1082,7 +1082,7 @@ MagickExport long FormatMagickSize(const MagickSizeType size,
 %
 */
 
-MagickExport long FormatMagickStringList(char *string,const size_t length,
+MagickExport ssize_t FormatMagickStringList(char *string,const size_t length,
   const char *format,va_list operands)
 {
   int
@@ -1095,20 +1095,20 @@ MagickExport long FormatMagickStringList(char *string,const size_t length,
 #endif
   if (n < 0)
     string[length-1]='\0';
-  return((long) n);
+  return((ssize_t) n);
 }
 
-MagickExport long FormatMagickString(char *string,const size_t length,
+MagickExport ssize_t FormatMagickString(char *string,const size_t length,
   const char *format,...)
 {
-  long
+  ssize_t
     n;
 
   va_list
     operands;
 
   va_start(operands,format);
-  n=(long) FormatMagickStringList(string,length,format,operands);
+  n=(ssize_t) FormatMagickStringList(string,length,format,operands);
   va_end(operands);
   return(n);
 }
@@ -1129,7 +1129,7 @@ MagickExport long FormatMagickString(char *string,const size_t length,
 %
 %  The format of the FormatMagickTime method is:
 %
-%      long FormatMagickTime(const time_t time,const size_t length,
+%      ssize_t FormatMagickTime(const time_t time,const size_t length,
 %        char *timestamp)
 %
 %  A description of each parameter follows.
@@ -1142,10 +1142,10 @@ MagickExport long FormatMagickString(char *string,const size_t length,
 %   o timestamp:  Return the Internet date/time here.
 %
 */
-MagickExport long FormatMagickTime(const time_t time,const size_t length,
+MagickExport ssize_t FormatMagickTime(const time_t time,const size_t length,
   char *timestamp)
 {
-  long
+  ssize_t
     count;
 
   struct tm
@@ -1894,7 +1894,7 @@ MagickExport char **StringToArgv(const char *text,int *argc)
     *p,
     *q;
 
-  register long
+  register ssize_t
     i;
 
   *argc=0;
@@ -1924,7 +1924,7 @@ MagickExport char **StringToArgv(const char *text,int *argc)
   */
   argv[0]=AcquireString("magick");
   p=text;
-  for (i=1; i < (long) *argc; i++)
+  for (i=1; i < (ssize_t) *argc; i++)
   {
     while (isspace((int) ((unsigned char) *p)) != 0)
       p++;
@@ -1992,7 +1992,7 @@ MagickExport char *StringInfoToHexString(const StringInfo *string_info)
   register const unsigned char
     *p;
 
-  register long
+  register ssize_t
     i;
 
   register unsigned char
@@ -2028,7 +2028,7 @@ MagickExport char *StringInfoToHexString(const StringInfo *string_info)
   hex_digits[15]='f';
   p=string_info->datum;
   q=(unsigned char *) string;
-  for (i=0; i < (long) string_info->length; i++)
+  for (i=0; i < (ssize_t) string_info->length; i++)
   {
     *q++=hex_digits[(*p >> 4) & 0x0f];
     *q++=hex_digits[*p & 0x0f];
@@ -2136,10 +2136,10 @@ MagickExport char **StringToList(const char *text)
   register const char
     *p;
 
-  register long
+  register ssize_t
     i;
 
-  unsigned long
+  size_t
     lines;
 
   if (text == (char *) NULL)
@@ -2165,7 +2165,7 @@ MagickExport char **StringToList(const char *text)
       if (textlist == (char **) NULL)
         ThrowFatalException(ResourceLimitFatalError,"UnableToConvertText");
       p=text;
-      for (i=0; i < (long) lines; i++)
+      for (i=0; i < (ssize_t) lines; i++)
       {
         for (q=p; *q != '\0'; q++)
           if ((*q == '\r') || (*q == '\n'))
@@ -2188,27 +2188,28 @@ MagickExport char **StringToList(const char *text)
       register char
         *q;
 
-      register long
+      register ssize_t
         j;
 
       /*
         Convert string to a HEX list.
       */
-      lines=(unsigned long) (strlen(text)/0x14)+1;
+      lines=(size_t) (strlen(text)/0x14)+1;
       textlist=(char **) AcquireQuantumMemory((size_t) lines+1UL,
         sizeof(*textlist));
       if (textlist == (char **) NULL)
         ThrowFatalException(ResourceLimitFatalError,"UnableToConvertText");
       p=text;
-      for (i=0; i < (long) lines; i++)
+      for (i=0; i < (ssize_t) lines; i++)
       {
         textlist[i]=(char *) AcquireQuantumMemory(2UL*MaxTextExtent,
           sizeof(*textlist));
         if (textlist[i] == (char *) NULL)
           ThrowFatalException(ResourceLimitFatalError,"UnableToConvertText");
-        (void) FormatMagickString(textlist[i],MaxTextExtent,"0x%08lx: ",0x14*i);
+        (void) FormatMagickString(textlist[i],MaxTextExtent,"0x%08lx: ",
+          (long) (0x14*i));
         q=textlist[i]+strlen(textlist[i]);
-        for (j=1; j <= (long) MagickMin(strlen(p),0x14); j++)
+        for (j=1; j <= (ssize_t) MagickMin(strlen(p),0x14); j++)
         {
           (void) FormatMagickString(hex_string,MaxTextExtent,"%02x",*(p+j));
           (void) CopyMagickString(q,hex_string,MaxTextExtent);
@@ -2224,7 +2225,7 @@ MagickExport char **StringToList(const char *text)
             *q++=' ';
         }
         *q++=' ';
-        for (j=1; j <= (long) MagickMin(strlen(p),0x14); j++)
+        for (j=1; j <= (ssize_t) MagickMin(strlen(p),0x14); j++)
         {
           if (isprint((int) ((unsigned char) *p)) != 0)
             *q++=(*p);

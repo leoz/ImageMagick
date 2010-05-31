@@ -43,7 +43,7 @@ typedef struct _DIR
   int
     d_VRefNum;
 
-  long int
+  long
     d_DirID;
 
   int
@@ -100,7 +100,7 @@ extern MagickExport struct dirent
   *readdir(DIR *);
 
 extern MagickExport void
-  seekdir(DIR *,long),
+  seekdir(DIR *,long
   closedir(DIR *);
 #endif
 

@@ -142,7 +142,7 @@ static Image *ReadPWPImage(const ImageInfo *image_info,ExceptionInfo *exception)
   register Image
     *p;
 
-  register long
+  register ssize_t
     i;
 
   size_t
@@ -154,7 +154,7 @@ static Image *ReadPWPImage(const ImageInfo *image_info,ExceptionInfo *exception)
   unsigned char
     magick[MaxTextExtent];
 
-  unsigned long
+  size_t
     filesize;
 
   /*
@@ -209,7 +209,7 @@ static Image *ReadPWPImage(const ImageInfo *image_info,ExceptionInfo *exception)
       }
     length=fwrite("SFW94A",1,6,file);
     filesize=65535UL*magick[2]+256L*magick[1]+magick[0];
-    for (i=0; i < (long) filesize; i++)
+    for (i=0; i < (ssize_t) filesize; i++)
     {
       c=ReadBlobByte(pwp_image);
       (void) fputc(c,file);
@@ -219,7 +219,7 @@ static Image *ReadPWPImage(const ImageInfo *image_info,ExceptionInfo *exception)
     if (next_image == (Image *) NULL)
       break;
     (void) FormatMagickString(next_image->filename,MaxTextExtent,
-      "slide_%02ld.sfw",next_image->scene);
+      "slide_%02ld.sfw",(long) next_image->scene);
     if (image == (Image *) NULL)
       image=next_image;
     else
@@ -278,10 +278,10 @@ static Image *ReadPWPImage(const ImageInfo *image_info,ExceptionInfo *exception)
 %
 %  The format of the RegisterPWPImage method is:
 %
-%      unsigned long RegisterPWPImage(void)
+%      size_t RegisterPWPImage(void)
 %
 */
-ModuleExport unsigned long RegisterPWPImage(void)
+ModuleExport size_t RegisterPWPImage(void)
 {
   MagickInfo
     *entry;

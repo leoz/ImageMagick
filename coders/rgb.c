@@ -100,7 +100,7 @@ static Image *ReadRGBImage(const ImageInfo *image_info,ExceptionInfo *exception)
     *canvas_image,
     *image;
 
-  long
+  ssize_t
     y;
 
   MagickBooleanType
@@ -115,7 +115,7 @@ static Image *ReadRGBImage(const ImageInfo *image_info,ExceptionInfo *exception)
   QuantumType
     quantum_type;
 
-  register long
+  register ssize_t
     i,
     j;
 
@@ -206,7 +206,7 @@ static Image *ReadRGBImage(const ImageInfo *image_info,ExceptionInfo *exception)
       */
       image->scene++;
       length=GetQuantumExtent(canvas_image,quantum_info,quantum_type);
-      for (y=0; y < (long) image->rows; y++)
+      for (y=0; y < (ssize_t) image->rows; y++)
       {
         count=ReadBlob(image,length,pixels);
         if (count != (ssize_t) length)
@@ -250,12 +250,12 @@ static Image *ReadRGBImage(const ImageInfo *image_info,ExceptionInfo *exception)
             if (count != (ssize_t) length)
               break;
           }
-        for (y=0; y < (long) image->extract_info.height; y++)
+        for (y=0; y < (ssize_t) image->extract_info.height; y++)
         {
           register const PixelPacket
             *restrict p;
 
-          register long
+          register ssize_t
             x;
 
           register PixelPacket
@@ -276,7 +276,7 @@ static Image *ReadRGBImage(const ImageInfo *image_info,ExceptionInfo *exception)
           if (SyncAuthenticPixels(canvas_image,exception) == MagickFalse)
             break;
           if (((y-image->extract_info.y) >= 0) &&
-              ((y-image->extract_info.y) < (long) image->rows))
+              ((y-image->extract_info.y) < (ssize_t) image->rows))
             {
               p=GetVirtualPixels(canvas_image,canvas_image->extract_info.x,0,
                 canvas_image->columns,1,exception);
@@ -285,7 +285,7 @@ static Image *ReadRGBImage(const ImageInfo *image_info,ExceptionInfo *exception)
               if ((p == (const PixelPacket *) NULL) ||
                   (q == (PixelPacket *) NULL))
                 break;
-              for (x=0; x < (long) image->columns; x++)
+              for (x=0; x < (ssize_t) image->columns; x++)
               {
                 qx[0]=GetRedPixelComponent(p);
                 qx[1]=GetGreenPixelComponent(p);
@@ -309,7 +309,8 @@ static Image *ReadRGBImage(const ImageInfo *image_info,ExceptionInfo *exception)
             }
           if (image->previous == (Image *) NULL)
             {
-              status=SetImageProgress(image,LoadImageTag,y,image->rows);
+              status=SetImageProgress(image,LoadImageTag,(MagickOffsetType) y,
+                image->rows);
               if (status == MagickFalse)
                 break;
             }
@@ -327,12 +328,12 @@ static Image *ReadRGBImage(const ImageInfo *image_info,ExceptionInfo *exception)
             length=GetQuantumExtent(canvas_image,quantum_info,quantum_types[0]);
             count=ReadBlob(image,length,pixels);
           }
-        for (y=0; y < (long) image->extract_info.height; y++)
+        for (y=0; y < (ssize_t) image->extract_info.height; y++)
         {
           register const PixelPacket
             *restrict p;
 
-          register long
+          register ssize_t
             x;
 
           register PixelPacket
@@ -355,7 +356,7 @@ static Image *ReadRGBImage(const ImageInfo *image_info,ExceptionInfo *exception)
             if (SyncAuthenticPixels(canvas_image,exception) == MagickFalse)
               break;
             if (((y-image->extract_info.y) >= 0) &&
-                ((y-image->extract_info.y) < (long) image->rows))
+                ((y-image->extract_info.y) < (ssize_t) image->rows))
               {
                 p=GetVirtualPixels(canvas_image,canvas_image->extract_info.x,
                   0,canvas_image->columns,1,exception);
@@ -365,7 +366,7 @@ static Image *ReadRGBImage(const ImageInfo *image_info,ExceptionInfo *exception)
                     (q == (PixelPacket *) NULL))
                   break;
                 if (i == (channels - 1))
-                  for (x=0; x < (long) image->columns; x++)
+                  for (x=0; x < (ssize_t) image->columns; x++)
                   {
                     SetRedPixelComponent(q,GetRedPixelComponent(p));
                     SetGreenPixelComponent(q,GetGreenPixelComponent(p));
@@ -381,7 +382,8 @@ static Image *ReadRGBImage(const ImageInfo *image_info,ExceptionInfo *exception)
           }
           if (image->previous == (Image *) NULL)
             {
-              status=SetImageProgress(image,LoadImageTag,y,image->rows);
+              status=SetImageProgress(image,LoadImageTag,(MagickOffsetType) y,
+                image->rows);
               if (status == MagickFalse)
                 break;
             }
@@ -400,12 +402,12 @@ static Image *ReadRGBImage(const ImageInfo *image_info,ExceptionInfo *exception)
           }
         for (i=0; i < channels; i++)
         {
-          for (y=0; y < (long) image->extract_info.height; y++)
+          for (y=0; y < (ssize_t) image->extract_info.height; y++)
           {
             register const PixelPacket
               *restrict p;
 
-            register long
+            register ssize_t
               x;
 
             register PixelPacket
@@ -426,7 +428,7 @@ static Image *ReadRGBImage(const ImageInfo *image_info,ExceptionInfo *exception)
             if (SyncAuthenticPixels(canvas_image,exception) == MagickFalse)
               break;
             if (((y-image->extract_info.y) >= 0) &&
-                ((y-image->extract_info.y) < (long) image->rows))
+                ((y-image->extract_info.y) < (ssize_t) image->rows))
               {
                 p=GetVirtualPixels(canvas_image,canvas_image->extract_info.x,0,
                   canvas_image->columns,1,exception);
@@ -435,7 +437,7 @@ static Image *ReadRGBImage(const ImageInfo *image_info,ExceptionInfo *exception)
                 if ((p == (const PixelPacket *) NULL) ||
                     (q == (PixelPacket *) NULL))
                   break;
-                for (x=0; x < (long) image->columns; x++)
+                for (x=0; x < (ssize_t) image->columns; x++)
                 {
                   switch(quantum_types[i])
                   {
@@ -494,8 +496,8 @@ static Image *ReadRGBImage(const ImageInfo *image_info,ExceptionInfo *exception)
                   break;
                 }
           length=GetQuantumExtent(canvas_image,quantum_info,quantum_types[i]);
-          for (j=0; j < (long) scene; j++)
-            for (y=0; y < (long) image->extract_info.height; y++)
+          for (j=0; j < (ssize_t) scene; j++)
+            for (y=0; y < (ssize_t) image->extract_info.height; y++)
               if (ReadBlob(image,length,pixels) != (ssize_t) length)
                 {
                   ThrowFileException(exception,CorruptImageError,
@@ -503,12 +505,12 @@ static Image *ReadRGBImage(const ImageInfo *image_info,ExceptionInfo *exception)
                   break;
                 }
           count=ReadBlob(image,length,pixels);
-          for (y=0; y < (long) image->extract_info.height; y++)
+          for (y=0; y < (ssize_t) image->extract_info.height; y++)
           {
             register const PixelPacket
               *restrict p;
 
-            register long
+            register ssize_t
               x;
 
             register PixelPacket
@@ -529,7 +531,7 @@ static Image *ReadRGBImage(const ImageInfo *image_info,ExceptionInfo *exception)
             if (SyncAuthenticPixels(canvas_image,exception) == MagickFalse)
               break;
             if (((y-image->extract_info.y) >= 0) &&
-                ((y-image->extract_info.y) < (long) image->rows))
+                ((y-image->extract_info.y) < (ssize_t) image->rows))
               {
                 p=GetVirtualPixels(canvas_image,canvas_image->extract_info.x,0,
                   canvas_image->columns,1,exception);
@@ -538,7 +540,7 @@ static Image *ReadRGBImage(const ImageInfo *image_info,ExceptionInfo *exception)
                 if ((p == (const PixelPacket *) NULL) ||
                     (q == (PixelPacket *) NULL))
                   break;
-                for (x=0; x < (long) image->columns; x++)
+                for (x=0; x < (ssize_t) image->columns; x++)
                 {
                   switch(quantum_types[i])
                   {
@@ -628,10 +630,10 @@ static Image *ReadRGBImage(const ImageInfo *image_info,ExceptionInfo *exception)
 %
 %  The format of the RegisterRGBImage method is:
 %
-%      unsigned long RegisterRGBImage(void)
+%      size_t RegisterRGBImage(void)
 %
 */
-ModuleExport unsigned long RegisterRGBImage(void)
+ModuleExport size_t RegisterRGBImage(void)
 {
   MagickInfo
     *entry;
@@ -780,7 +782,7 @@ ModuleExport void UnregisterRGBImage(void)
 */
 static MagickBooleanType WriteRGBImage(const ImageInfo *image_info,Image *image)
 {
-  long
+  ssize_t
     y;
 
   MagickBooleanType
@@ -796,7 +798,7 @@ static MagickBooleanType WriteRGBImage(const ImageInfo *image_info,Image *image)
     quantum_type,
     quantum_types[4];
 
-  register long
+  register ssize_t
     i;
 
   ssize_t
@@ -808,7 +810,7 @@ static MagickBooleanType WriteRGBImage(const ImageInfo *image_info,Image *image)
   unsigned char
     *pixels;
 
-  unsigned long
+  size_t
     channels;
 
   /*
@@ -843,7 +845,7 @@ static MagickBooleanType WriteRGBImage(const ImageInfo *image_info,Image *image)
       image->matte=MagickTrue;
       channels=4;
     }
-  for (i=0; i < (long) channels; i++)
+  for (i=0; i < (ssize_t) channels; i++)
   {
     switch (image_info->magick[i])
     {
@@ -887,9 +889,9 @@ static MagickBooleanType WriteRGBImage(const ImageInfo *image_info,Image *image)
           No interlacing:  RGBRGBRGBRGBRGBRGB...
         */
         image_view=AcquireCacheView(image);
-        for (y=0; y < (long) image->rows; y++)
+        for (y=0; y < (ssize_t) image->rows; y++)
         {
-          register long
+          register ssize_t
             x;
 
           register PixelPacket
@@ -899,7 +901,7 @@ static MagickBooleanType WriteRGBImage(const ImageInfo *image_info,Image *image)
             &image->exception);
           if (q == (PixelPacket *) NULL)
             break;
-          for (x=0; x < (long) image->columns; x++)
+          for (x=0; x < (ssize_t) image->columns; x++)
           {
             px=(*q);
             qx[0]=&(q->red);
@@ -922,7 +924,8 @@ static MagickBooleanType WriteRGBImage(const ImageInfo *image_info,Image *image)
             break;
           if (image->previous == (Image *) NULL)
             {
-              status=SetImageProgress(image,SaveImageTag,y,image->rows);
+              status=SetImageProgress(image,SaveImageTag,(MagickOffsetType) y,
+                image->rows);
               if (status == MagickFalse)
                 break;
             }
@@ -935,7 +938,7 @@ static MagickBooleanType WriteRGBImage(const ImageInfo *image_info,Image *image)
         /*
           Line interlacing:  RRR...GGG...BBB...RRR...GGG...BBB...
         */
-        for (y=0; y < (long) image->rows; y++)
+        for (y=0; y < (ssize_t) image->rows; y++)
         {
           register const PixelPacket
             *restrict p;
@@ -943,7 +946,7 @@ static MagickBooleanType WriteRGBImage(const ImageInfo *image_info,Image *image)
           p=GetVirtualPixels(image,0,y,image->columns,1,&image->exception);
           if (p == (const PixelPacket *) NULL)
             break;
-          for (i=0; i < (long) channels; i++)
+          for (i=0; i < (ssize_t) channels; i++)
           {
             length=ExportQuantumPixels(image,(const CacheView *) NULL,
               quantum_info,quantum_types[i],pixels,&image->exception);
@@ -953,7 +956,8 @@ static MagickBooleanType WriteRGBImage(const ImageInfo *image_info,Image *image)
           }
           if (image->previous == (Image *) NULL)
             {
-              status=SetImageProgress(image,SaveImageTag,y,image->rows);
+              status=SetImageProgress(image,SaveImageTag,(MagickOffsetType) y,
+                image->rows);
               if (status == MagickFalse)
                 break;
             }
@@ -965,9 +969,9 @@ static MagickBooleanType WriteRGBImage(const ImageInfo *image_info,Image *image)
         /*
           Plane interlacing:  RRRRRR...GGGGGG...BBBBBB...
         */
-        for (i=0; i < (long) channels; i++)
+        for (i=0; i < (ssize_t) channels; i++)
         {
-          for (y=0; y < (long) image->rows; y++)
+          for (y=0; y < (ssize_t) image->rows; y++)
           {
             register const PixelPacket
               *restrict p;
@@ -1004,7 +1008,7 @@ static MagickBooleanType WriteRGBImage(const ImageInfo *image_info,Image *image)
         /*
           Partition interlacing:  RRRRRR..., GGGGGG..., BBBBBB...
         */
-        for (i=0; i < (long) channels; i++)
+        for (i=0; i < (ssize_t) channels; i++)
         {
           sfx[0]=image_info->magick[i];
           AppendImageFormat(sfx,image->filename);
@@ -1012,7 +1016,7 @@ static MagickBooleanType WriteRGBImage(const ImageInfo *image_info,Image *image)
             AppendBinaryBlobMode,&image->exception);
           if (status == MagickFalse)
             return(status);
-          for (y=0; y < (long) image->rows; y++)
+          for (y=0; y < (ssize_t) image->rows; y++)
           {
             register const PixelPacket
               *restrict p;

@@ -112,8 +112,8 @@ typedef long long MagickOffsetType;
 typedef unsigned long long MagickSizeType;
 #define MagickSizeFormat  "%10llu"
 #else
-typedef long MagickOffsetType;
-typedef unsigned long MagickSizeType;
+typedef ssize_t MagickOffsetType;
+typedef size_t MagickSizeType;
 #define MagickSizeFormat  "%10lu"
 #endif
 #else

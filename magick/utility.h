@@ -37,8 +37,8 @@ typedef enum
 
 extern MagickExport char
   *Base64Encode(const unsigned char *,const size_t,size_t *),
-  **GetPathComponents(const char *,unsigned long *),
-  **ListFiles(const char *,const char *,unsigned long *);
+  **GetPathComponents(const char *,size_t *),
+  **ListFiles(const char *,const char *,size_t *);
 
 extern MagickExport FILE
   *OpenMagickStream(const char *,const char *);
@@ -46,9 +46,6 @@ extern MagickExport FILE
 extern MagickExport int
   SystemCommand(const MagickBooleanType,const MagickBooleanType,const char *,
     ExceptionInfo *);
-
-extern MagickExport long
-  GetMagickPageSize(void);
 
 extern MagickExport MagickBooleanType
   AcquireUniqueFilename(char *),
@@ -59,15 +56,18 @@ extern MagickExport MagickBooleanType
   IsMagickTrue(const char *),
   IsPathAccessible(const char *);
 
+extern MagickExport size_t
+  MultilineCensus(const char *);
+
+extern MagickExport ssize_t
+  GetMagickPageSize(void);
+
 extern MagickExport unsigned char
   *Base64Decode(const char *, size_t *);
 
-extern MagickExport unsigned long
-  MultilineCensus(const char *);
-
 extern MagickExport void
   AppendImageFormat(const char *,char *),
-  ChopPathComponents(char *,const unsigned long),
+  ChopPathComponents(char *,const size_t),
   ExpandFilename(char *),
   GetPathComponent(const char *,PathType,char *);
 

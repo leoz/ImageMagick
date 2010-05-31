@@ -163,7 +163,7 @@ static Image *ReadCALSImage(const ImageInfo *image_info,
   MagickBooleanType
     status;
 
-  register long
+  register ssize_t
     i;
 
   unsigned long
@@ -303,10 +303,10 @@ static Image *ReadCALSImage(const ImageInfo *image_info,
 %
 %  The format of the RegisterCALSImage method is:
 %
-%      unsigned long RegisterCALSImage(void)
+%      size_t RegisterCALSImage(void)
 %
 */
-ModuleExport unsigned long RegisterCALSImage(void)
+ModuleExport size_t RegisterCALSImage(void)
 {
   MagickInfo
     *entry;
@@ -410,7 +410,7 @@ static ssize_t WriteCALSRecord(Image *image,const char *data)
   register const char
     *p;
 
-  register long
+  register ssize_t
     i;
 
   i=0;
@@ -444,7 +444,7 @@ static MagickBooleanType WriteCALSImage(const ImageInfo *image_info,
   MagickBooleanType
     status;
 
-  register long
+  register ssize_t
     i;
 
   ssize_t
@@ -456,7 +456,7 @@ static MagickBooleanType WriteCALSImage(const ImageInfo *image_info,
   unsigned char
     *group4;
 
-  unsigned long
+  size_t
     density,
     orient_x,
     orient_y;
@@ -532,10 +532,10 @@ static MagickBooleanType WriteCALSImage(const ImageInfo *image_info,
     }
   }
   (void) FormatMagickString(header,MaxTextExtent,"rorient: %03ld,%03ld",
-    orient_x,orient_y);
+    (long) orient_x,(long) orient_y);
   count=WriteCALSRecord(image,header);
   (void) FormatMagickString(header,MaxTextExtent,"rpelcnt: %06lu,%06lu",
-    image->columns,image->rows);
+    (unsigned long) image->columns,(unsigned long) image->rows);
   count=WriteCALSRecord(image,header);  
   density=200;
   if (image_info->density != (char *) NULL)
@@ -544,9 +544,10 @@ static MagickBooleanType WriteCALSImage(const ImageInfo *image_info,
         geometry_info;
 
       (void) ParseGeometry(image_info->density,&geometry_info);
-      density=(unsigned long) floor(geometry_info.rho+0.5);
+      density=(size_t) floor(geometry_info.rho+0.5);
     }
-  (void) FormatMagickString(header,MaxTextExtent,"rdensty: %04lu",density);
+  (void) FormatMagickString(header,MaxTextExtent,"rdensty: %04lu",
+    (unsigned long) density);
   count=WriteCALSRecord(image,header);
   count=WriteCALSRecord(image,"notes: NONE");
   (void) ResetMagickMemory(header,' ',128);

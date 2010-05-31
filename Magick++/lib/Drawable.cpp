@@ -276,7 +276,7 @@ Magick::DrawableBezier::~DrawableBezier( void )
 }
 void Magick::DrawableBezier::operator()( MagickCore::DrawingWand * context_ ) const
 {
-  unsigned long num_coords = (unsigned long) _coordinates.size();
+  size_t num_coords = (size_t) _coordinates.size();
   PointInfo *coordinates = new PointInfo[num_coords];
 
   PointInfo *q = coordinates;
@@ -633,7 +633,7 @@ Magick::DrawableFont::DrawableFont ( const std::string &font_ )
 }
 Magick::DrawableFont::DrawableFont ( const std::string &family_,
                                      Magick::StyleType style_,
-                                     const unsigned long weight_,
+                                     const size_t weight_,
                                      Magick::StretchType stretch_ )
   : _font(),
     _family(family_),
@@ -794,7 +794,7 @@ Magick::DrawablePolygon::~DrawablePolygon ( void )
 void Magick::DrawablePolygon::operator()
   ( MagickCore::DrawingWand * context_ ) const
 {
-  unsigned long num_coords = (unsigned long) _coordinates.size();
+  size_t num_coords = (size_t) _coordinates.size();
   PointInfo *coordinates = new PointInfo[num_coords];
 
   PointInfo *q = coordinates;
@@ -834,7 +834,7 @@ Magick::DrawablePolyline::~DrawablePolyline ( void )
 void Magick::DrawablePolyline::operator()
   ( MagickCore::DrawingWand * context_ ) const
 {
-  unsigned long num_coords = (unsigned long) _coordinates.size();
+  size_t num_coords = (size_t) _coordinates.size();
   PointInfo *coordinates = new PointInfo[num_coords];
 
   PointInfo *q = coordinates;
@@ -900,8 +900,8 @@ Magick::DrawableBase* Magick::DrawablePopPattern::copy() const
 
 // Push Pattern definition
 Magick::DrawablePushPattern::DrawablePushPattern
-( const std::string &id_, long x_, long y_,
-  long width_, long height_ )
+( const std::string &id_, ssize_t x_, ssize_t y_,
+  size_t width_, size_t height_ )
   : _id(id_),
     _x(x_),
     _y(y_),
@@ -1026,7 +1026,7 @@ Magick::DrawableDashArray::DrawableDashArray( const double* dasharray_ )
 }
 // Deprecated, do not use for new code, and migrate existing code to
 // using double*
-Magick::DrawableDashArray::DrawableDashArray( const unsigned int* dasharray_ )
+Magick::DrawableDashArray::DrawableDashArray( const size_t* dasharray_ )
   : _size(0),
     _dasharray(0)
 {
@@ -1058,7 +1058,7 @@ Magick::DrawableDashArray& Magick::DrawableDashArray::operator=
 void Magick::DrawableDashArray::operator()
   ( MagickCore::DrawingWand * context_ ) const
 {
-  (void) DrawSetStrokeDashArray( context_, (unsigned long) _size, _dasharray );
+  (void) DrawSetStrokeDashArray( context_, (size_t) _size, _dasharray );
 }
 Magick::DrawableBase* Magick::DrawableDashArray::copy() const
 {
@@ -1071,7 +1071,7 @@ void Magick::DrawableDashArray::dasharray ( const double* dasharray_ )
   if(dasharray_)
     {
       // Count elements in dash array
-      unsigned int n = 0;
+      size_t n = 0;
       {
         const double *p = dasharray_;
         while(*p++ != 0)
@@ -1093,16 +1093,16 @@ void Magick::DrawableDashArray::dasharray ( const double* dasharray_ )
 }
 // This method is deprecated.  Don't use for new code, and migrate existing
 // code to the const double* version.
-void Magick::DrawableDashArray::dasharray( const unsigned int* dasharray_ )
+void Magick::DrawableDashArray::dasharray( const size_t* dasharray_ )
 {
   _dasharray=(double *) RelinquishMagickMemory(_dasharray);
 
   if(dasharray_)
     {
       // Count elements in dash array
-      unsigned int n = 0;
+      size_t n = 0;
       {
-        const unsigned int *p = dasharray_;
+        const size_t *p = dasharray_;
         while(*p++ != 0)
           n++;
       }
@@ -1113,7 +1113,7 @@ void Magick::DrawableDashArray::dasharray( const unsigned int* dasharray_ )
       // Copy elements
       {
         double *q = _dasharray;
-        const unsigned int *p = dasharray_;
+        const size_t *p = dasharray_;
         while( *p )
           *q++=static_cast<double>(*p++);
         *q=0;

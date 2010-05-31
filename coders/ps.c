@@ -130,7 +130,7 @@ static MagickBooleanType InvokePostscriptDelegate(
     argc,
     code;
 
-  register long
+  register ssize_t
     i;
 
 #if defined(MAGICKCORE_WINDOWS_SUPPORT)
@@ -177,7 +177,7 @@ static MagickBooleanType InvokePostscriptDelegate(
 #if defined(MAGICKCORE_WINDOWS_SUPPORT)
   NTGhostscriptUnLoadDLL();
 #endif
-  for (i=0; i < (long) argc; i++)
+  for (i=0; i < (ssize_t) argc; i++)
     argv[i]=DestroyString(argv[i]);
   argv=(char **) RelinquishMagickMemory(argv);
   if ((status != 0) && (status != -101))
@@ -287,7 +287,7 @@ static inline int ProfileInteger(Image *image,short int *hex_digits)
     l,
     value;
 
-  register long
+  register ssize_t
     i;
 
   l=0;
@@ -304,7 +304,7 @@ static inline int ProfileInteger(Image *image,short int *hex_digits)
     c&=0xff;
     if (isxdigit(c) == MagickFalse)
       continue;
-    value=(int) ((unsigned long) value << 4)+hex_digits[c];
+    value=(int) ((size_t) value << 4)+hex_digits[c];
     i++;
   }
   return(value);
@@ -382,7 +382,7 @@ static Image *ReadPSImage(const ImageInfo *image_info,ExceptionInfo *exception)
   register char
     *p;
 
-  register long
+  register ssize_t
     i;
 
   SegmentInfo
@@ -557,7 +557,7 @@ static Image *ReadPSImage(const ImageInfo *image_info,ExceptionInfo *exception)
         length=extent;
         profile=AcquireStringInfo(length);
         p=GetStringInfoDatum(profile);
-        for (i=0; i < (long) length; i++)
+        for (i=0; i < (ssize_t) length; i++)
           *p++=(unsigned char) ProfileInteger(image,hex_digits);
         (void) SetImageProfile(image,"8bim",profile);
         profile=DestroyStringInfo(profile);
@@ -666,8 +666,8 @@ static Image *ReadPSImage(const ImageInfo *image_info,ExceptionInfo *exception)
           "%gx%g%+.15g%+.15g",bounds.x2-bounds.x1,bounds.y2-bounds.y1,
           bounds.x1,bounds.y1);
         (void) SetImageProperty(image,"ps:HiResBoundingBox",geometry);
-        page.width=(unsigned long) floor(bounds.x2-bounds.x1+0.5);
-        page.height=(unsigned long) floor(bounds.y2-bounds.y1+0.5);
+        page.width=(size_t) floor(bounds.x2-bounds.x1+0.5);
+        page.height=(size_t) floor(bounds.y2-bounds.y1+0.5);
         hires_bounds=bounds;
       }
   }
@@ -691,7 +691,8 @@ static Image *ReadPSImage(const ImageInfo *image_info,ExceptionInfo *exception)
   count=write(file,command,(unsigned int) strlen(command));
   (void) FormatMagickString(translate_geometry,MaxTextExtent,
     "%g %g translate\n",-bounds.x1,-bounds.y1);
-  count=write(file,translate_geometry,strlen(translate_geometry));
+  count=write(file,translate_geometry,(unsigned int)
+    strlen(translate_geometry));
   file=close(file)-1;
   /*
     Render Postscript with the Ghostscript delegate.
@@ -727,11 +728,11 @@ static Image *ReadPSImage(const ImageInfo *image_info,ExceptionInfo *exception)
     image->x_resolution,image->y_resolution);
   if (image_info->page != (char *) NULL)
     (void) ParseAbsoluteGeometry(image_info->page,&page);
-  page.width=(unsigned long) floor(page.width*image->x_resolution/delta.x+0.5);
-  page.height=(unsigned long) floor(page.height*image->y_resolution/delta.y+
+  page.width=(size_t) floor(page.width*image->x_resolution/delta.x+0.5);
+  page.height=(size_t) floor(page.height*image->y_resolution/delta.y+
     0.5);
   (void) FormatMagickString(options,MaxTextExtent,"-g%lux%lu ",
-    page.width,page.height);
+    (unsigned long) page.width,(unsigned long) page.height);
   read_info=CloneImageInfo(image_info);
   *read_info->magick='\0';
   if (read_info->number_scenes != 0)
@@ -740,8 +741,8 @@ static Image *ReadPSImage(const ImageInfo *image_info,ExceptionInfo *exception)
         pages[MaxTextExtent];
 
       (void) FormatMagickString(pages,MaxTextExtent,"-dFirstPage=%lu "
-        "-dLastPage=%lu",read_info->scene+1,read_info->scene+
-        read_info->number_scenes);
+        "-dLastPage=%lu",(unsigned long) read_info->scene+1,(unsigned long)
+        (read_info->scene+read_info->number_scenes));
       (void) ConcatenateMagickString(options,pages,MaxTextExtent);
       read_info->number_scenes=0;
       if (read_info->scenes != (char *) NULL)
@@ -795,13 +796,13 @@ static Image *ReadPSImage(const ImageInfo *image_info,ExceptionInfo *exception)
       Image
         *clone_image;
 
-      register long
+      register ssize_t
         i;
 
       /*
         Add place holder images to meet the subimage specification requirement.
       */
-      for (i=0; i < (long) image_info->scene; i++)
+      for (i=0; i < (ssize_t) image_info->scene; i++)
       {
         clone_image=CloneImage(postscript_image,1,1,MagickTrue,exception);
         if (clone_image != (Image *) NULL)
@@ -852,10 +853,10 @@ static Image *ReadPSImage(const ImageInfo *image_info,ExceptionInfo *exception)
 %
 %  The format of the RegisterPSImage method is:
 %
-%      unsigned long RegisterPSImage(void)
+%      size_t RegisterPSImage(void)
 %
 */
-ModuleExport unsigned long RegisterPSImage(void)
+ModuleExport size_t RegisterPSImage(void)
 {
   MagickInfo
     *entry;
@@ -982,7 +983,7 @@ static inline size_t MagickMin(const size_t x,const size_t y)
 }
 
 static inline unsigned char *PopHexPixel(const char **hex_digits,
-  const unsigned long pixel,unsigned char *pixels)
+  const size_t pixel,unsigned char *pixels)
 {
   register const char
     *hex;
@@ -1010,7 +1011,7 @@ static MagickBooleanType WritePSImage(const ImageInfo *image_info,Image *image)
       q=PopHexPixel(hex_digits,ScaleQuantumToChar(pixel.green),q); \
       q=PopHexPixel(hex_digits,ScaleQuantumToChar(pixel.blue),q); \
     } \
-  q=PopHexPixel(hex_digits,(const unsigned long) MagickMin(length,0xff),q); \
+  q=PopHexPixel(hex_digits,(const size_t) MagickMin(length,0xff),q); \
 }
 
   static const char
@@ -1317,7 +1318,7 @@ static MagickBooleanType WritePSImage(const ImageInfo *image_info,Image *image)
   IndexPacket
     index;
 
-  long
+  ssize_t
     j,
     y;
 
@@ -1349,7 +1350,7 @@ static MagickBooleanType WritePSImage(const ImageInfo *image_info,Image *image)
   register const PixelPacket
     *p;
 
-  register long
+  register ssize_t
     i,
     x;
 
@@ -1368,7 +1369,7 @@ static MagickBooleanType WritePSImage(const ImageInfo *image_info,Image *image)
   unsigned char
     pixels[2048];
 
-  unsigned long
+  size_t
     bit,
     byte,
     page,
@@ -1419,18 +1420,19 @@ static MagickBooleanType WritePSImage(const ImageInfo *image_info,Image *image)
       }
     if (image->units == PixelsPerCentimeterResolution)
       {
-        resolution.x=(unsigned long) (100.0*2.54*resolution.x+0.5)/100.0;
-        resolution.y=(unsigned long) (100.0*2.54*resolution.y+0.5)/100.0;
+        resolution.x=(size_t) (100.0*2.54*resolution.x+0.5)/100.0;
+        resolution.y=(size_t) (100.0*2.54*resolution.y+0.5)/100.0;
       }
     SetGeometry(image,&geometry);
     (void) FormatMagickString(page_geometry,MaxTextExtent,"%lux%lu",
-      image->columns,image->rows);
+      (unsigned long) image->columns,(unsigned long) image->rows);
     if (image_info->page != (char *) NULL)
       (void) CopyMagickString(page_geometry,image_info->page,MaxTextExtent);
     else
       if ((image->page.width != 0) && (image->page.height != 0))
         (void) FormatMagickString(page_geometry,MaxTextExtent,"%lux%lu%+ld%+ld",
-          image->page.width,image->page.height,image->page.x,image->page.y);
+          (unsigned long) image->page.width,(unsigned long) image->page.height,
+          (long) image->page.x,(long) image->page.y);
       else
         if ((image->gravity != UndefinedGravity) &&
             (LocaleCompare(image_info->magick,"PS") == 0))
@@ -1439,16 +1441,16 @@ static MagickBooleanType WritePSImage(const ImageInfo *image_info,Image *image)
     (void) ParseMetaGeometry(page_geometry,&geometry.x,&geometry.y,
       &geometry.width,&geometry.height);
     scale.x=(double) (geometry.width*delta.x)/resolution.x;
-    geometry.width=(unsigned long) floor(scale.x+0.5);
+    geometry.width=(size_t) floor(scale.x+0.5);
     scale.y=(double) (geometry.height*delta.y)/resolution.y;
-    geometry.height=(unsigned long) floor(scale.y+0.5);
+    geometry.height=(size_t) floor(scale.y+0.5);
     (void) ParseAbsoluteGeometry(page_geometry,&media_info);
     (void) ParseGravityGeometry(image,page_geometry,&page_info,
       &image->exception);
     if (image->gravity != UndefinedGravity)
       {
         geometry.x=(-page_info.x);
-        geometry.y=(long) (media_info.height+page_info.y-image->rows);
+        geometry.y=(ssize_t) (media_info.height+page_info.y-image->rows);
       }
     pointsize=12.0;
     if (image_info->pointsize != 0.0)
@@ -1456,7 +1458,7 @@ static MagickBooleanType WritePSImage(const ImageInfo *image_info,Image *image)
     text_size=0;
     value=GetImageProperty(image,"label");
     if (value != (const char *) NULL)
-      text_size=(unsigned long) (MultilineCensus(value)*pointsize+12);
+      text_size=(size_t) (MultilineCensus(value)*pointsize+12);
     if (page == 1)
       {
         /*
@@ -1489,8 +1491,8 @@ static MagickBooleanType WritePSImage(const ImageInfo *image_info,Image *image)
           {
             (void) FormatMagickString(buffer,MaxTextExtent,
               "%%%%BoundingBox: %ld %ld %ld %ld\n",(long) ceil(bounds.x1-0.5),
-              (long) ceil(bounds.y1-0.5),(long) floor(bounds.x2+0.5),
-              (long) floor(bounds.y2+0.5));
+              (long) ceil(bounds.y1-0.5),(long) floor(bounds.x2+0.5),(long)
+              floor(bounds.y2+0.5));
             (void) WriteBlobString(image,buffer);
             (void) FormatMagickString(buffer,MaxTextExtent,
               "%%%%HiResBoundingBox: %g %g %g %g\n",bounds.x1,
@@ -1507,7 +1509,7 @@ static MagickBooleanType WritePSImage(const ImageInfo *image_info,Image *image)
               "%%BeginPhotoshop: %lu",(unsigned long) GetStringInfoLength(
               profile));
             (void) WriteBlobString(image,buffer);
-            for (i=0; i < (long) GetStringInfoLength(profile); i++)
+            for (i=0; i < (ssize_t) GetStringInfoLength(profile); i++)
             {
               if ((i % 32) == 0)
                 (void) WriteBlobString(image,"\n% ");
@@ -1528,7 +1530,7 @@ static MagickBooleanType WritePSImage(const ImageInfo *image_info,Image *image)
                "\n%%begin_xml_packet: %lu\n",(unsigned long)
                GetStringInfoLength(profile));
             (void) WriteBlobString(image,buffer);
-            for (i=0; i < (long) GetStringInfoLength(profile); i++)
+            for (i=0; i < (ssize_t) GetStringInfoLength(profile); i++)
               (void) WriteBlobByte(image,GetStringInfoDatum(profile)[i]);
             (void) WriteBlobString(image,"\n%end_xml_packet\n%end_xml_code\n");
           }
@@ -1548,7 +1550,7 @@ static MagickBooleanType WritePSImage(const ImageInfo *image_info,Image *image)
             (void) WriteBlobString(image,"%%Orientation: Portrait\n");
             (void) WriteBlobString(image,"%%PageOrder: Ascend\n");
             (void) FormatMagickString(buffer,MaxTextExtent,"%%%%Pages: %lu\n",
-              image_info->adjoin != MagickFalse ? (unsigned long)
+              image_info->adjoin != MagickFalse ? (size_t)
               GetImageListLength(image) : 1UL);
             (void) WriteBlobString(image,buffer);
           }
@@ -1562,13 +1564,13 @@ static MagickBooleanType WritePSImage(const ImageInfo *image_info,Image *image)
             Image
               *preview_image;
 
-            long
+            ssize_t
               y;
 
             Quantum
               pixel;
 
-            register long
+            register ssize_t
               x;
 
             /*
@@ -1581,12 +1583,13 @@ static MagickBooleanType WritePSImage(const ImageInfo *image_info,Image *image)
               Dump image as bitmap.
             */
             (void) FormatMagickString(buffer,MaxTextExtent,
-              "%%%%BeginPreview: %lu %lu %lu %lu\n%%  ",preview_image->columns,
-              preview_image->rows,1L,(((preview_image->columns+7) >> 3)*
-              preview_image->rows+35)/36);
+              "%%%%BeginPreview: %lu %lu %lu %lu\n%%  ",(unsigned long)
+              preview_image->columns,(unsigned long) preview_image->rows,1UL,
+              (unsigned long) ((((preview_image->columns+7) >> 3)*
+              preview_image->rows+35)/36));
             (void) WriteBlobString(image,buffer);
             q=pixels;
-            for (y=0; y < (long) image->rows; y++)
+            for (y=0; y < (ssize_t) image->rows; y++)
             {
               p=GetVirtualPixels(preview_image,0,y,preview_image->columns,1,
                 &preview_image->exception);
@@ -1595,7 +1598,7 @@ static MagickBooleanType WritePSImage(const ImageInfo *image_info,Image *image)
               indexes=GetVirtualIndexQueue(preview_image);
               bit=0;
               byte=0;
-              for (x=0; x < (long) preview_image->columns; x++)
+              for (x=0; x < (ssize_t) preview_image->columns; x++)
               {
                 byte<<=1;
                 pixel=PixelIntensityToQuantum(p);
@@ -1647,7 +1650,7 @@ static MagickBooleanType WritePSImage(const ImageInfo *image_info,Image *image)
         }
         value=GetImageProperty(image,"label");
         if (value != (const char *) NULL)
-          for (j=(long) MultilineCensus(value)-1; j >= 0; j--)
+          for (j=(ssize_t) MultilineCensus(value)-1; j >= 0; j--)
           {
             (void) WriteBlobString(image,"  /label 512 string def\n");
             (void) WriteBlobString(image,"  currentfile label readline pop\n");
@@ -1665,12 +1668,13 @@ static MagickBooleanType WritePSImage(const ImageInfo *image_info,Image *image)
         (void) WriteBlobString(image,"} bind def\n");
         (void) WriteBlobString(image,"%%EndProlog\n");
       }
-    (void) FormatMagickString(buffer,MaxTextExtent,"%%%%Page:  1 %lu\n",page++);
+    (void) FormatMagickString(buffer,MaxTextExtent,"%%%%Page:  1 %lu\n",
+      (unsigned long) page++);
     (void) WriteBlobString(image,buffer);
     (void) FormatMagickString(buffer,MaxTextExtent,
-      "%%%%PageBoundingBox: %ld %ld %ld %ld\n",geometry.x,geometry.y,
-      geometry.x+(long) geometry.width,geometry.y+(long) (geometry.height+
-      text_size));
+      "%%%%PageBoundingBox: %ld %ld %ld %ld\n",(long) geometry.x,(long)
+      geometry.y,geometry.x+(long) geometry.width,geometry.y+(long)
+      (geometry.height+text_size));
     (void) WriteBlobString(image,buffer);
     if ((double) geometry.x < bounds.x1)
       bounds.x1=(double) geometry.x;
@@ -1689,9 +1693,8 @@ static MagickBooleanType WritePSImage(const ImageInfo *image_info,Image *image)
     /*
       Output image data.
     */
-    (void) FormatMagickString(buffer,MaxTextExtent,
-      "%ld %ld\n%g %g\n%g\n",geometry.x,geometry.y,scale.x,scale.y,
-      pointsize);
+    (void) FormatMagickString(buffer,MaxTextExtent,"%ld %ld\n%g %g\n%g\n",
+      (long) geometry.x,(long) geometry.y,scale.x,scale.y,pointsize);
     (void) WriteBlobString(image,buffer);
     labels=(char **) NULL;
     value=GetImageProperty(image,"label");
@@ -1724,16 +1727,17 @@ static MagickBooleanType WritePSImage(const ImageInfo *image_info,Image *image)
               Dump image as grayscale.
             */
             (void) FormatMagickString(buffer,MaxTextExtent,
-              "%lu %lu\n1\n1\n1\n8\n",image->columns,image->rows);
+              "%lu %lu\n1\n1\n1\n8\n",(unsigned long) image->columns,
+              (unsigned long) image->rows);
             (void) WriteBlobString(image,buffer);
             q=pixels;
-            for (y=0; y < (long) image->rows; y++)
+            for (y=0; y < (ssize_t) image->rows; y++)
             {
               p=GetVirtualPixels(image,0,y,image->columns,1,
                 &image->exception);
               if (p == (const PixelPacket *) NULL)
                 break;
-              for (x=0; x < (long) image->columns; x++)
+              for (x=0; x < (ssize_t) image->columns; x++)
               {
                 pixel=ScaleQuantumToChar(PixelIntensityToQuantum(p));
                 q=PopHexPixel(hex_digits,pixel,q);
@@ -1748,7 +1752,8 @@ static MagickBooleanType WritePSImage(const ImageInfo *image_info,Image *image)
               }
               if (image->previous == (Image *) NULL)
                 {
-                  status=SetImageProgress(image,SaveImageTag,y,image->rows);
+                  status=SetImageProgress(image,SaveImageTag,(MagickOffsetType) y,
+                image->rows);
                   if (status == MagickFalse)
                     break;
                 }
@@ -1761,7 +1766,7 @@ static MagickBooleanType WritePSImage(const ImageInfo *image_info,Image *image)
           }
         else
           {
-            long
+            ssize_t
               y;
 
             Quantum
@@ -1771,10 +1776,11 @@ static MagickBooleanType WritePSImage(const ImageInfo *image_info,Image *image)
               Dump image as bitmap.
             */
             (void) FormatMagickString(buffer,MaxTextExtent,
-              "%lu %lu\n1\n1\n1\n1\n",image->columns,image->rows);
+              "%lu %lu\n1\n1\n1\n1\n",(unsigned long) image->columns,
+              (unsigned long) image->rows);
             (void) WriteBlobString(image,buffer);
             q=pixels;
-            for (y=0; y < (long) image->rows; y++)
+            for (y=0; y < (ssize_t) image->rows; y++)
             {
               p=GetVirtualPixels(image,0,y,image->columns,1,
                 &image->exception);
@@ -1783,7 +1789,7 @@ static MagickBooleanType WritePSImage(const ImageInfo *image_info,Image *image)
               indexes=GetVirtualIndexQueue(image);
               bit=0;
               byte=0;
-              for (x=0; x < (long) image->columns; x++)
+              for (x=0; x < (ssize_t) image->columns; x++)
               {
                 byte<<=1;
                 pixel=PixelIntensityToQuantum(p);
@@ -1817,7 +1823,8 @@ static MagickBooleanType WritePSImage(const ImageInfo *image_info,Image *image)
                 };
               if (image->previous == (Image *) NULL)
                 {
-                  status=SetImageProgress(image,SaveImageTag,y,image->rows);
+                  status=SetImageProgress(image,SaveImageTag,(MagickOffsetType) y,
+                image->rows);
                   if (status == MagickFalse)
                     break;
                 }
@@ -1837,7 +1844,7 @@ static MagickBooleanType WritePSImage(const ImageInfo *image_info,Image *image)
             Dump DirectClass image.
           */
           (void) FormatMagickString(buffer,MaxTextExtent,"%lu %lu\n0\n%d\n",
-            image->columns,image->rows,
+            (unsigned long) image->columns,(unsigned long) image->rows,
             image_info->compression == RLECompression ? 1 : 0);
           (void) WriteBlobString(image,buffer);
           switch (image_info->compression)
@@ -1848,7 +1855,7 @@ static MagickBooleanType WritePSImage(const ImageInfo *image_info,Image *image)
                 Dump runlength-encoded DirectColor packets.
               */
               q=pixels;
-              for (y=0; y < (long) image->rows; y++)
+              for (y=0; y < (ssize_t) image->rows; y++)
               {
                 p=GetVirtualPixels(image,0,y,image->columns,1,
                   &image->exception);
@@ -1856,12 +1863,12 @@ static MagickBooleanType WritePSImage(const ImageInfo *image_info,Image *image)
                   break;
                 pixel=(*p);
                 length=255;
-                for (x=0; x < (long) image->columns; x++)
+                for (x=0; x < (ssize_t) image->columns; x++)
                 {
                   if ((p->red == pixel.red) && (p->green == pixel.green) &&
                       (p->blue == pixel.blue) &&
                       (p->opacity == pixel.opacity) && (length < 255) &&
-                      (x < (long) (image->columns-1)))
+                      (x < (ssize_t) (image->columns-1)))
                     length++;
                   else
                     {
@@ -1889,7 +1896,8 @@ static MagickBooleanType WritePSImage(const ImageInfo *image_info,Image *image)
                   }
                 if (image->previous == (Image *) NULL)
                   {
-                    status=SetImageProgress(image,SaveImageTag,y,image->rows);
+                    status=SetImageProgress(image,SaveImageTag,(MagickOffsetType) y,
+                image->rows);
                     if (status == MagickFalse)
                       break;
                   }
@@ -1908,13 +1916,13 @@ static MagickBooleanType WritePSImage(const ImageInfo *image_info,Image *image)
                 Dump uncompressed DirectColor packets.
               */
               q=pixels;
-              for (y=0; y < (long) image->rows; y++)
+              for (y=0; y < (ssize_t) image->rows; y++)
               {
                 p=GetVirtualPixels(image,0,y,image->columns,1,
                   &image->exception);
                 if (p == (const PixelPacket *) NULL)
                   break;
-                for (x=0; x < (long) image->columns; x++)
+                for (x=0; x < (ssize_t) image->columns; x++)
                 {
                   if ((image->matte != MagickFalse) &&
                       (p->opacity == (Quantum) TransparentOpacity))
@@ -1939,7 +1947,8 @@ static MagickBooleanType WritePSImage(const ImageInfo *image_info,Image *image)
                 }
                 if (image->previous == (Image *) NULL)
                   {
-                    status=SetImageProgress(image,SaveImageTag,y,image->rows);
+                    status=SetImageProgress(image,SaveImageTag,(MagickOffsetType) y,
+                image->rows);
                     if (status == MagickFalse)
                       break;
                   }
@@ -1960,16 +1969,17 @@ static MagickBooleanType WritePSImage(const ImageInfo *image_info,Image *image)
             Dump PseudoClass image.
           */
           (void) FormatMagickString(buffer,MaxTextExtent,"%lu %lu\n%d\n%d\n0\n",
-            image->columns,image->rows,
+            (unsigned long) image->columns,(unsigned long) image->rows,
             image->storage_class == PseudoClass ? 1 : 0,
             image_info->compression == RLECompression ? 1 : 0);
           (void) WriteBlobString(image,buffer);
           /*
             Dump number of colors and colormap.
           */
-          (void) FormatMagickString(buffer,MaxTextExtent,"%lu\n",image->colors);
+          (void) FormatMagickString(buffer,MaxTextExtent,"%lu\n",(unsigned long)
+            image->colors);
           (void) WriteBlobString(image,buffer);
-          for (i=0; i < (long) image->colors; i++)
+          for (i=0; i < (ssize_t) image->colors; i++)
           {
             (void) FormatMagickString(buffer,MaxTextExtent,"%02X%02X%02X\n",
               ScaleQuantumToChar(image->colormap[i].red),
@@ -1985,7 +1995,7 @@ static MagickBooleanType WritePSImage(const ImageInfo *image_info,Image *image)
                 Dump runlength-encoded PseudoColor packets.
               */
               q=pixels;
-              for (y=0; y < (long) image->rows; y++)
+              for (y=0; y < (ssize_t) image->rows; y++)
               {
                 p=GetVirtualPixels(image,0,y,image->columns,1,
                   &image->exception);
@@ -1994,17 +2004,17 @@ static MagickBooleanType WritePSImage(const ImageInfo *image_info,Image *image)
                 indexes=GetVirtualIndexQueue(image);
                 index=(*indexes);
                 length=255;
-                for (x=0; x < (long) image->columns; x++)
+                for (x=0; x < (ssize_t) image->columns; x++)
                 {
                   if ((index == indexes[x]) && (length < 255) &&
-                      (x < ((long) image->columns-1)))
+                      (x < ((ssize_t) image->columns-1)))
                     length++;
                   else
                     {
                       if (x > 0)
                         {
                           q=PopHexPixel(hex_digits,index,q);
-                          q=PopHexPixel(hex_digits,(unsigned long)
+                          q=PopHexPixel(hex_digits,(size_t)
                             MagickMin(length,0xff),q);
                           i++;
                           if ((q-pixels+6) >= 80)
@@ -2021,11 +2031,12 @@ static MagickBooleanType WritePSImage(const ImageInfo *image_info,Image *image)
                   p++;
                 }
                 q=PopHexPixel(hex_digits,index,q);
-                q=PopHexPixel(hex_digits,(unsigned long)
+                q=PopHexPixel(hex_digits,(size_t)
                   MagickMin(length,0xff),q);
                 if (image->previous == (Image *) NULL)
                   {
-                    status=SetImageProgress(image,SaveImageTag,y,image->rows);
+                    status=SetImageProgress(image,SaveImageTag,(MagickOffsetType) y,
+                image->rows);
                     if (status == MagickFalse)
                       break;
                   }
@@ -2044,14 +2055,14 @@ static MagickBooleanType WritePSImage(const ImageInfo *image_info,Image *image)
                 Dump uncompressed PseudoColor packets.
               */
               q=pixels;
-              for (y=0; y < (long) image->rows; y++)
+              for (y=0; y < (ssize_t) image->rows; y++)
               {
                 p=GetVirtualPixels(image,0,y,image->columns,1,
                   &image->exception);
                 if (p == (const PixelPacket *) NULL)
                   break;
                 indexes=GetVirtualIndexQueue(image);
-                for (x=0; x < (long) image->columns; x++)
+                for (x=0; x < (ssize_t) image->columns; x++)
                 {
                   q=PopHexPixel(hex_digits,indexes[x],q);
                   if ((q-pixels+4) >= 80)
@@ -2064,7 +2075,8 @@ static MagickBooleanType WritePSImage(const ImageInfo *image_info,Image *image)
                 }
                 if (image->previous == (Image *) NULL)
                   {
-                    status=SetImageProgress(image,SaveImageTag,y,image->rows);
+                    status=SetImageProgress(image,SaveImageTag,(MagickOffsetType) y,
+                image->rows);
                     if (status == MagickFalse)
                       break;
                   }

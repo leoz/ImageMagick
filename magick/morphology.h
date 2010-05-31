@@ -52,13 +52,16 @@ typedef enum
   EdgesKernel,
   CornersKernel,
   RidgesKernel,
+  Ridges2Kernel,
   LineEndsKernel,
   LineJunctionsKernel,
   ConvexHullKernel,
   SkeletonKernel,
+  MatKernel,
   ChebyshevKernel,    /* Distance Measuring Kernels */
   ManhattenKernel,
   EuclideanKernel,
+  TestKernel,         /* Kernel being tested as posible addition */
   UserDefinedKernel   /* User Specified Kernel Array */
 } KernelInfoType;
 
@@ -97,11 +100,11 @@ typedef struct KernelInfo
   KernelInfoType
     type;
 
-  unsigned long
+  size_t
     width,
     height;
 
-  long
+  ssize_t
     x,
     y;
 
@@ -116,7 +119,7 @@ typedef struct KernelInfo
   struct KernelInfo
     *next;
 
-  unsigned long
+  size_t
     signature;
 } KernelInfo;
 
@@ -128,10 +131,10 @@ extern MagickExport KernelInfo
   *DestroyKernelInfo(KernelInfo *);
 
 extern MagickExport Image
-  *MorphologyImage(const Image *,const MorphologyMethod,const long,
+  *MorphologyImage(const Image *,const MorphologyMethod,const ssize_t,
     const KernelInfo *,ExceptionInfo *),
   *MorphologyImageChannel(const Image *,const ChannelType,
-    const MorphologyMethod,const long,const KernelInfo *,ExceptionInfo *);
+    const MorphologyMethod,const ssize_t,const KernelInfo *,ExceptionInfo *);
 
 extern MagickExport void
   ScaleGeometryKernelInfo(KernelInfo *,const char *),

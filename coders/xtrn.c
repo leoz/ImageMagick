@@ -462,7 +462,7 @@ size_t SafeArrayFifo(const Image *image,const void *data,const size_t length)
       hr = SafeArrayAccessData(pSafeArray, (void**)&pReturnBuffer);
             if( FAILED(hr) )
                     return 0;
-            (void) CopyMagickMemory( pReturnBuffer+lCount, (unsigned char *)data, length );
+            (void) memcpy( pReturnBuffer+lCount, (unsigned char *)data, length );
       hr = SafeArrayUnaccessData(pSafeArray);
             if( FAILED(hr) )
                     return 0;

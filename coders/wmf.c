@@ -129,7 +129,7 @@ static Image *ReadWMFImage(const ImageInfo *image_info,ExceptionInfo *exception)
   MagickBooleanType
     status;
 
-  unsigned long
+  size_t
     flags;
 
   wmfAPI
@@ -162,7 +162,7 @@ static Image *ReadWMFImage(const ImageInfo *image_info,ExceptionInfo *exception)
   flags|=WMF_OPT_IGNORE_NONFATAL;
   flags|=WMF_OPT_FUNCTION;
   options.function=wmf_eps_function;
-  wmf_status=wmf_api_create(&wmf_info,flags,&options);
+  wmf_status=wmf_api_create(&wmf_info,(unsigned long) flags,&options);
   if (wmf_status != wmf_E_None)
     {
       if (wmf_info != (wmfAPI *) NULL)
@@ -248,10 +248,10 @@ static Image *ReadWMFImage(const ImageInfo *image_info,ExceptionInfo *exception)
 %
 %  The format of the RegisterWMFImage method is:
 %
-%      unsigned long RegisterWMFImage(void)
+%      size_t RegisterWMFImage(void)
 %
 */
-ModuleExport unsigned long RegisterWMFImage(void)
+ModuleExport size_t RegisterWMFImage(void)
 {
   MagickInfo
     *entry;

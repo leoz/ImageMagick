@@ -98,13 +98,13 @@ static Image *ReadMTVImage(const ImageInfo *image_info,ExceptionInfo *exception)
   Image
     *image;
 
-  long
+  ssize_t
     y;
 
   MagickBooleanType
     status;
 
-  register long
+  register ssize_t
     x;
 
   register PixelPacket
@@ -165,7 +165,7 @@ static Image *ReadMTVImage(const ImageInfo *image_info,ExceptionInfo *exception)
       3UL*sizeof(*pixels));
     if (pixels == (unsigned char *) NULL)
       ThrowReaderException(ResourceLimitError,"MemoryAllocationFailed");
-    for (y=0; y < (long) image->rows; y++)
+    for (y=0; y < (ssize_t) image->rows; y++)
     {
       count=(ssize_t) ReadBlob(image,(size_t) (3*image->columns),pixels);
       if (count != (ssize_t) (3*image->columns))
@@ -174,7 +174,7 @@ static Image *ReadMTVImage(const ImageInfo *image_info,ExceptionInfo *exception)
       q=QueueAuthenticPixels(image,0,y,image->columns,1,exception);
       if (q == (PixelPacket *) NULL)
         break;
-      for (x=0; x < (long) image->columns; x++)
+      for (x=0; x < (ssize_t) image->columns; x++)
       {
         q->red=ScaleCharToQuantum(*p++);
         q->green=ScaleCharToQuantum(*p++);
@@ -186,7 +186,8 @@ static Image *ReadMTVImage(const ImageInfo *image_info,ExceptionInfo *exception)
         break;
       if (image->previous == (Image *) NULL)
         {
-          status=SetImageProgress(image,LoadImageTag,y,image->rows);
+          status=SetImageProgress(image,LoadImageTag,(MagickOffsetType) y,
+                image->rows);
           if (status == MagickFalse)
             break;
         }
@@ -249,10 +250,10 @@ static Image *ReadMTVImage(const ImageInfo *image_info,ExceptionInfo *exception)
 %
 %  The format of the RegisterMTVImage method is:
 %
-%      unsigned long RegisterMTVImage(void)
+%      size_t RegisterMTVImage(void)
 %
 */
-ModuleExport unsigned long RegisterMTVImage(void)
+ModuleExport size_t RegisterMTVImage(void)
 {
   MagickInfo
     *entry;
@@ -320,7 +321,7 @@ static MagickBooleanType WriteMTVImage(const ImageInfo *image_info,Image *image)
   char
     buffer[MaxTextExtent];
 
-  long
+  ssize_t
     y;
 
   MagickBooleanType
@@ -332,7 +333,7 @@ static MagickBooleanType WriteMTVImage(const ImageInfo *image_info,Image *image)
   register const PixelPacket
     *p;
 
-  register long
+  register ssize_t
     x;
 
   register unsigned char
@@ -369,15 +370,15 @@ static MagickBooleanType WriteMTVImage(const ImageInfo *image_info,Image *image)
       Initialize raster file header.
     */
     (void) FormatMagickString(buffer,MaxTextExtent,"%lu %lu\n",
-      image->columns,image->rows);
+      (unsigned long) image->columns,(unsigned long) image->rows);
     (void) WriteBlobString(image,buffer);
-    for (y=0; y < (long) image->rows; y++)
+    for (y=0; y < (ssize_t) image->rows; y++)
     {
       p=GetVirtualPixels(image,0,y,image->columns,1,&image->exception);
       if (p == (const PixelPacket *) NULL)
         break;
       q=pixels;
-      for (x=0; x < (long) image->columns; x++)
+      for (x=0; x < (ssize_t) image->columns; x++)
       {
         *q++=ScaleQuantumToChar(GetRedPixelComponent(p));
         *q++=ScaleQuantumToChar(GetGreenPixelComponent(p));
@@ -387,7 +388,8 @@ static MagickBooleanType WriteMTVImage(const ImageInfo *image_info,Image *image)
       (void) WriteBlob(image,(size_t) (q-pixels),pixels);
       if (image->previous == (Image *) NULL)
         {
-          status=SetImageProgress(image,SaveImageTag,y,image->rows);
+          status=SetImageProgress(image,SaveImageTag,(MagickOffsetType) y,
+                image->rows);
           if (status == MagickFalse)
             break;
         }

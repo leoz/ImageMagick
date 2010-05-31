@@ -59,14 +59,14 @@ typedef struct _LogInfo
   LogInfo;
 
 extern MagickExport char
-  **GetLogList(const char *,unsigned long *,ExceptionInfo *);
+  **GetLogList(const char *,size_t *,ExceptionInfo *);
 
 extern MagickExport const char
   *GetLogName(void),
   *SetLogName(const char *);
                                                                                 
 extern MagickExport const LogInfo
-  **GetLogInfoList(const char *,unsigned long *,ExceptionInfo *);
+  **GetLogInfoList(const char *,size_t *,ExceptionInfo *);
 
 extern MagickExport LogEventType
   SetLogEventMask(const char *);
@@ -75,12 +75,11 @@ extern MagickExport MagickBooleanType
   IsEventLogging(void),
   ListLogInfo(FILE *,ExceptionInfo *),
   LogComponentGenesis(void),
-  LogMagickEvent(const LogEventType,const char *,const char *,
-    const unsigned long,const char *,...) 
+  LogMagickEvent(const LogEventType,const char *,const char *,const size_t,
+    const char *,...) 
     magick_attribute((format (printf,5,6))),
-  LogMagickEventList(const LogEventType,const char *,const char *,
-    const unsigned long,const char *,va_list)
-    magick_attribute((format (printf,5,0)));
+  LogMagickEventList(const LogEventType,const char *,const char *,const size_t,
+    const char *,va_list) magick_attribute((format (printf,5,0)));
 
 extern MagickExport void
   CloseMagickLog(void),

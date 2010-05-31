@@ -141,7 +141,7 @@ typedef struct _SVGInfo
   AffineMatrix
     affine;
 
-  unsigned long
+  size_t
     width,
     height;
 
@@ -375,7 +375,7 @@ static char **GetStyleTokens(void *context,const char *style,int *number_tokens)
     *text,
     **tokens;
 
-  register long
+  register ssize_t
     i;
 
   SVGInfo
@@ -406,7 +406,7 @@ static char **GetTransformTokens(void *context,const char *text,
     *p,
     *q;
 
-  register long
+  register ssize_t
     i;
 
   SVGInfo
@@ -792,7 +792,7 @@ static void SVGStartElement(void *context,const xmlChar *name,
   SVGInfo
     *svg_info;
 
-  register long
+  register ssize_t
     i,
     j;
 
@@ -2114,10 +2114,10 @@ static void SVGStartElement(void *context,const xmlChar *name,
           if ((svg_info->view_box.width == 0.0) ||
               (svg_info->view_box.height == 0.0))
             svg_info->view_box=svg_info->bounds;
-          svg_info->width=(unsigned long) floor(svg_info->bounds.width+0.5);
-          svg_info->height=(unsigned long) floor(svg_info->bounds.height+0.5);
-          MVGPrintf(svg_info->file,"viewbox 0 0 %lu %lu\n",svg_info->width,
-            svg_info->height);
+          svg_info->width=(size_t) floor(svg_info->bounds.width+0.5);
+          svg_info->height=(size_t) floor(svg_info->bounds.height+0.5);
+          MVGPrintf(svg_info->file,"viewbox 0 0 %lu %lu\n",(unsigned long)
+            svg_info->width,(unsigned long) svg_info->height);
           sx=(double) svg_info->width/svg_info->view_box.width;
           sy=(double) svg_info->height/svg_info->view_box.height;
           MVGPrintf(svg_info->file,"affine %g 0 0 %g 0.0 0.0\n",sx,sy);
@@ -2401,7 +2401,7 @@ static void SVGCharacters(void *context,const xmlChar *c,int length)
   register char
     *p;
 
-  register long
+  register ssize_t
     i;
 
   SVGInfo
@@ -2426,7 +2426,7 @@ static void SVGCharacters(void *context,const xmlChar *c,int length)
   if (svg_info->text == (char *) NULL)
     return;
   p=svg_info->text+strlen(svg_info->text);
-  for (i=0; i < (long) length; i++)
+  for (i=0; i < (ssize_t) length; i++)
     *p++=c[i];
   *p='\0';
 }
@@ -2657,7 +2657,6 @@ static void SVGExternalSubset(void *context,const xmlChar *name,
 }
 
 #if defined(MAGICKCORE_RSVG_DELEGATE)
-#if !defined(MAGICKCORE_CAIRO_DELEGATE)
 static void SVGSetImageSize(int *width,int *height,gpointer context)
 {
   Image
@@ -2667,7 +2666,6 @@ static void SVGSetImageSize(int *width,int *height,gpointer context)
   *width=(int) (*width*image->x_resolution/72.0);
   *height=(int) (*height*image->y_resolution/72.0);
 }
-#endif
 #endif
 
 #if defined(__cplusplus) || defined(c_plusplus)
@@ -2689,7 +2687,7 @@ static Image *ReadSVGImage(const ImageInfo *image_info,ExceptionInfo *exception)
     status,
     unique_file;
 
-  long
+  ssize_t
     n;
 
   SVGInfo
@@ -2752,13 +2750,13 @@ static Image *ReadSVGImage(const ImageInfo *image_info,ExceptionInfo *exception)
       GError
         *error;
 
-      long
+      ssize_t
         y;
 
       PixelPacket
         fill_color;
 
-      register long
+      register ssize_t
         x;
 
       register PixelPacket
@@ -2771,9 +2769,7 @@ static Image *ReadSVGImage(const ImageInfo *image_info,ExceptionInfo *exception)
       if (svg_handle == (RsvgHandle *) NULL)
         ThrowReaderException(ResourceLimitError,"MemoryAllocationFailed");
       rsvg_handle_set_base_uri(svg_handle,image_info->filename);
-#if !defined(MAGICKCORE_CAIRO_DELEGATE)
       rsvg_handle_set_size_callback(svg_handle,SVGSetImageSize,image,NULL);
-#endif
       if ((image->x_resolution != 72.0) && (image->y_resolution != 72.0))
         rsvg_handle_set_dpi_x_y(svg_handle,image->x_resolution,
           image->y_resolution);
@@ -2847,12 +2843,12 @@ static Image *ReadSVGImage(const ImageInfo *image_info,ExceptionInfo *exception)
 #else
           p=gdk_pixbuf_get_pixels(pixel_info);
 #endif
-          for (y=0; y < (long) image->rows; y++)
+          for (y=0; y < (ssize_t) image->rows; y++)
           {
             q=GetAuthenticPixels(image,0,y,image->columns,1,exception);
             if (q == (PixelPacket *) NULL)
               break;
-            for (x=0; x < (long) image->columns; x++)
+            for (x=0; x < (ssize_t) image->columns; x++)
             {
 #if defined(MAGICKCORE_CAIRO_DELEGATE)
               fill_color.blue=ScaleCharToQuantum(*p++);
@@ -2884,7 +2880,8 @@ static Image *ReadSVGImage(const ImageInfo *image_info,ExceptionInfo *exception)
               break;
             if (image->previous == (Image *) NULL)
               {
-                status=SetImageProgress(image,LoadImageTag,y,image->rows);
+                status=SetImageProgress(image,LoadImageTag,(MagickOffsetType) y,
+                image->rows);
                 if (status == MagickFalse)
                   break;
               }
@@ -3046,10 +3043,10 @@ static Image *ReadSVGImage(const ImageInfo *image_info,ExceptionInfo *exception)
 %
 %  The format of the RegisterSVGImage method is:
 %
-%      unsigned long RegisterSVGImage(void)
+%      size_t RegisterSVGImage(void)
 %
 */
-ModuleExport unsigned long RegisterSVGImage(void)
+ModuleExport size_t RegisterSVGImage(void)
 {
   char
     version[MaxTextExtent];
@@ -3224,7 +3221,7 @@ static MagickBooleanType IsPoint(const char *point)
   char
     *p;
 
-  long
+  ssize_t
     value;
 
   value=strtol(point,&p,10);
@@ -3233,13 +3230,13 @@ static MagickBooleanType IsPoint(const char *point)
 
 static MagickBooleanType TraceSVGImage(Image *image)
 {
-  long
+  ssize_t
     y;
 
   register const PixelPacket
     *p;
 
-  register long
+  register ssize_t
     x;
 
 #if defined(MAGICKCORE_AUTOTRACE_DELEGATE)
@@ -3259,10 +3256,10 @@ static MagickBooleanType TraceSVGImage(Image *image)
     ImageType
       type;
 
-    register long
+    register ssize_t
       i;
 
-    unsigned long
+    size_t
       number_planes;
 
     /*
@@ -3276,12 +3273,12 @@ static MagickBooleanType TraceSVGImage(Image *image)
       number_planes=1;
     trace=at_bitmap_new(image->columns,image->rows,number_planes);
     i=0;
-    for (y=0; y < (long) image->rows; y++)
+    for (y=0; y < (ssize_t) image->rows; y++)
     {
       p=GetVirtualPixels(image,0,y,image->columns,1,&image->exception);
       if (p == (const PixelPacket *) NULL)
         break;
-      for (x=0; x < (long) image->columns; x++)
+      for (x=0; x < (ssize_t) image->columns; x++)
       {
         trace->bitmap[i++]=GetRedPixelComponent(p);
         if (number_planes == 3)
@@ -3323,22 +3320,24 @@ static MagickBooleanType TraceSVGImage(Image *image)
     (void) WriteBlobString(image,
       "  \"http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd\">\n");
     (void) FormatMagickString(message,MaxTextExtent,
-      "<svg width=\"%lu\" height=\"%lu\">\n",image->columns,image->rows);
+      "<svg width=\"%lu\" height=\"%lu\">\n",(unsigned long) image->columns,
+      (unsigned long) image->rows);
     (void) WriteBlobString(image,message);
     GetMagickPixelPacket(image,&pixel);
-    for (y=0; y < (long) image->rows; y++)
+    for (y=0; y < (ssize_t) image->rows; y++)
     {
       p=GetVirtualPixels(image,0,y,image->columns,1,&image->exception);
       if (p == (const PixelPacket *) NULL)
         break;
       indexes=GetVirtualIndexQueue(image);
-      for (x=0; x < (long) image->columns; x++)
+      for (x=0; x < (ssize_t) image->columns; x++)
       {
         SetMagickPixelPacket(image,p,indexes+x,&pixel);
         (void) QueryMagickColorname(image,&pixel,SVGCompliance,tuple,
           &image->exception);
         (void) FormatMagickString(message,MaxTextExtent,
-          "  <circle cx=\"%ld\" cy=\"%ld\" r=\"1\" fill=\"%s\"/>\n",x,y,tuple);
+          "  <circle cx=\"%ld\" cy=\"%ld\" r=\"1\" fill=\"%s\"/>\n",(long) x,
+          (long) y,tuple);
         (void) WriteBlobString(image,message);
         p++;
       }
@@ -3371,7 +3370,7 @@ static MagickBooleanType WriteSVGImage(const ImageInfo *image_info,Image *image)
   int
     n;
 
-  long
+  ssize_t
     j;
 
   MagickBooleanType
@@ -3387,10 +3386,10 @@ static MagickBooleanType WriteSVGImage(const ImageInfo *image_info,Image *image)
   PrimitiveType
     primitive_type;
 
-  register long
+  register ssize_t
     x;
 
-  register long
+  register ssize_t
     i;
 
   size_t
@@ -3399,7 +3398,7 @@ static MagickBooleanType WriteSVGImage(const ImageInfo *image_info,Image *image)
   SVGInfo
     svg_info;
 
-  unsigned long
+  size_t
     number_points;
 
   /*
@@ -3433,7 +3432,8 @@ static MagickBooleanType WriteSVGImage(const ImageInfo *image_info,Image *image)
   (void) WriteBlobString(image,
     "  \"http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd\">\n");
   (void) FormatMagickString(message,MaxTextExtent,
-    "<svg width=\"%lu\" height=\"%lu\">\n",image->columns,image->rows);
+    "<svg width=\"%lu\" height=\"%lu\">\n",(unsigned long) image->columns,
+    (unsigned long) image->rows);
   (void) WriteBlobString(image,message);
   /*
     Allocate primitive info memory.
@@ -3997,7 +3997,7 @@ static MagickBooleanType WriteSVGImage(const ImageInfo *image_info,Image *image)
           {
             if (IsPoint(q))
               {
-                long
+                ssize_t
                   k;
 
                 p=q;
@@ -4162,7 +4162,7 @@ static MagickBooleanType WriteSVGImage(const ImageInfo *image_info,Image *image)
       primitive_info[i].coordinates=0;
       primitive_info[i].method=FloodfillMethod;
       i++;
-      if (i < (long) (number_points-6*BezierQuantum-360))
+      if (i < (ssize_t) (number_points-6*BezierQuantum-360))
         continue;
       number_points+=6*BezierQuantum+360;
       primitive_info=(PrimitiveInfo *) ResizeQuantumMemory(primitive_info,
@@ -4358,7 +4358,7 @@ static MagickBooleanType WriteSVGImage(const ImageInfo *image_info,Image *image)
         for (p=token; *p != '\0'; p++)
           if (isalpha((int) *p))
             number_attributes++;
-        if (i > (long) (number_points-6*BezierQuantum*number_attributes-1))
+        if (i > (ssize_t) (number_points-6*BezierQuantum*number_attributes-1))
           {
             number_points+=6*BezierQuantum*number_attributes;
             primitive_info=(PrimitiveInfo *) ResizeQuantumMemory(primitive_info,

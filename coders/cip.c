@@ -88,10 +88,10 @@ static MagickBooleanType
 %
 %  The format of the RegisterCIPImage method is:
 %
-%      unsigned long RegisterCIPImage(void)
+%      size_t RegisterCIPImage(void)
 %
 */
-ModuleExport unsigned long RegisterCIPImage(void)
+ModuleExport size_t RegisterCIPImage(void)
 {
   MagickInfo
     *entry;
@@ -155,7 +155,7 @@ ModuleExport void UnregisterCIPImage(void)
 %
 */
 
-static inline long MagickMin(const long x,const long y)
+static inline ssize_t MagickMin(const ssize_t x,const ssize_t y)
 {
   if (x < y)
     return(x);
@@ -170,7 +170,7 @@ static MagickBooleanType WriteCIPImage(const ImageInfo *image_info,Image *image)
   const char
     *value;
 
-  long
+  ssize_t
     y;
 
   MagickBooleanType
@@ -179,7 +179,7 @@ static MagickBooleanType WriteCIPImage(const ImageInfo *image_info,Image *image)
   register const PixelPacket
     *p;
 
-  register long
+  register ssize_t
     i,
     x;
 
@@ -213,50 +213,51 @@ static MagickBooleanType WriteCIPImage(const ImageInfo *image_info,Image *image)
     }
   (void) WriteBlobString(image,buffer);
   (void) FormatMagickString(buffer,MaxTextExtent,"<LocationX>%ld</LocationX>\n",
-    image->page.x);
+    (long) image->page.x);
   (void) WriteBlobString(image,buffer);
   (void) FormatMagickString(buffer,MaxTextExtent,"<LocationY>%ld</LocationY>\n",
-    image->page.y);
+    (long) image->page.y);
   (void) WriteBlobString(image,buffer);
   (void) FormatMagickString(buffer,MaxTextExtent,"<Width>%lu</Width>\n",
-    image->columns+(image->columns % 2));
+    (unsigned long) (image->columns+(image->columns % 2)));
   (void) WriteBlobString(image,buffer);
   (void) FormatMagickString(buffer,MaxTextExtent,"<Height>%lu</Height>\n",
-    image->rows);
+    (unsigned long) image->rows);
   (void) WriteBlobString(image,buffer);
   (void) FormatMagickString(buffer,MaxTextExtent,"<Depth>2</Depth>\n");
   (void) WriteBlobString(image,buffer);
   (void) WriteBlobString(image,"<Data>");
   if (image->colorspace != RGBColorspace)
     (void) TransformImageColorspace(image,RGBColorspace);
-  for (y=0; y < (long) image->rows; y++)
+  for (y=0; y < (ssize_t) image->rows; y++)
   {
     p=GetVirtualPixels(image,0,y,image->columns,1,&image->exception);
     if (p == (const PixelPacket *) NULL)
       break;
-    for (x=0; x < ((long) image->columns-3); x+=4)
+    for (x=0; x < ((ssize_t) image->columns-3); x+=4)
     {
       byte=(unsigned char)
-        ((((unsigned long) (4*PixelIntensityToQuantum(p+3)/QuantumRange) & 0x03) << 6) |
-         (((unsigned long) (4*PixelIntensityToQuantum(p+2)/QuantumRange) & 0x03) << 4) |
-         (((unsigned long) (4*PixelIntensityToQuantum(p+1)/QuantumRange) & 0x03) << 2) |
-         (((unsigned long) (4*PixelIntensityToQuantum(p+0)/QuantumRange) & 0x03) << 0));
+        ((((size_t) (4*PixelIntensityToQuantum(p+3)/QuantumRange) & 0x03) << 6) |
+         (((size_t) (4*PixelIntensityToQuantum(p+2)/QuantumRange) & 0x03) << 4) |
+         (((size_t) (4*PixelIntensityToQuantum(p+1)/QuantumRange) & 0x03) << 2) |
+         (((size_t) (4*PixelIntensityToQuantum(p+0)/QuantumRange) & 0x03) << 0));
       (void) FormatMagickString(buffer,MaxTextExtent,"%02x",byte);
       (void) WriteBlobString(image,buffer);
       p+=4;
     }
     if ((image->columns % 4) != 0)
       {
-        i=(long) image->columns % 4;
+        i=(ssize_t) image->columns % 4;
         byte=(unsigned char)
-          ((((unsigned long) (4*PixelIntensityToQuantum(p+MagickMin(i,3))/QuantumRange) & 0x03) << 6) |
-           (((unsigned long) (4*PixelIntensityToQuantum(p+MagickMin(i,2))/QuantumRange) & 0x03) << 4) |
-           (((unsigned long) (4*PixelIntensityToQuantum(p+MagickMin(i,1))/QuantumRange) & 0x03) << 2) |
-           (((unsigned long) (4*PixelIntensityToQuantum(p+MagickMin(i,0))/QuantumRange) & 0x03) << 0));
+          ((((size_t) (4*PixelIntensityToQuantum(p+MagickMin(i,3))/QuantumRange) & 0x03) << 6) |
+           (((size_t) (4*PixelIntensityToQuantum(p+MagickMin(i,2))/QuantumRange) & 0x03) << 4) |
+           (((size_t) (4*PixelIntensityToQuantum(p+MagickMin(i,1))/QuantumRange) & 0x03) << 2) |
+           (((size_t) (4*PixelIntensityToQuantum(p+MagickMin(i,0))/QuantumRange) & 0x03) << 0));
         (void) FormatMagickString(buffer,MaxTextExtent,"%02x",~byte);
         (void) WriteBlobString(image,buffer);
       }
-    status=SetImageProgress(image,SaveImageTag,y,image->rows);
+    status=SetImageProgress(image,SaveImageTag,(MagickOffsetType) y,
+                image->rows);
     if (status == MagickFalse)
       break;
   }

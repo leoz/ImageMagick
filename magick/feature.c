@@ -116,7 +116,7 @@
 %  The format of the GetImageChannelFeatures method is:
 %
 %      ChannelFeatures *GetImageChannelFeatures(const Image *image,
-%        const unsigned long distance,ExceptionInfo *exception)
+%        const size_t distance,ExceptionInfo *exception)
 %
 %  A description of each parameter follows:
 %
@@ -128,7 +128,7 @@
 %
 */
 
-static inline long MagickAbsoluteValue(const long x)
+static inline ssize_t MagickAbsoluteValue(const ssize_t x)
 {
   if (x < 0)
     return(-x);
@@ -136,7 +136,7 @@ static inline long MagickAbsoluteValue(const long x)
 }
 
 MagickExport ChannelFeatures *GetImageChannelFeatures(const Image *image,
-  const unsigned long distance,ExceptionInfo *exception)
+  const size_t distance,ExceptionInfo *exception)
 {
   typedef struct _ChannelStatistics
   {
@@ -171,20 +171,20 @@ MagickExport ChannelFeatures *GetImageChannelFeatures(const Image *image,
     gray,
     *grays;
 
-  long
+  ssize_t
     y,
     z;
 
   MagickBooleanType
     status;
 
-  register long
+  register ssize_t
     i;
 
   size_t
     length;
 
-  unsigned long
+  unsigned int
     number_grays;
 
   assert(image != (Image *) NULL);
@@ -212,20 +212,20 @@ MagickExport ChannelFeatures *GetImageChannelFeatures(const Image *image,
         ResourceLimitError,"MemoryAllocationFailed","`%s'",image->filename);
       return(channel_features);
     }
-  for (i=0; i <= (long) MaxMap; i++)
+  for (i=0; i <= (ssize_t) MaxMap; i++)
   {
-    grays[i].red=(~0UL);
-    grays[i].green=(~0UL);
-    grays[i].blue=(~0UL);
-    grays[i].opacity=(~0UL);
-    grays[i].index=(~0UL);
+    grays[i].red=(~0U);
+    grays[i].green=(~0U);
+    grays[i].blue=(~0U);
+    grays[i].opacity=(~0U);
+    grays[i].index=(~0U);
   }
   status=MagickTrue;
   image_view=AcquireCacheView(image);
 #if defined(MAGICKCORE_OPENMP_SUPPORT)
   #pragma omp parallel for schedule(dynamic,4) shared(status)
 #endif
-  for (y=0; y < (long) image->rows; y++)
+  for (y=0; y < (ssize_t) image->rows; y++)
   {
     register const IndexPacket
       *restrict indexes;
@@ -233,7 +233,7 @@ MagickExport ChannelFeatures *GetImageChannelFeatures(const Image *image,
     register const PixelPacket
       *restrict p;
 
-    register long
+    register ssize_t
       x;
 
     if (status == MagickFalse)
@@ -245,11 +245,14 @@ MagickExport ChannelFeatures *GetImageChannelFeatures(const Image *image,
         continue;
       }
     indexes=GetCacheViewVirtualIndexQueue(image_view);
-    for (x=0; x < (long) image->columns; x++)
+    for (x=0; x < (ssize_t) image->columns; x++)
     {
-      grays[ScaleQuantumToMap(p->red)].red=ScaleQuantumToMap(p->red);
-      grays[ScaleQuantumToMap(p->green)].green=ScaleQuantumToMap(p->green);
-      grays[ScaleQuantumToMap(p->blue)].blue=ScaleQuantumToMap(p->blue);
+      grays[ScaleQuantumToMap(p->red)].red=
+        ScaleQuantumToMap(p->red);
+      grays[ScaleQuantumToMap(p->green)].green=
+        ScaleQuantumToMap(p->green);
+      grays[ScaleQuantumToMap(p->blue)].blue=
+        ScaleQuantumToMap(p->blue);
       if (image->matte != MagickFalse)
         grays[ScaleQuantumToMap(p->opacity)].opacity=
           ScaleQuantumToMap(p->opacity);
@@ -268,19 +271,19 @@ MagickExport ChannelFeatures *GetImageChannelFeatures(const Image *image,
       return(channel_features);
     }
   (void) ResetMagickMemory(&gray,0,sizeof(gray));
-  for (i=0; i <= (long) MaxMap; i++)
+  for (i=0; i <= (ssize_t) MaxMap; i++)
   {
-    if (grays[i].red != ~0UL)
+    if (grays[i].red != ~0U)
       grays[gray.red++].red=grays[i].red;
-    if (grays[i].green != ~0UL)
+    if (grays[i].green != ~0U)
       grays[gray.green++].green=grays[i].green;
-    if (grays[i].blue != ~0UL)
+    if (grays[i].blue != ~0U)
       grays[gray.blue++].blue=grays[i].blue;
     if (image->matte != MagickFalse)
-      if (grays[i].opacity != ~0UL)
+      if (grays[i].opacity != ~0U)
         grays[gray.opacity++].opacity=grays[i].opacity;
     if (image->colorspace == CMYKColorspace)
-      if (grays[i].index != ~0UL)
+      if (grays[i].index != ~0U)
         grays[gray.index++].index=grays[i].index;
   }
   /*
@@ -316,7 +319,7 @@ MagickExport ChannelFeatures *GetImageChannelFeatures(const Image *image,
     {
       if (Q != (ChannelStatistics **) NULL)
         {
-          for (i=0; i < (long) number_grays; i++)
+          for (i=0; i < (ssize_t) number_grays; i++)
             Q[i]=(ChannelStatistics *) RelinquishMagickMemory(Q[i]);
           Q=(ChannelStatistics **) RelinquishMagickMemory(Q);
         }
@@ -330,7 +333,7 @@ MagickExport ChannelFeatures *GetImageChannelFeatures(const Image *image,
         density_x=(ChannelStatistics *) RelinquishMagickMemory(density_x);
       if (cooccurrence != (ChannelStatistics **) NULL)
         {
-          for (i=0; i < (long) number_grays; i++)
+          for (i=0; i < (ssize_t) number_grays; i++)
             cooccurrence[i]=(ChannelStatistics *)
               RelinquishMagickMemory(cooccurrence[i]);
           cooccurrence=(ChannelStatistics **) RelinquishMagickMemory(
@@ -357,7 +360,7 @@ MagickExport ChannelFeatures *GetImageChannelFeatures(const Image *image,
   (void) ResetMagickMemory(&entropy_xy2,0,sizeof(entropy_xy2));
   (void) ResetMagickMemory(&entropy_y,0,sizeof(entropy_y));
   (void) ResetMagickMemory(&variance,0,sizeof(variance));
-  for (i=0; i < (long) number_grays; i++)
+  for (i=0; i < (ssize_t) number_grays; i++)
   {
     cooccurrence[i]=(ChannelStatistics *) AcquireQuantumMemory(number_grays,
       sizeof(**cooccurrence));
@@ -369,7 +372,7 @@ MagickExport ChannelFeatures *GetImageChannelFeatures(const Image *image,
       sizeof(**cooccurrence));
     (void) ResetMagickMemory(Q[i],0,number_grays*sizeof(**Q));
   }
-  if (i < (long) number_grays)
+  if (i < (ssize_t) number_grays)
     {
       for (i--; i >= 0; i--)
       {
@@ -400,9 +403,9 @@ MagickExport ChannelFeatures *GetImageChannelFeatures(const Image *image,
 #if defined(MAGICKCORE_OPENMP_SUPPORT)
   #pragma omp parallel for schedule(dynamic,4) shared(status)
 #endif
-  for (y=0; y < (long) image->rows; y++)
+  for (y=0; y < (ssize_t) image->rows; y++)
   {
-    long
+    ssize_t
       u,
       v;
 
@@ -412,7 +415,7 @@ MagickExport ChannelFeatures *GetImageChannelFeatures(const Image *image,
     register const PixelPacket
       *restrict p;
 
-    register long
+    register ssize_t
       x;
 
     ssize_t
@@ -420,7 +423,7 @@ MagickExport ChannelFeatures *GetImageChannelFeatures(const Image *image,
 
     if (status == MagickFalse)
       continue;
-    p=GetCacheViewVirtualPixels(image_view,-(long) distance,y,image->columns+
+    p=GetCacheViewVirtualPixels(image_view,-(ssize_t) distance,y,image->columns+
       2*distance,distance+1,exception);
     if (p == (const PixelPacket *) NULL)
       {
@@ -430,7 +433,7 @@ MagickExport ChannelFeatures *GetImageChannelFeatures(const Image *image,
     indexes=GetCacheViewVirtualIndexQueue(image_view);
     p+=distance;
     indexes+=distance;
-    for (x=0; x < (long) image->columns; x++)
+    for (x=0; x < (ssize_t) image->columns; x++)
     {
       for (i=0; i < 4; i++)
       {
@@ -458,7 +461,7 @@ MagickExport ChannelFeatures *GetImageChannelFeatures(const Image *image,
             /*
               Right diagonal adjacency.
             */
-            offset=(ssize_t) (image->columns+2*distance)-distance;
+            offset=(ssize_t) ((image->columns+2*distance)-distance);
             break;
           }
           case 3:
@@ -466,7 +469,7 @@ MagickExport ChannelFeatures *GetImageChannelFeatures(const Image *image,
             /*
               Left diagonal adjacency.
             */
-            offset=(ssize_t) (image->columns+2*distance)+distance;
+            offset=(ssize_t) ((image->columns+2*distance)+distance);
             break;
           }
         }
@@ -524,7 +527,7 @@ MagickExport ChannelFeatures *GetImageChannelFeatures(const Image *image,
   image_view=DestroyCacheView(image_view);
   if (status == MagickFalse)
     {
-      for (i=0; i < (long) number_grays; i++)
+      for (i=0; i < (ssize_t) number_grays; i++)
         cooccurrence[i]=(ChannelStatistics *)
           RelinquishMagickMemory(cooccurrence[i]);
       cooccurrence=(ChannelStatistics **) RelinquishMagickMemory(cooccurrence);
@@ -581,12 +584,12 @@ MagickExport ChannelFeatures *GetImageChannelFeatures(const Image *image,
         break;
       }
     }
-    for (y=0; y < (long) number_grays; y++)
+    for (y=0; y < (ssize_t) number_grays; y++)
     {
-      register long
+      register ssize_t
         x;
 
-      for (x=0; x < (long) number_grays; x++)
+      for (x=0; x < (ssize_t) number_grays; x++)
       {
         cooccurrence[x][y].direction[i].red/=normalize;
         cooccurrence[x][y].direction[i].green/=normalize;
@@ -606,15 +609,15 @@ MagickExport ChannelFeatures *GetImageChannelFeatures(const Image *image,
 #endif
   for (i=0; i < 4; i++)
   {
-    register long
+    register ssize_t
       y;
 
-    for (y=0; y < (long) number_grays; y++)
+    for (y=0; y < (ssize_t) number_grays; y++)
     {
-      register long
+      register ssize_t
         x;
 
-      for (x=0; x < (long) number_grays; x++)
+      for (x=0; x < (ssize_t) number_grays; x++)
       {
         /*
           Angular second moment:  measure of homogeneity of the image.
@@ -790,10 +793,10 @@ MagickExport ChannelFeatures *GetImageChannelFeatures(const Image *image,
 #endif
   for (i=0; i < 4; i++)
   {
-    register long
+    register ssize_t
       x;
 
-    for (x=2; x < (long) (2*number_grays); x++)
+    for (x=2; x < (ssize_t) (2*number_grays); x++)
     {
       /*
         Sum average.
@@ -865,15 +868,15 @@ MagickExport ChannelFeatures *GetImageChannelFeatures(const Image *image,
 #endif
   for (i=0; i < 4; i++)
   {
-    register long
+    register ssize_t
       y;
 
-    for (y=0; y < (long) number_grays; y++)
+    for (y=0; y < (ssize_t) number_grays; y++)
     {
-      register long
+      register ssize_t
         x;
 
-      for (x=0; x < (long) number_grays; x++)
+      for (x=0; x < (ssize_t) number_grays; x++)
       {
         /*
           Sum of Squares: Variance
@@ -985,10 +988,10 @@ MagickExport ChannelFeatures *GetImageChannelFeatures(const Image *image,
 #endif
   for (i=0; i < 4; i++)
   {
-    register long
+    register ssize_t
       x;
 
-    for (x=0; x < (long) number_grays; x++)
+    for (x=0; x < (ssize_t) number_grays; x++)
     {
       /*
         Difference variance.
@@ -1136,21 +1139,21 @@ MagickExport ChannelFeatures *GetImageChannelFeatures(const Image *image,
 #endif
   for (i=0; i < 4; i++)
   {
-    for (z=0; z < (long) number_grays; z++)
+    for (z=0; z < (ssize_t) number_grays; z++)
     {
-      register long
+      register ssize_t
         y;
 
       ChannelStatistics
         pixel;
 
       (void) ResetMagickMemory(&pixel,0,sizeof(pixel));
-      for (y=0; y < (long) number_grays; y++)
+      for (y=0; y < (ssize_t) number_grays; y++)
       {
-        register long
+        register ssize_t
           x;
 
-        for (x=0; x < (long) number_grays; x++)
+        for (x=0; x < (ssize_t) number_grays; x++)
         {
           /*
             Contrast:  amount of local variations present in an image.
@@ -1221,13 +1224,13 @@ MagickExport ChannelFeatures *GetImageChannelFeatures(const Image *image,
     Relinquish resources.
   */
   sum=(ChannelStatistics *) RelinquishMagickMemory(sum);
-  for (i=0; i < (long) number_grays; i++)
+  for (i=0; i < (ssize_t) number_grays; i++)
     Q[i]=(ChannelStatistics *) RelinquishMagickMemory(Q[i]);
   Q=(ChannelStatistics **) RelinquishMagickMemory(Q);
   density_y=(ChannelStatistics *) RelinquishMagickMemory(density_y);
   density_xy=(ChannelStatistics *) RelinquishMagickMemory(density_xy);
   density_x=(ChannelStatistics *) RelinquishMagickMemory(density_x);
-  for (i=0; i < (long) number_grays; i++)
+  for (i=0; i < (ssize_t) number_grays; i++)
     cooccurrence[i]=(ChannelStatistics *)
       RelinquishMagickMemory(cooccurrence[i]);
   cooccurrence=(ChannelStatistics **) RelinquishMagickMemory(cooccurrence);

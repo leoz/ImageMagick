@@ -102,7 +102,7 @@ static Image *ReadYCBCRImage(const ImageInfo *image_info,
     *canvas_image,
     *image;
 
-  long
+  ssize_t
     y;
 
   MagickBooleanType
@@ -120,7 +120,7 @@ static Image *ReadYCBCRImage(const ImageInfo *image_info,
   register const PixelPacket
     *p;
 
-  register long
+  register ssize_t
     i,
     x;
 
@@ -190,7 +190,7 @@ static Image *ReadYCBCRImage(const ImageInfo *image_info,
       */
       image->scene++;
       length=GetQuantumExtent(canvas_image,quantum_info,quantum_type);
-      for (y=0; y < (long) image->rows; y++)
+      for (y=0; y < (ssize_t) image->rows; y++)
       {
         count=ReadBlob(image,length,pixels);
         if (count != (ssize_t) length)
@@ -222,7 +222,7 @@ static Image *ReadYCBCRImage(const ImageInfo *image_info,
             length=GetQuantumExtent(canvas_image,quantum_info,quantum_type);
             count=ReadBlob(image,length,pixels);
           }
-        for (y=0; y < (long) image->extract_info.height; y++)
+        for (y=0; y < (ssize_t) image->extract_info.height; y++)
         {
           if (count != (ssize_t) length)
             {
@@ -239,7 +239,7 @@ static Image *ReadYCBCRImage(const ImageInfo *image_info,
           if (SyncAuthenticPixels(canvas_image,exception) == MagickFalse)
             break;
           if (((y-image->extract_info.y) >= 0) && 
-              ((y-image->extract_info.y) < (long) image->rows))
+              ((y-image->extract_info.y) < (ssize_t) image->rows))
             {
               p=GetVirtualPixels(canvas_image,canvas_image->extract_info.x,0,
                 canvas_image->columns,1,exception);
@@ -248,7 +248,7 @@ static Image *ReadYCBCRImage(const ImageInfo *image_info,
               if ((p == (const PixelPacket *) NULL) ||
                   (q == (PixelPacket *) NULL))
                 break;
-              for (x=0; x < (long) image->columns; x++)
+              for (x=0; x < (ssize_t) image->columns; x++)
               {
                 SetRedPixelComponent(q,GetRedPixelComponent(p));
                 SetGreenPixelComponent(q,GetGreenPixelComponent(p));
@@ -263,7 +263,8 @@ static Image *ReadYCBCRImage(const ImageInfo *image_info,
             }
           if (image->previous == (Image *) NULL)
             {
-              status=SetImageProgress(image,LoadImageTag,y,image->rows);
+              status=SetImageProgress(image,LoadImageTag,(MagickOffsetType) y,
+                image->rows);
               if (status == MagickFalse)
                 break;
             }
@@ -290,7 +291,7 @@ static Image *ReadYCBCRImage(const ImageInfo *image_info,
             length=GetQuantumExtent(canvas_image,quantum_info,RedQuantum);
             count=ReadBlob(image,length,pixels);
           }
-        for (y=0; y < (long) image->extract_info.height; y++)
+        for (y=0; y < (ssize_t) image->extract_info.height; y++)
         {
           for (i=0; i < (image->matte != MagickFalse ? 4 : 3); i++)
           {
@@ -310,7 +311,7 @@ static Image *ReadYCBCRImage(const ImageInfo *image_info,
             if (SyncAuthenticPixels(canvas_image,exception) == MagickFalse)
               break;
             if (((y-image->extract_info.y) >= 0) && 
-                ((y-image->extract_info.y) < (long) image->rows))
+                ((y-image->extract_info.y) < (ssize_t) image->rows))
               {
                 p=GetVirtualPixels(canvas_image,canvas_image->extract_info.x,
                   0,canvas_image->columns,1,exception);
@@ -319,7 +320,7 @@ static Image *ReadYCBCRImage(const ImageInfo *image_info,
                 if ((p == (const PixelPacket *) NULL) ||
                     (q == (PixelPacket *) NULL))
                   break;
-                for (x=0; x < (long) image->columns; x++)
+                for (x=0; x < (ssize_t) image->columns; x++)
                 {
                   switch (quantum_type)
                   {
@@ -339,7 +340,8 @@ static Image *ReadYCBCRImage(const ImageInfo *image_info,
           }
           if (image->previous == (Image *) NULL)
             {
-              status=SetImageProgress(image,LoadImageTag,y,image->rows);
+              status=SetImageProgress(image,LoadImageTag,(MagickOffsetType) y,
+                image->rows);
               if (status == MagickFalse)
                 break;
             }
@@ -356,7 +358,7 @@ static Image *ReadYCBCRImage(const ImageInfo *image_info,
             length=GetQuantumExtent(canvas_image,quantum_info,RedQuantum);
             count=ReadBlob(image,length,pixels);
           }
-        for (y=0; y < (long) image->extract_info.height; y++)
+        for (y=0; y < (ssize_t) image->extract_info.height; y++)
         {
           if (count != (ssize_t) length)
             {
@@ -373,7 +375,7 @@ static Image *ReadYCBCRImage(const ImageInfo *image_info,
           if (SyncAuthenticPixels(canvas_image,exception) == MagickFalse)
             break;
           if (((y-image->extract_info.y) >= 0) && 
-              ((y-image->extract_info.y) < (long) image->rows))
+              ((y-image->extract_info.y) < (ssize_t) image->rows))
             {
               p=GetVirtualPixels(canvas_image,canvas_image->extract_info.x,0,
                 canvas_image->columns,1,exception);
@@ -382,7 +384,7 @@ static Image *ReadYCBCRImage(const ImageInfo *image_info,
               if ((p == (const PixelPacket *) NULL) ||
                   (q == (PixelPacket *) NULL))
                 break;
-              for (x=0; x < (long) image->columns; x++)
+              for (x=0; x < (ssize_t) image->columns; x++)
               {
                 SetRedPixelComponent(q,GetRedPixelComponent(p));
                 p++;
@@ -399,7 +401,7 @@ static Image *ReadYCBCRImage(const ImageInfo *image_info,
             if (status == MagickFalse)
               break;
           }
-        for (y=0; y < (long) image->extract_info.height; y++)
+        for (y=0; y < (ssize_t) image->extract_info.height; y++)
         {
           if (count != (ssize_t) length)
             {
@@ -416,7 +418,7 @@ static Image *ReadYCBCRImage(const ImageInfo *image_info,
           if (SyncAuthenticPixels(canvas_image,exception) == MagickFalse)
             break;
           if (((y-image->extract_info.y) >= 0) && 
-              ((y-image->extract_info.y) < (long) image->rows))
+              ((y-image->extract_info.y) < (ssize_t) image->rows))
             {
               p=GetVirtualPixels(canvas_image,canvas_image->extract_info.x,0,
                 canvas_image->columns,1,exception);
@@ -425,7 +427,7 @@ static Image *ReadYCBCRImage(const ImageInfo *image_info,
               if ((p == (const PixelPacket *) NULL) ||
                   (q == (PixelPacket *) NULL))
                 break;
-              for (x=0; x < (long) image->columns; x++)
+              for (x=0; x < (ssize_t) image->columns; x++)
               {
                 SetGreenPixelComponent(q,GetGreenPixelComponent(p));
                 p++;
@@ -442,7 +444,7 @@ static Image *ReadYCBCRImage(const ImageInfo *image_info,
             if (status == MagickFalse)
               break;
           }
-        for (y=0; y < (long) image->extract_info.height; y++)
+        for (y=0; y < (ssize_t) image->extract_info.height; y++)
         {
           if (count != (ssize_t) length)
             {
@@ -459,7 +461,7 @@ static Image *ReadYCBCRImage(const ImageInfo *image_info,
           if (SyncAuthenticPixels(canvas_image,exception) == MagickFalse)
             break;
           if (((y-image->extract_info.y) >= 0) && 
-              ((y-image->extract_info.y) < (long) image->rows))
+              ((y-image->extract_info.y) < (ssize_t) image->rows))
             {
               p=GetVirtualPixels(canvas_image,canvas_image->extract_info.x,0,
                 canvas_image->columns,1,exception);
@@ -468,7 +470,7 @@ static Image *ReadYCBCRImage(const ImageInfo *image_info,
               if ((p == (const PixelPacket *) NULL) ||
                   (q == (PixelPacket *) NULL))
                 break;
-              for (x=0; x < (long) image->columns; x++)
+              for (x=0; x < (ssize_t) image->columns; x++)
               {
                 SetBluePixelComponent(q,GetBluePixelComponent(p));
                 p++;
@@ -487,7 +489,7 @@ static Image *ReadYCBCRImage(const ImageInfo *image_info,
           }
         if (image->matte != MagickFalse)
           {
-            for (y=0; y < (long) image->extract_info.height; y++)
+            for (y=0; y < (ssize_t) image->extract_info.height; y++)
             {
               if (count != (ssize_t) length)
                 {
@@ -504,7 +506,7 @@ static Image *ReadYCBCRImage(const ImageInfo *image_info,
               if (SyncAuthenticPixels(canvas_image,exception) == MagickFalse)
                 break;
               if (((y-image->extract_info.y) >= 0) && 
-                  ((y-image->extract_info.y) < (long) image->rows))
+                  ((y-image->extract_info.y) < (ssize_t) image->rows))
                 {
                   p=GetVirtualPixels(canvas_image,
                     canvas_image->extract_info.x,0,canvas_image->columns,1,
@@ -514,7 +516,7 @@ static Image *ReadYCBCRImage(const ImageInfo *image_info,
                   if ((p == (const PixelPacket *) NULL) ||
                       (q == (PixelPacket *) NULL))
                     break;
-                  for (x=0; x < (long) image->columns; x++)
+                  for (x=0; x < (ssize_t) image->columns; x++)
                   {
                     SetOpacityPixelComponent(q,GetOpacityPixelComponent(p));
                     p++;
@@ -561,8 +563,8 @@ static Image *ReadYCBCRImage(const ImageInfo *image_info,
               break;
             }
         length=GetQuantumExtent(canvas_image,quantum_info,RedQuantum);
-        for (i=0; i < (long) scene; i++)
-          for (y=0; y < (long) image->extract_info.height; y++)
+        for (i=0; i < (ssize_t) scene; i++)
+          for (y=0; y < (ssize_t) image->extract_info.height; y++)
             if (ReadBlob(image,length,pixels) != (ssize_t) length)
               {
                 ThrowFileException(exception,CorruptImageError,
@@ -570,7 +572,7 @@ static Image *ReadYCBCRImage(const ImageInfo *image_info,
                 break;
               }
         count=ReadBlob(image,length,pixels);
-        for (y=0; y < (long) image->extract_info.height; y++)
+        for (y=0; y < (ssize_t) image->extract_info.height; y++)
         {
           if (count != (ssize_t) length)
             {
@@ -587,7 +589,7 @@ static Image *ReadYCBCRImage(const ImageInfo *image_info,
           if (SyncAuthenticPixels(canvas_image,exception) == MagickFalse)
             break;
           if (((y-image->extract_info.y) >= 0) && 
-              ((y-image->extract_info.y) < (long) image->rows))
+              ((y-image->extract_info.y) < (ssize_t) image->rows))
             {
               p=GetVirtualPixels(canvas_image,canvas_image->extract_info.x,0,
                 canvas_image->columns,1,exception);
@@ -596,7 +598,7 @@ static Image *ReadYCBCRImage(const ImageInfo *image_info,
               if ((p == (const PixelPacket *) NULL) ||
                   (q == (PixelPacket *) NULL))
                 break;
-              for (x=0; x < (long) image->columns; x++)
+              for (x=0; x < (ssize_t) image->columns; x++)
               {
                 SetRedPixelComponent(q,GetRedPixelComponent(p));
                 p++;
@@ -623,8 +625,8 @@ static Image *ReadYCBCRImage(const ImageInfo *image_info,
             return((Image *) NULL);
           }
         length=GetQuantumExtent(canvas_image,quantum_info,GreenQuantum);
-        for (i=0; i < (long) scene; i++)
-          for (y=0; y < (long) image->extract_info.height; y++)
+        for (i=0; i < (ssize_t) scene; i++)
+          for (y=0; y < (ssize_t) image->extract_info.height; y++)
             if (ReadBlob(image,length,pixels) != (ssize_t) length)
               {
                 ThrowFileException(exception,CorruptImageError,
@@ -632,7 +634,7 @@ static Image *ReadYCBCRImage(const ImageInfo *image_info,
                 break;
               }
         count=ReadBlob(image,length,pixels);
-        for (y=0; y < (long) image->extract_info.height; y++)
+        for (y=0; y < (ssize_t) image->extract_info.height; y++)
         {
           if (count != (ssize_t) length)
             {
@@ -649,7 +651,7 @@ static Image *ReadYCBCRImage(const ImageInfo *image_info,
           if (SyncAuthenticPixels(canvas_image,exception) == MagickFalse)
             break;
           if (((y-image->extract_info.y) >= 0) && 
-              ((y-image->extract_info.y) < (long) image->rows))
+              ((y-image->extract_info.y) < (ssize_t) image->rows))
             {
               p=GetVirtualPixels(canvas_image,canvas_image->extract_info.x,0,
                 canvas_image->columns,1,exception);
@@ -658,7 +660,7 @@ static Image *ReadYCBCRImage(const ImageInfo *image_info,
               if ((p == (const PixelPacket *) NULL) ||
                   (q == (PixelPacket *) NULL))
                 break;
-              for (x=0; x < (long) image->columns; x++)
+              for (x=0; x < (ssize_t) image->columns; x++)
               {
                 SetGreenPixelComponent(q,GetGreenPixelComponent(p));
                 p++;
@@ -685,8 +687,8 @@ static Image *ReadYCBCRImage(const ImageInfo *image_info,
             return((Image *) NULL);
           }
         length=GetQuantumExtent(canvas_image,quantum_info,BlueQuantum);
-        for (i=0; i < (long) scene; i++)
-          for (y=0; y < (long) image->extract_info.height; y++)
+        for (i=0; i < (ssize_t) scene; i++)
+          for (y=0; y < (ssize_t) image->extract_info.height; y++)
             if (ReadBlob(image,length,pixels) != (ssize_t) length)
               {
                 ThrowFileException(exception,CorruptImageError,
@@ -694,7 +696,7 @@ static Image *ReadYCBCRImage(const ImageInfo *image_info,
                 break;
               }
         count=ReadBlob(image,length,pixels);
-        for (y=0; y < (long) image->extract_info.height; y++)
+        for (y=0; y < (ssize_t) image->extract_info.height; y++)
         {
           if (count != (ssize_t) length)
             {
@@ -711,7 +713,7 @@ static Image *ReadYCBCRImage(const ImageInfo *image_info,
           if (SyncAuthenticPixels(canvas_image,exception) == MagickFalse)
             break;
           if (((y-image->extract_info.y) >= 0) && 
-              ((y-image->extract_info.y) < (long) image->rows))
+              ((y-image->extract_info.y) < (ssize_t) image->rows))
             {
               p=GetVirtualPixels(canvas_image,canvas_image->extract_info.x,0,
                 canvas_image->columns,1,exception);
@@ -720,7 +722,7 @@ static Image *ReadYCBCRImage(const ImageInfo *image_info,
               if ((p == (const PixelPacket *) NULL) ||
                   (q == (PixelPacket *) NULL))
                 break;
-              for (x=0; x < (long) image->columns; x++)
+              for (x=0; x < (ssize_t) image->columns; x++)
               {
                 SetBluePixelComponent(q,GetBluePixelComponent(p));
                 p++;
@@ -749,8 +751,8 @@ static Image *ReadYCBCRImage(const ImageInfo *image_info,
                 return((Image *) NULL);
               }
             length=GetQuantumExtent(canvas_image,quantum_info,AlphaQuantum);
-            for (i=0; i < (long) scene; i++)
-              for (y=0; y < (long) image->extract_info.height; y++)
+            for (i=0; i < (ssize_t) scene; i++)
+              for (y=0; y < (ssize_t) image->extract_info.height; y++)
                 if (ReadBlob(image,length,pixels) != (ssize_t) length)
                   {
                     ThrowFileException(exception,CorruptImageError,
@@ -758,7 +760,7 @@ static Image *ReadYCBCRImage(const ImageInfo *image_info,
                     break;
                   }
             count=ReadBlob(image,length,pixels);
-            for (y=0; y < (long) image->extract_info.height; y++)
+            for (y=0; y < (ssize_t) image->extract_info.height; y++)
             {
               if (count != (ssize_t) length)
                 {
@@ -775,7 +777,7 @@ static Image *ReadYCBCRImage(const ImageInfo *image_info,
               if (SyncAuthenticPixels(canvas_image,exception) == MagickFalse)
                 break;
               if (((y-image->extract_info.y) >= 0) && 
-                  ((y-image->extract_info.y) < (long) image->rows))
+                  ((y-image->extract_info.y) < (ssize_t) image->rows))
                 {
                   p=GetVirtualPixels(canvas_image,
                     canvas_image->extract_info.x,0,canvas_image->columns,1,
@@ -785,7 +787,7 @@ static Image *ReadYCBCRImage(const ImageInfo *image_info,
                   if ((p == (const PixelPacket *) NULL) ||
                       (q == (PixelPacket *) NULL))
                     break;
-                  for (x=0; x < (long) image->columns; x++)
+                  for (x=0; x < (ssize_t) image->columns; x++)
                   {
                     SetOpacityPixelComponent(q,GetOpacityPixelComponent(p));
                     p++;
@@ -865,10 +867,10 @@ static Image *ReadYCBCRImage(const ImageInfo *image_info,
 %
 %  The format of the RegisterYCBCRImage method is:
 %
-%      unsigned long RegisterYCBCRImage(void)
+%      size_t RegisterYCBCRImage(void)
 %
 */
-ModuleExport unsigned long RegisterYCBCRImage(void)
+ModuleExport size_t RegisterYCBCRImage(void)
 {
   MagickInfo
     *entry;
@@ -946,7 +948,7 @@ ModuleExport void UnregisterYCBCRImage(void)
 static MagickBooleanType WriteYCBCRImage(const ImageInfo *image_info,
   Image *image)
 {
-  long
+  ssize_t
     y;
 
   MagickBooleanType
@@ -1020,7 +1022,7 @@ static MagickBooleanType WriteYCBCRImage(const ImageInfo *image_info,
         /*
           No interlacing:  YCbCrYCbCrYCbCrYCbCrYCbCrYCbCr...
         */
-        for (y=0; y < (long) image->rows; y++)
+        for (y=0; y < (ssize_t) image->rows; y++)
         {
           p=GetVirtualPixels(image,0,y,image->columns,1,&image->exception);
           if (p == (const PixelPacket *) NULL)
@@ -1032,7 +1034,8 @@ static MagickBooleanType WriteYCBCRImage(const ImageInfo *image_info,
             break;
           if (image->previous == (Image *) NULL)
             {
-              status=SetImageProgress(image,SaveImageTag,y,image->rows);
+              status=SetImageProgress(image,SaveImageTag,(MagickOffsetType) y,
+                image->rows);
               if (status == MagickFalse)
                 break;
             }
@@ -1044,7 +1047,7 @@ static MagickBooleanType WriteYCBCRImage(const ImageInfo *image_info,
         /*
           Line interlacing:  YYY...CbCbCb...CrCrCr...YYY...CbCbCb...CrCrCr...
         */
-        for (y=0; y < (long) image->rows; y++)
+        for (y=0; y < (ssize_t) image->rows; y++)
         {
           p=GetVirtualPixels(image,0,y,image->columns,1,&image->exception);
           if (p == (const PixelPacket *) NULL)
@@ -1074,7 +1077,8 @@ static MagickBooleanType WriteYCBCRImage(const ImageInfo *image_info,
             }
           if (image->previous == (Image *) NULL)
             {
-              status=SetImageProgress(image,SaveImageTag,y,image->rows);
+              status=SetImageProgress(image,SaveImageTag,(MagickOffsetType) y,
+                image->rows);
               if (status == MagickFalse)
                 break;
             }
@@ -1086,7 +1090,7 @@ static MagickBooleanType WriteYCBCRImage(const ImageInfo *image_info,
         /*
           Plane interlacing:  YYYYYY...CbCbCbCbCbCb...CrCrCrCrCrCr...
         */
-        for (y=0; y < (long) image->rows; y++)
+        for (y=0; y < (ssize_t) image->rows; y++)
         {
           p=GetVirtualPixels(image,0,y,image->columns,1,&image->exception);
           if (p == (const PixelPacket *) NULL)
@@ -1103,7 +1107,7 @@ static MagickBooleanType WriteYCBCRImage(const ImageInfo *image_info,
             if (status == MagickFalse)
               break;
           }
-        for (y=0; y < (long) image->rows; y++)
+        for (y=0; y < (ssize_t) image->rows; y++)
         {
           p=GetVirtualPixels(image,0,y,image->columns,1,&image->exception);
           if (p == (const PixelPacket *) NULL)
@@ -1120,7 +1124,7 @@ static MagickBooleanType WriteYCBCRImage(const ImageInfo *image_info,
             if (status == MagickFalse)
               break;
           }
-        for (y=0; y < (long) image->rows; y++)
+        for (y=0; y < (ssize_t) image->rows; y++)
         {
           p=GetVirtualPixels(image,0,y,image->columns,1,&image->exception);
           if (p == (const PixelPacket *) NULL)
@@ -1139,7 +1143,7 @@ static MagickBooleanType WriteYCBCRImage(const ImageInfo *image_info,
           }
         if (quantum_type == RGBAQuantum)
           {
-            for (y=0; y < (long) image->rows; y++)
+            for (y=0; y < (ssize_t) image->rows; y++)
             {
               p=GetVirtualPixels(image,0,y,image->columns,1,
                 &image->exception);
@@ -1173,7 +1177,7 @@ static MagickBooleanType WriteYCBCRImage(const ImageInfo *image_info,
           AppendBinaryBlobMode,&image->exception);
         if (status == MagickFalse)
           return(status);
-        for (y=0; y < (long) image->rows; y++)
+        for (y=0; y < (ssize_t) image->rows; y++)
         {
           p=GetVirtualPixels(image,0,y,image->columns,1,&image->exception);
           if (p == (const PixelPacket *) NULL)
@@ -1196,7 +1200,7 @@ static MagickBooleanType WriteYCBCRImage(const ImageInfo *image_info,
           AppendBinaryBlobMode,&image->exception);
         if (status == MagickFalse)
           return(status);
-        for (y=0; y < (long) image->rows; y++)
+        for (y=0; y < (ssize_t) image->rows; y++)
         {
           p=GetVirtualPixels(image,0,y,image->columns,1,&image->exception);
           if (p == (const PixelPacket *) NULL)
@@ -1219,7 +1223,7 @@ static MagickBooleanType WriteYCBCRImage(const ImageInfo *image_info,
           AppendBinaryBlobMode,&image->exception);
         if (status == MagickFalse)
           return(status);
-        for (y=0; y < (long) image->rows; y++)
+        for (y=0; y < (ssize_t) image->rows; y++)
         {
           p=GetVirtualPixels(image,0,y,image->columns,1,&image->exception);
           if (p == (const PixelPacket *) NULL)
@@ -1244,7 +1248,7 @@ static MagickBooleanType WriteYCBCRImage(const ImageInfo *image_info,
               AppendBinaryBlobMode,&image->exception);
             if (status == MagickFalse)
               return(status);
-            for (y=0; y < (long) image->rows; y++)
+            for (y=0; y < (ssize_t) image->rows; y++)
             {
               p=GetVirtualPixels(image,0,y,image->columns,1,
                 &image->exception);
