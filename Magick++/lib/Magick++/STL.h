@@ -71,7 +71,7 @@ namespace Magick
   private:
     size_t _width;
     size_t _height;
-    size_t _offset;
+    ssize_t _offset;
   };
   
   // Add noise to image with specified noise type
@@ -228,9 +228,9 @@ namespace Magick
     void operator()( Image &image_ ) const;
 
   private:
-    size_t _opacityRed;
-    size_t _opacityGreen;
-    size_t _opacityBlue;
+    unsigned int _opacityRed;
+    unsigned int _opacityGreen;
+    unsigned int _opacityBlue;
     Color _penColor;
   };
 
@@ -485,8 +485,8 @@ namespace Magick
     void operator()( Image &image_ ) const;
 
   private:
-    size_t   _x;
-    size_t   _y;
+    ssize_t   _x;
+    ssize_t   _y;
     Color          _fillColor;
     Color          _borderColor;
   };
@@ -716,7 +716,7 @@ namespace Magick
   {
   public:
     matteFloodfillImage( const Color &target_ ,
-       const size_t matte_,
+       const unsigned int matte_,
        const ssize_t x_, const ssize_t y_,
        const PaintMethod method_ );
 
@@ -724,7 +724,7 @@ namespace Magick
 
   private:
     Color         _target;
-    size_t  _matte;
+    unsigned int  _matte;
     ssize_t           _x;
     ssize_t           _y;
     PaintMethod   _method;
@@ -822,7 +822,7 @@ namespace Magick
     void operator()( Image &image_ ) const;
 
   private:
-    size_t _opacity;
+    unsigned int _opacity;
   };
 
   // Change color of opaque pixel to specified pen color.
@@ -904,8 +904,8 @@ namespace Magick
     void operator()( Image &image_ ) const;
 
   private:
-    ssize_t _columns;
-    ssize_t _rows;
+    size_t _columns;
+    size_t _rows;
   };
 
   // Rotate image counter-clockwise by specified number of degrees.

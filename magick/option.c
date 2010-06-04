@@ -102,7 +102,7 @@ static const OptionInfo
     { "Opaque", (ssize_t) OpaqueAlphaChannel, MagickFalse },
     { "Set", (ssize_t) SetAlphaChannel, MagickFalse },
     { "Shape", (ssize_t) ShapeAlphaChannel, MagickFalse },
-    { "Reset", (ssize_t) SetAlphaChannel, MagickTrue }, /* deprecated */
+    { "Reset", (ssize_t) SetAlphaChannel, MagickTrue },  /* deprecated */
     { "Transparent", (ssize_t) TransparentAlphaChannel, MagickFalse },
     { (char *) NULL, (ssize_t) UndefinedAlphaChannel, MagickFalse }
   },
@@ -136,7 +136,7 @@ static const OptionInfo
     { "Red", (ssize_t) RedChannel, MagickFalse },
     { "Saturation", (ssize_t) GreenChannel, MagickFalse },
     { "Yellow", (ssize_t) YellowChannel, MagickFalse },
-    { "Sync", (ssize_t) SyncChannels, MagickFalse },   /* special channel flag */
+    { "Sync", (ssize_t) SyncChannels, MagickFalse },
     { (char *) NULL, (ssize_t) UndefinedChannel, MagickFalse }
   },
   ClassOptions[] =
@@ -176,10 +176,10 @@ static const OptionInfo
     { "-append", 0L, MagickFalse },
     { "+authenticate", 0L, MagickFalse },
     { "-authenticate", 1L, MagickFalse },
-    { "+auto-gamma", 0L, MagickTrue },   /* under development */
-    { "-auto-gamma", 0L, MagickTrue },   /* under development */
-    { "+auto-level", 0L, MagickTrue },   /* under development */
-    { "-auto-level", 0L, MagickTrue },   /* under development */
+    { "+auto-gamma", 0L, MagickTrue },
+    { "-auto-gamma", 0L, MagickTrue },
+    { "+auto-level", 0L, MagickTrue },
+    { "-auto-level", 0L, MagickTrue },
     { "+auto-orient", 0L, MagickFalse },
     { "-auto-orient", 0L, MagickFalse },
     { "+average", 0L, MagickFalse },
@@ -755,9 +755,9 @@ static const OptionInfo
     { "Src", (ssize_t) SrcCompositeOp, MagickFalse },
     { "VividLight", (ssize_t) VividLightCompositeOp, MagickFalse },
     { "Xor", (ssize_t) XorCompositeOp, MagickFalse },
-    { "Add", (ssize_t) AddCompositeOp, MagickTrue }, /* depreciate */
-    { "Subtract", (ssize_t) SubtractCompositeOp, MagickTrue }, /* depreciate */
-    { "Threshold", (ssize_t) ThresholdCompositeOp, MagickTrue }, /* depreciate */
+    { "Add", (ssize_t) AddCompositeOp, MagickTrue }, /* deprecate */
+    { "Subtract", (ssize_t) SubtractCompositeOp, MagickTrue }, /* deprecate */
+    { "Threshold", (ssize_t) ThresholdCompositeOp, MagickTrue }, /* deprecate */
     { (char *) NULL, (ssize_t) UndefinedCompositeOp, MagickFalse }
   },
   CompressOptions[] =
@@ -1055,10 +1055,9 @@ static const OptionInfo
     { "Undefined", (ssize_t) UndefinedKernel, MagickTrue },
     { "Unity", (ssize_t) UnityKernel, MagickFalse },
     { "Gaussian", (ssize_t) GaussianKernel, MagickFalse },
-    { "DOG", (ssize_t) DOGKernel, MagickFalse },
-    { "LOG", (ssize_t) LOGKernel, MagickFalse },
+    { "DoG", (ssize_t) DoGKernel, MagickFalse },
+    { "LoG", (ssize_t) LoGKernel, MagickFalse },
     { "Blur", (ssize_t) BlurKernel, MagickFalse },
-    { "DOB", (ssize_t) DOBKernel, MagickFalse },
     { "Comet", (ssize_t) CometKernel, MagickFalse },
     { "Laplacian", (ssize_t) LaplacianKernel, MagickFalse },
     { "Sobel", (ssize_t) SobelKernel, MagickFalse },
@@ -1078,17 +1077,17 @@ static const OptionInfo
     { "Edges", (ssize_t) EdgesKernel, MagickFalse },
     { "Corners", (ssize_t) CornersKernel, MagickFalse },
     { "Ridges", (ssize_t) RidgesKernel, MagickFalse },
-    { "Ridges2", (ssize_t) Ridges2Kernel, MagickFalse },
+    { "Ridges2", (ssize_t) Ridges2Kernel, MagickTrue },  /* experimental */
     { "LineEnds", (ssize_t) LineEndsKernel, MagickFalse },
     { "LineJunctions", (ssize_t) LineJunctionsKernel, MagickFalse },
     { "ConvexHull", (ssize_t) ConvexHullKernel, MagickFalse },
     { "Skeleton", (ssize_t) SkeletonKernel, MagickFalse },
-    { "Mat", (ssize_t) MatKernel, MagickTrue },      /* experimental */
+    { "Mat", (ssize_t) MatKernel, MagickTrue },         /* experimental */
     { "Chebyshev", (ssize_t) ChebyshevKernel, MagickFalse },
-    { "Manhatten", (ssize_t) ManhattenKernel, MagickFalse },
+    { "Manhattan", (ssize_t) ManhattanKernel, MagickFalse },
     { "Euclidean", (ssize_t) EuclideanKernel, MagickFalse },
-    { "Test", (ssize_t) TestKernel, MagickTrue },    /* for experimental kernels */
-    { "User Defined", (ssize_t) UserDefinedKernel, MagickTrue }, /* internel */
+    { "Test", (ssize_t) TestKernel, MagickTrue },       /* experimental */
+    { "User Defined", (ssize_t) UserDefinedKernel, MagickTrue }, /* internal */
     { (char *) NULL, (ssize_t) UndefinedKernel, MagickFalse }
   },
   LayerOptions[] =

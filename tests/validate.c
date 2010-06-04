@@ -108,7 +108,7 @@ static size_t ValidateCompareCommand(ImageInfo *image_info,
   for (i=0; compare_options[i] != (char *) NULL; i++)
   {
     CatchException(exception);
-    (void) fprintf(stdout,"  test %lu: %s",(unsigned long) test++,
+    (void) fprintf(stdout,"  test %.20g: %s",(double) (test++),
       compare_options[i]);
     (void) FormatMagickString(command,MaxTextExtent,"%s %s %s %s",
       compare_options[i],reference_filename,reference_filename,output_filename);
@@ -132,8 +132,9 @@ static size_t ValidateCompareCommand(ImageInfo *image_info,
       }
     (void) fprintf(stdout,"... pass.\n");
   }
-  (void) fprintf(stdout,"  summary: %lu subtests; %lu passed; %lu failed.\n",
-    (unsigned long) test,(unsigned long) (test-(*fail)),(unsigned long) *fail);
+  (void) fprintf(stdout,
+    "  summary: %.20g subtests; %.20g passed; %.20g failed.\n",(double) test,
+    (double) (test-(*fail)),(double) *fail);
   return(test);
 }
 
@@ -196,7 +197,7 @@ static size_t ValidateCompositeCommand(ImageInfo *image_info,
   for (i=0; composite_options[i] != (char *) NULL; i++)
   {
     CatchException(exception);
-    (void) fprintf(stdout,"  test %lu: %s",(unsigned long) test++,
+    (void) fprintf(stdout,"  test %.20g: %s",(double) (test++),
       composite_options[i]);
     (void) FormatMagickString(command,MaxTextExtent,"%s %s %s %s",
       reference_filename,composite_options[i],reference_filename,
@@ -221,8 +222,9 @@ static size_t ValidateCompositeCommand(ImageInfo *image_info,
       }
     (void) fprintf(stdout,"... pass.\n");
   }
-  (void) fprintf(stdout,"  summary: %lu subtests; %lu passed; %lu failed.\n",
-    (unsigned long) test,(unsigned long) (test-(*fail)),(unsigned long) *fail);
+  (void) fprintf(stdout,
+    "  summary: %.20g subtests; %.20g passed; %.20g failed.\n",(double) test,
+    (double) (test-(*fail)),(double) *fail);
   return(test);
 }
 
@@ -285,7 +287,7 @@ static size_t ValidateConvertCommand(ImageInfo *image_info,
   for (i=0; convert_options[i] != (char *) NULL; i++)
   {
     CatchException(exception);
-    (void) fprintf(stdout,"  test %lu: %s",(unsigned long) test++,
+    (void) fprintf(stdout,"  test %.20g: %s",(double) test++,
       convert_options[i]);
     (void) FormatMagickString(command,MaxTextExtent,"%s %s %s %s",
       reference_filename,convert_options[i],reference_filename,output_filename);
@@ -309,8 +311,9 @@ static size_t ValidateConvertCommand(ImageInfo *image_info,
       }
     (void) fprintf(stdout,"... pass.\n");
   }
-  (void) fprintf(stdout,"  summary: %lu subtests; %lu passed; %lu failed.\n",
-    (unsigned long) test,(unsigned long) (test-(*fail)),(unsigned long) *fail);
+  (void) fprintf(stdout,
+    "  summary: %.20g subtests; %.20g passed; %.20g failed.\n",(double) test,
+    (double) (test-(*fail)),(double) *fail);
   return(test);
 }
 
@@ -374,7 +377,7 @@ static size_t ValidateIdentifyCommand(ImageInfo *image_info,
   for (i=0; identify_options[i] != (char *) NULL; i++)
   {
     CatchException(exception);
-    (void) fprintf(stdout,"  test %lu: %s",(unsigned long) test++,
+    (void) fprintf(stdout,"  test %.20g: %s",(double) test++,
       identify_options[i]);
     (void) FormatMagickString(command,MaxTextExtent,"%s %s",
       identify_options[i],reference_filename);
@@ -398,8 +401,9 @@ static size_t ValidateIdentifyCommand(ImageInfo *image_info,
       }
     (void) fprintf(stdout,"... pass.\n");
   }
-  (void) fprintf(stdout,"  summary: %lu subtests; %lu passed; %lu failed.\n",
-    (unsigned long) test,(unsigned long) (test-(*fail)),(unsigned long) *fail);
+  (void) fprintf(stdout,
+    "  summary: %.20g subtests; %.20g passed; %.20g failed.\n",(double) test,
+    (double) (test-(*fail)),(double) *fail);
   return(test);
 }
 
@@ -486,11 +490,11 @@ static size_t ValidateImageFormatsInMemory(ImageInfo *image_info,
         Generate reference image.
       */
       CatchException(exception);
-      (void) fprintf(stdout,"  test %lu: %s/%s/%s/%lu-bits",(unsigned long)
-        test++,reference_formats[i].magick,MagickOptionToMnemonic(
+      (void) fprintf(stdout,"  test %.20g: %s/%s/%s/%.20g-bits",(double)
+        (test++),reference_formats[i].magick,MagickOptionToMnemonic(
         MagickCompressOptions,reference_formats[i].compression),
         MagickOptionToMnemonic(MagickTypeOptions,reference_types[j].type),
-        (unsigned long) reference_types[j].depth);
+        (double) reference_types[j].depth);
       (void) CopyMagickString(image_info->filename,reference_filename,
         MaxTextExtent);
       reference_image=ReadImage(image_info,exception);
@@ -503,9 +507,8 @@ static size_t ValidateImageFormatsInMemory(ImageInfo *image_info,
       /*
         Write reference image.
       */
-      (void) FormatMagickString(size,MaxTextExtent,"%lux%lu",
-        (unsigned long) reference_image->columns,(unsigned long)
-        reference_image->rows);
+      (void) FormatMagickString(size,MaxTextExtent,"%.20gx%.20g",
+        (double) reference_image->columns,(double) reference_image->rows);
       (void) CloneString(&image_info->size,size);
       image_info->depth=reference_types[j].depth;
       (void) FormatMagickString(reference_image->filename,MaxTextExtent,"%s:%s",
@@ -615,8 +618,9 @@ static size_t ValidateImageFormatsInMemory(ImageInfo *image_info,
       (void) fprintf(stdout,"... pass.\n");
     }
   }
-  (void) fprintf(stdout,"  summary: %lu subtests; %lu passed; %lu failed.\n",
-    (unsigned long) test,(unsigned long) (test-(*fail)),(unsigned long) *fail);
+  (void) fprintf(stdout,
+    "  summary: %.20g subtests; %.20g passed; %.20g failed.\n",(double) test,
+    (double) (test-(*fail)),(double) *fail);
   return(test);
 }
 
@@ -697,11 +701,11 @@ static size_t ValidateImageFormatsOnDisk(ImageInfo *image_info,
         Generate reference image.
       */
       CatchException(exception);
-      (void) fprintf(stdout,"  test %lu: %s/%s/%s/%lu-bits",(unsigned long)
-        test++,reference_formats[i].magick,MagickOptionToMnemonic(
+      (void) fprintf(stdout,"  test %.20g: %s/%s/%s/%.20g-bits",(double)
+        (test++),reference_formats[i].magick,MagickOptionToMnemonic(
         MagickCompressOptions,reference_formats[i].compression),
         MagickOptionToMnemonic(MagickTypeOptions,reference_types[j].type),
-        (unsigned long) reference_types[j].depth);
+        (double) reference_types[j].depth);
       (void) CopyMagickString(image_info->filename,reference_filename,
         MaxTextExtent);
       reference_image=ReadImage(image_info,exception);
@@ -714,9 +718,8 @@ static size_t ValidateImageFormatsOnDisk(ImageInfo *image_info,
       /*
         Write reference image.
       */
-      (void) FormatMagickString(size,MaxTextExtent,"%lux%lu",
-        (unsigned long) reference_image->columns,(unsigned long)
-        reference_image->rows);
+      (void) FormatMagickString(size,MaxTextExtent,"%.20gx%.20g",
+        (double) reference_image->columns,(double) reference_image->rows);
       (void) CloneString(&image_info->size,size);
       image_info->depth=reference_types[j].depth;
       (void) FormatMagickString(reference_image->filename,MaxTextExtent,"%s:%s",
@@ -823,8 +826,9 @@ static size_t ValidateImageFormatsOnDisk(ImageInfo *image_info,
       (void) fprintf(stdout,"... pass.\n");
     }
   }
-  (void) fprintf(stdout,"  summary: %lu subtests; %lu passed; %lu failed.\n",
-    (unsigned long) test,(unsigned long) (test-(*fail)),(unsigned long) *fail);
+  (void) fprintf(stdout,
+    "  summary: %.20g subtests; %.20g passed; %.20g failed.\n",(double) test,
+    (double) (test-(*fail)),(double) *fail);
   return(test);
 }
 
@@ -900,7 +904,7 @@ static size_t ValidateImportExportPixels(ImageInfo *image_info,
         Generate reference image.
       */
       CatchException(exception);
-      (void) fprintf(stdout,"  test %lu: %s/%s",(unsigned long) test++,
+      (void) fprintf(stdout,"  test %.20g: %s/%s",(double) (test++),
         reference_map[i],MagickOptionToMnemonic(MagickStorageOptions,
         reference_storage[j].type));
       (void) CopyMagickString(image_info->filename,reference_filename,
@@ -993,8 +997,9 @@ static size_t ValidateImportExportPixels(ImageInfo *image_info,
       (void) fprintf(stdout,"... pass.\n");
     }
   }
-  (void) fprintf(stdout,"  summary: %lu subtests; %lu passed; %lu failed.\n",
-    (unsigned long) test,(unsigned long) (test-(*fail)),(unsigned long) *fail);
+  (void) fprintf(stdout,
+    "  summary: %.20g subtests; %.20g passed; %.20g failed.\n",(double) test,
+    (double) (test-(*fail)),(double) *fail);
   return(test);
 }
 
@@ -1057,7 +1062,7 @@ static size_t ValidateMontageCommand(ImageInfo *image_info,
   for (i=0; montage_options[i] != (char *) NULL; i++)
   {
     CatchException(exception);
-    (void) fprintf(stdout,"  test %lu: %s",(unsigned long) test++,
+    (void) fprintf(stdout,"  test %.20g: %s",(double) (test++),
       montage_options[i]);
     (void) FormatMagickString(command,MaxTextExtent,"%s %s %s %s",
       reference_filename,montage_options[i],reference_filename,
@@ -1082,8 +1087,9 @@ static size_t ValidateMontageCommand(ImageInfo *image_info,
       }
     (void) fprintf(stdout,"... pass.\n");
   }
-  (void) fprintf(stdout,"  summary: %lu subtests; %lu passed; %lu failed.\n",
-    (unsigned long) test,(unsigned long) (test-(*fail)),(unsigned long) *fail);
+  (void) fprintf(stdout,
+    "  summary: %.20g subtests; %.20g passed; %.20g failed.\n",(double) test,
+    (double) (test-(*fail)),(double) *fail);
   return(test);
 }
 
@@ -1146,7 +1152,7 @@ static size_t ValidateStreamCommand(ImageInfo *image_info,
   for (i=0; stream_options[i] != (char *) NULL; i++)
   {
     CatchException(exception);
-    (void) fprintf(stdout,"  test %lu: %s",(unsigned long) test++,
+    (void) fprintf(stdout,"  test %.20g: %s",(double) (test++),
       stream_options[i]);
     (void) FormatMagickString(command,MaxTextExtent,"%s %s %s",
       stream_options[i],reference_filename,output_filename);
@@ -1170,8 +1176,9 @@ static size_t ValidateStreamCommand(ImageInfo *image_info,
       }
     (void) fprintf(stdout,"... pass.\n");
   }
-  (void) fprintf(stdout,"  summary: %lu subtests; %lu passed; %lu failed.\n",
-    (unsigned long) test,(unsigned long) (test-(*fail)),(unsigned long) *fail);
+  (void) fprintf(stdout,
+    "  summary: %.20g subtests; %.20g passed; %.20g failed.\n",(double) test,
+    (double) (test-(*fail)),(double) *fail);
   return(test);
 }
 
@@ -1435,9 +1442,9 @@ int main(int argc,char **argv)
           if ((type & StreamValidate) != 0)
             tests+=ValidateStreamCommand(image_info,reference_filename,
               output_filename,&fail,exception);
-          (void) fprintf(stdout,"validation suite: %lu tests; %lu passed; "
-            "%lu failed.\n",(unsigned long) tests,(unsigned long) (tests-fail),
-            (unsigned long) fail);
+          (void) fprintf(stdout,
+            "validation suite: %.20g tests; %.20g passed; %.20g failed.\n",
+            (double) tests,(double) (tests-fail),(double) fail);
         }
       (void) RelinquishUniqueFileResource(output_filename);
       (void) RelinquishUniqueFileResource(reference_filename);
@@ -1449,7 +1456,7 @@ int main(int argc,char **argv)
       elapsed_time=GetElapsedTime(timer);
       user_time=GetUserTime(timer);
       (void) fprintf(stderr,
-        "Performance: %lui %gips %0.3fu %ld:%02ld.%03ld\n",(unsigned long)
+        "Performance: %.20gi %gips %0.3fu %ld:%02ld.%03ld\n",(double)
         iterations,1.0*iterations/elapsed_time,user_time,(long)
         (elapsed_time/60.0),(long) ceil(fmod(elapsed_time,60.0)),
         (long) (1000.0*(elapsed_time-floor(elapsed_time))));

@@ -831,20 +831,20 @@ static char *TranslateEvent(const LogEventType magick_unused(type),
       (void) FormatMagickString(text,extent,
         "<entry>\n"
         "  <timestamp>%s</timestamp>\n"
-        "  <elapsed-time>%ld:%02ld.%03ld</elapsed-time>\n"
+        "  <elapsed-time>%lu:%02lu.%03lu</elapsed-time>\n"
         "  <user-time>%0.3f</user-time>\n"
-        "  <process-id>%ld</process-id>\n"
-        "  <thread-id>%lu</thread-id>\n"
+        "  <process-id>%.20g</process-id>\n"
+        "  <thread-id>%.20g</thread-id>\n"
         "  <module>%s</module>\n"
         "  <function>%s</function>\n"
-        "  <line>%lu</line>\n"
+        "  <line>%.20g</line>\n"
         "  <domain>%s</domain>\n"
         "  <event>%s</event>\n"
-        "</entry>",timestamp,(long) (elapsed_time/60.0),(long)
-        floor(fmod(elapsed_time,60.0)),(long) (1000.0*(elapsed_time-
-        floor(elapsed_time))+0.5),user_time,(long) getpid(),
-        (unsigned long) GetMagickThreadSignature(),module,function,
-        (unsigned long) line, domain,event);
+        "</entry>",timestamp,(unsigned long) (elapsed_time/60.0),
+        (unsigned long) floor(fmod(elapsed_time,60.0)),(unsigned long)
+        (1000.0*(elapsed_time-floor(elapsed_time))+0.5),user_time,
+        (double) getpid(),(double) GetMagickThreadSignature(),module,function,
+        (double) line,domain,event);
       return(text);
     }
   /*
@@ -931,13 +931,13 @@ static char *TranslateEvent(const LogEventType magick_unused(type),
             q++;
             break;
           }
-        q+=FormatMagickString(q,extent,"%lu",(unsigned long)
-          (log_info->generation % log_info->generations));
+        q+=FormatMagickString(q,extent,"%.20g",(double) (log_info->generation %
+          log_info->generations));
         break;
       }
       case 'l':
       {
-        q+=FormatMagickString(q,extent,"%lu",(unsigned long) line);
+        q+=FormatMagickString(q,extent,"%.20g",(double) line);
         break;
       }
       case 'm':
@@ -961,14 +961,14 @@ static char *TranslateEvent(const LogEventType magick_unused(type),
       }
       case 'p':
       {
-        q+=FormatMagickString(q,extent,"%ld",(long) getpid());
+        q+=FormatMagickString(q,extent,"%.20g",(double) getpid());
         break;
       }
       case 'r':
       {
-        q+=FormatMagickString(q,extent,"%ld:%02ld.%03ld",(long)
-          (elapsed_time/60.0),(long) floor(fmod(elapsed_time,60.0)),
-          (long) (1000.0*(elapsed_time-floor(elapsed_time))+0.5));
+        q+=FormatMagickString(q,extent,"%lu:%02lu.%03lu",(unsigned long)
+          (elapsed_time/60.0),(unsigned long) floor(fmod(elapsed_time,60.0)),
+          (unsigned long) (1000.0*(elapsed_time-floor(elapsed_time))+0.5));
         break;
       }
       case 't':
@@ -1068,8 +1068,8 @@ static char *TranslateFilename(const LogInfo *log_info)
             q++;
             break;
           }
-        q+=FormatMagickString(q,extent,"%lu",(unsigned long)
-          (log_info->generation % log_info->generations));
+        q+=FormatMagickString(q,extent,"%.20g",(double) (log_info->generation %
+          log_info->generations));
         break;
       }
       case 'n':
@@ -1079,7 +1079,7 @@ static char *TranslateFilename(const LogInfo *log_info)
       }
       case 'p':
       {
-        q+=FormatMagickString(q,extent,"%ld",(long) getpid());
+        q+=FormatMagickString(q,extent,"%.20g",(double) getpid());
         break;
       }
       case 'v':

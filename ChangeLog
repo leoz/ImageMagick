@@ -1,8 +1,25 @@
-2010-05-28  6.6.2.1 Glenn Randers-Pehrson <glennrp@image...>
+2010-05-25  6.6.2-2 Anthony Thyssen <A.Thyssen@griffith...>
+  * Replaced '^' morphology kernel rotation with two varients '>' and '<'
+  * Hopefully finally settled the kernel defintion of 'Skeleton' to
+    correctly thin down ANY starting image, as symetrically as posible.
+  * Spelling correction:  Manhatten -> Manhattan
+
+2010-06-01  6.6.2-2 Glenn Randers-Pehrson <glennrp@image...>
+  * Properly scale color components of the PNG bKGD chunk.
+  * Prevent MNG divide by zero in calculation of frame_timeout.  Set
+    both frame_delay and frame_timeout to infinite when ticks_per_second
+    is zero, as required by the MNG spec.
+
+2010-05-31  6.6.2-2 Cristy  <quetzlzacatenango@image...>
+  * Add x:silent option to prevent beeps when reading the X image format.
+  * Recognize TTF for GetMagicInfo().
+  * Ensure the +set option deletes the image artifact.
+
+2010-05-28  6.6.2-1 Glenn Randers-Pehrson <glennrp@image...>
   * Prevent coders/png.c from attempting to write an empty tRNS chunk.
 
-2010-05-25  6.6.2.1 Anthony Thyssen <A.Thyssen@griffith...>
-  * Finish for Square Array Rotates (off center origin rotate)
+2010-05-25  6.6.2-1 Anthony Thyssen <A.Thyssen@griffith...>
+  * Fix for Square Array Rotates (off center origin rotate)
   * Added HitAndMiss kernel Ridges2 to find 2 pixel thick ridges
   * Added FreiChen:0,{angle}  FreiChen:{angle} and FreiChen:-1 variations
     to complete this kernels definition
@@ -15,10 +32,10 @@
     rose_tile_%[filename:tile].gif.
   * Use 64-bit types when compiling with the 64-bit Visual C++ compiler under
     Windows.
-  * Prevent MNG divide by zero (refererce
+  * Prevent MNG divide by zero in calculation of frame_delay (reference
     http://www.imagemagick.org/discourse-server/viewtopic.php?f=3&t=16320).
 
-2010-05-23  6.6.2.0 Anthony Thyssen <A.Thyssen@griffith...>
+2010-05-23  6.6.2-0 Anthony Thyssen <A.Thyssen@griffith...>
   * Third Re-write of MorphologyApply() to better handle compound methods.
   * Implemented  -set option:morphology:compose for merging results of
     multiple kernels. "None" means re-iterate results with next kernel.
@@ -32,7 +49,7 @@
   * ExpandKernelInfo() (rotation expand) now groks symmetrical kernels.
     So the above will only produce a list of 2 kernels, not 4 kernels
 
-2010-05-18  6.6.2.0 Anthony Thyssen <A.Thyssen@griffith...>
+2010-05-18  6.6.2-0 Anthony Thyssen <A.Thyssen@griffith...>
   * Separation of internal function MorphologyAppy() from
     MorphologyImageChannel() to calls to convolve without user settings.
   * Rewrite of MorphologyApply() to output better 'verbose' messages
@@ -676,7 +693,7 @@
 2009-07-01  6.5.4-3 Cristy  <quetzlzacatenango@image...>
   * Add -blue-shift option.
   * Add compression flag for each channel of a PSD layer.
-  * Implement experimental forward and inverse fourier transforms (contributed
+  * Implement experimental forward and inverse Fourier transforms (contributed
     by Sean Burke and Fred Weinhaus).  The -fft / -ifft option is not ready for
     prime time just yet.
   * Support -cdl (color decision list) option.
