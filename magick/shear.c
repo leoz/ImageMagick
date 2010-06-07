@@ -1081,8 +1081,8 @@ static Image *IntegralRotateImage(const Image *image,size_t rotations,
         Rotate 90 degrees.
       */
       GetPixelCacheTileSize(image,&tile_width,&tile_height);
-#if defined(MAGICKCORE_OPENMP_SUPPORT) && defined(MAGICKCORE_FUTURE)
-  #pragma omp parallel for schedule(dynamic,4) shared(progress, status)
+#if defined(MAGICKCORE_OPENMP_SUPPORT) 
+  #pragma omp parallel for schedule(static,1) shared(progress, status)
 #endif
       for (tile_y=0; tile_y < (ssize_t) image->rows; tile_y+=(ssize_t) tile_height)
       {
@@ -1196,8 +1196,8 @@ static Image *IntegralRotateImage(const Image *image,size_t rotations,
       /*
         Rotate 180 degrees.
       */
-#if defined(MAGICKCORE_OPENMP_SUPPORT) && defined(MAGICKCORE_FUTURE)
-  #pragma omp parallel for schedule(dynamic,4) shared(progress,status)
+#if defined(MAGICKCORE_OPENMP_SUPPORT) 
+  #pragma omp parallel for schedule(static,8) shared(progress,status)
 #endif
       for (y=0; y < (ssize_t) image->rows; y++)
       {
@@ -1272,8 +1272,8 @@ static Image *IntegralRotateImage(const Image *image,size_t rotations,
         Rotate 270 degrees.
       */
       GetPixelCacheTileSize(image,&tile_width,&tile_height);
-#if defined(MAGICKCORE_OPENMP_SUPPORT) && defined(MAGICKCORE_FUTURE)
-  #pragma omp parallel for schedule(dynamic,4) shared(progress,status)
+#if defined(MAGICKCORE_OPENMP_SUPPORT) 
+  #pragma omp parallel for schedule(static,1) shared(progress,status)
 #endif
       for (tile_y=0; tile_y < (ssize_t) image->rows; tile_y+=(ssize_t) tile_height)
       {
