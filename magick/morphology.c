@@ -1315,6 +1315,12 @@ MagickExport KernelInfo *AcquireKernelBuiltIn(const KernelInfoType type,
             ScaleKernelInfo(kernel, 0.25, NoValue);
             break;
         }
+        if ( fabs(args->sigma) > MagickEpsilon )
+          /* Rotate by correctly supplied 'angle' */
+          RotateKernelInfo(kernel, args->sigma);
+        else if ( args->rho > 30.0 || args->rho < -30.0 )
+          /* Rotate by out of bounds 'type' */
+          RotateKernelInfo(kernel, args->rho);
         break;
       }
     case RobertsKernel:
@@ -1819,13 +1825,13 @@ MagickExport KernelInfo *AcquireKernelBuiltIn(const KernelInfoType type,
         if (kernel == (KernelInfo *) NULL)
           return(kernel);
         kernel->type = type;
-        ExpandRotateKernelInfo(kernel, 45.0);
+        ExpandRotateKernelInfo(kernel, 90.0);
         /* append the mirror versions too - no flip function yet */
         new_kernel=ParseKernelArray("3: 1,1,1  1,0,-  -,-,0");
         if (new_kernel == (KernelInfo *) NULL)
           return(DestroyKernelInfo(kernel));
         new_kernel->type = type;
-        ExpandRotateKernelInfo(new_kernel, 45.0);
+        ExpandRotateKernelInfo(new_kernel, 90.0);
         LastKernelInfo(kernel)->next = new_kernel;
         break;
       }
@@ -2001,8 +2007,8 @@ MagickExport KernelInfo *AcquireKernelBuiltIn(const KernelInfoType type,
     case UnityKernel:
     default:
       {
-        /* Unity or No-Op Kernel - 3x3 with 1 in center */
-        kernel=ParseKernelArray("3:0,0,0,0,1,0,0,0,0");
+        /* Unity or No-Op Kernel - Basically just a single pixel on its own */
+        kernel=ParseKernelArray("1:1");
         if (kernel == (KernelInfo *) NULL)
           return(kernel);
         kernel->type = ( type == UnityKernel ) ? UnityKernel : UndefinedKernel;
@@ -2439,7 +2445,7 @@ static size_t MorphologyPrimitive(const Image *image, Image
     case HitAndMissMorphology:
     case ThinningMorphology:
     case ThickenMorphology:
-      /* kernel is user as is, without reflection */
+      /* kernel is used as is, without reflection */
       break;
     default:
       assert("Not a Primitive Morphology Method" != (char *) NULL);
@@ -3017,15 +3023,12 @@ MagickExport Image *MorphologyApply(const Image *image, const ChannelType
       stage_limit = 2;
       break;
     case HitAndMissMorphology:
-      kernel_limit = 1;          /* no method or kernel iteration */
       rslt_compose = LightenCompositeOp;  /* Union of multi-kernel results */
-      break;
+      /* FALL THUR */
     case ThinningMorphology:
     case ThickenMorphology:
-      method_limit = kernel_limit;  /* iterate method with each kernel */
+      method_limit = kernel_limit;  /* iterate the whole method */
       kernel_limit = 1;             /* do not do kernel iteration  */
-    case DistanceMorphology:
-      rslt_compose = NoCompositeOp; /* Re-iterate with multiple kernels */
       break;
     default:
       break;
@@ -3286,13 +3289,19 @@ MagickExport Image *MorphologyApply(const Image *image, const ChannelType
           ** below ensures the methematical compose method is applied in a
           ** purely mathematical way, and only to the selected channels.
           ** Turn off SVG composition 'alpha blending'.
+          **
+          ** The compose image order is specifically so that the new image can
+          ** be subtarcted 'Minus' from the collected result, to allow you to
+          ** convert a HitAndMiss methd into a Thinning method.
           */
           if ( verbose == MagickTrue )
             fprintf(stderr, " (compose \"%s\")",
                  MagickOptionToMnemonic(MagickComposeOptions, rslt_compose) );
-          (void) CompositeImageChannel(rslt_image,
+          (void) CompositeImageChannel(curr_image,
                (ChannelType) (channel & ~SyncChannels), rslt_compose,
-               curr_image, 0, 0);
+               rslt_image, 0, 0);
+          rslt_image = DestroyImage(rslt_image);
+          rslt_image = curr_image;
           curr_image = (Image *) image;  /* continue with original image */
         }
       if ( verbose == MagickTrue )
@@ -3428,10 +3437,11 @@ MagickExport Image *MorphologyImageChannel(const Image *image,
   if ( artifact != (const char *) NULL)
     ShowKernelInfo(curr_kernel);
 
-  /* override the default handling of multi-kernel morphology results
-   * if 'Undefined' use the default method
-   * if 'None' (default for 'Convolve') re-iterate previous result
-   * otherwise merge resulting images using compose method given
+  /* Override the default handling of multi-kernel morphology results
+   * If 'Undefined' use the default method
+   * If 'None' (default for 'Convolve') re-iterate previous result
+   * Otherwise merge resulting images using compose method given.
+   * Default for 'HitAndMiss' is 'Lighten'.
    */
   compose = UndefinedCompositeOp;  /* use default for method */
   artifact = GetImageArtifact(image,"morphology:compose");
