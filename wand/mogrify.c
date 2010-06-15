@@ -4062,7 +4062,11 @@ WandExport MagickBooleanType MogrifyImageCommand(ImageInfo *image_info,
               path,*DirectorySeparator,filename);
           }
         if (format != (char *) NULL)
-          AppendImageFormat(format,images->filename);
+          {
+            (void) CopyMagickString(images->filename,images->magick_filename,
+              MaxTextExtent);
+            AppendImageFormat(format,images->filename);
+          }
         AppendImageStack(images);
         FinalizeImageSettings(image_info,image,MagickFalse);
         if (global_colormap != MagickFalse)
@@ -6729,7 +6733,7 @@ WandExport MagickBooleanType MogrifyImageInfo(ImageInfo *image_info,
             if (*option == '+')
               {
                 image_info->dither=MagickFalse;
-                (void) SetImageOption(image_info,option+1,"undefined");
+                (void) SetImageOption(image_info,option+1,"none");
                 break;
               }
             (void) SetImageOption(image_info,option+1,argv[i+1]);

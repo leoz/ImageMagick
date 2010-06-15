@@ -949,7 +949,6 @@ MagickExport KernelInfo *AcquireKernelBuiltIn(const KernelInfoType type,
   switch(type) {
     case UndefinedKernel:    /* These should not call this function */
     case UserDefinedKernel:
-    case TestKernel:
       break;
     case UnityKernel:      /* Named Descrete Convolution Kernels */
     case LaplacianKernel:
@@ -961,6 +960,7 @@ MagickExport KernelInfo *AcquireKernelBuiltIn(const KernelInfoType type,
     case FreiChenKernel:
     case EdgesKernel:       /* Hit and Miss kernels */
     case CornersKernel:
+    case ThinDiagonalsKernel:
     case LineEndsKernel:
     case LineJunctionsKernel:
     case RidgesKernel:
@@ -1292,7 +1292,9 @@ MagickExport KernelInfo *AcquireKernelBuiltIn(const KernelInfoType type,
         break;
       }
     case SobelKernel:
-      { switch ( (int) args->rho ) {
+#if 0
+      { /* Sobel with optional 'sub-types' */
+        switch ( (int) args->rho ) {
           default:
           case 0:
             kernel=ParseKernelArray("3: 1,0,-1  2,0,-2  1,0,-1");
@@ -1323,6 +1325,16 @@ MagickExport KernelInfo *AcquireKernelBuiltIn(const KernelInfoType type,
           RotateKernelInfo(kernel, args->rho);
         break;
       }
+#else
+      { /* Simple Sobel Kernel */
+        kernel=ParseKernelArray("3: 1,0,-1  2,0,-2  1,0,-1");
+        if (kernel == (KernelInfo *) NULL)
+          return(kernel);
+        kernel->type = type;
+        RotateKernelInfo(kernel, args->rho);
+        break;
+      }
+#endif
     case RobertsKernel:
       {
         kernel=ParseKernelArray("3: 0,0,0  1,-1,0  0,0,0");
@@ -1674,6 +1686,42 @@ MagickExport KernelInfo *AcquireKernelBuiltIn(const KernelInfoType type,
         ExpandRotateKernelInfo(kernel, 90.0); /* Expand 90 degree rotations */
         break;
       }
+    case ThinDiagonalsKernel:
+      {
+        switch ( (int) args->rho ) {
+          case 0:
+          default:
+            { KernelInfo
+                *new_kernel;
+              kernel=ParseKernelArray("3: 0,0,0  0,1,1  1,1,-");
+              if (kernel == (KernelInfo *) NULL)
+                return(kernel);
+              kernel->type = type;
+              new_kernel=ParseKernelArray("3: 0,0,1  0,1,1  0,1,-");
+              if (new_kernel == (KernelInfo *) NULL)
+                return(DestroyKernelInfo(kernel));
+              new_kernel->type = type;
+              LastKernelInfo(kernel)->next = new_kernel;
+              ExpandMirrorKernelInfo(kernel);
+              break;
+            }
+          case 1:
+            kernel=ParseKernelArray("3: 0,0,0  0,1,1  1,1,-");
+            if (kernel == (KernelInfo *) NULL)
+              return(kernel);
+            kernel->type = type;
+            RotateKernelInfo(kernel, args->sigma);
+            break;
+          case 2:
+            kernel=ParseKernelArray("3: 0,0,1  0,1,1  0,1,-");
+            if (kernel == (KernelInfo *) NULL)
+              return(kernel);
+            kernel->type = type;
+            RotateKernelInfo(kernel, args->sigma);
+            break;
+        }
+        break;
+      }
     case LineEndsKernel:
       { /* Kernels for finding the end of thin lines */
         switch ( (int) args->rho ) {
@@ -1686,10 +1734,11 @@ MagickExport KernelInfo *AcquireKernelBuiltIn(const KernelInfoType type,
             break;
           case 1:
             /* kernel for 4-connected line ends - no rotation */
-            kernel=ParseKernelArray("3: 0,0,0  0,1,0  -,1,-");
+            kernel=ParseKernelArray("3: 0,0,-  0,1,1  0,0,-");
             if (kernel == (KernelInfo *) NULL)
               return(kernel);
             kernel->type = type;
+            RotateKernelInfo(kernel, args->sigma);
             break;
          case 2:
             /* kernel to add for 8-connected lines - no rotation */
@@ -1697,6 +1746,23 @@ MagickExport KernelInfo *AcquireKernelBuiltIn(const KernelInfoType type,
             if (kernel == (KernelInfo *) NULL)
               return(kernel);
             kernel->type = type;
+            RotateKernelInfo(kernel, args->sigma);
+            break;
+         case 3:
+            /* kernel to add for orthogonal line ends - does not find corners */
+            kernel=ParseKernelArray("3: 0,0,0  0,1,1  0,0,0");
+            if (kernel == (KernelInfo *) NULL)
+              return(kernel);
+            kernel->type = type;
+            RotateKernelInfo(kernel, args->sigma);
+            break;
+         case 4:
+            /* traditional line end - fails on last T end */
+            kernel=ParseKernelArray("3: 0,0,0  0,1,-  0,0,-");
+            if (kernel == (KernelInfo *) NULL)
+              return(kernel);
+            kernel->type = type;
+            RotateKernelInfo(kernel, args->sigma);
             break;
         }
         break;
@@ -1717,6 +1783,7 @@ MagickExport KernelInfo *AcquireKernelBuiltIn(const KernelInfoType type,
             if (kernel == (KernelInfo *) NULL)
               return(kernel);
             kernel->type = type;
+            RotateKernelInfo(kernel, args->sigma);
             break;
           case 2:
             /* Diagonal T Junctions */
@@ -1724,6 +1791,7 @@ MagickExport KernelInfo *AcquireKernelBuiltIn(const KernelInfoType type,
             if (kernel == (KernelInfo *) NULL)
               return(kernel);
             kernel->type = type;
+            RotateKernelInfo(kernel, args->sigma);
             break;
           case 3:
             /* Orthogonal T Junctions */
@@ -1731,6 +1799,7 @@ MagickExport KernelInfo *AcquireKernelBuiltIn(const KernelInfoType type,
             if (kernel == (KernelInfo *) NULL)
               return(kernel);
             kernel->type = type;
+            RotateKernelInfo(kernel, args->sigma);
             break;
           case 4:
             /* Diagonal X Junctions */
@@ -1738,6 +1807,7 @@ MagickExport KernelInfo *AcquireKernelBuiltIn(const KernelInfoType type,
             if (kernel == (KernelInfo *) NULL)
               return(kernel);
             kernel->type = type;
+            RotateKernelInfo(kernel, args->sigma);
             break;
           case 5:
             /* Orthogonal X Junctions - minimal diamond kernel */
@@ -1745,6 +1815,7 @@ MagickExport KernelInfo *AcquireKernelBuiltIn(const KernelInfoType type,
             if (kernel == (KernelInfo *) NULL)
               return(kernel);
             kernel->type = type;
+            RotateKernelInfo(kernel, args->sigma);
             break;
         }
         break;
@@ -2359,7 +2430,7 @@ static void CalcKernelMetaData(KernelInfo *kernel)
 %
 %  A description of each parameter follows:
 %
-%    o image: the image.
+%    o image: the source image
 %
 %    o method: the morphology method to be applied.
 %
@@ -2371,13 +2442,11 @@ static void CalcKernelMetaData(KernelInfo *kernel)
 %    o channel: the channel type.
 %
 %    o kernel: An array of double representing the morphology kernel.
-%              Warning: kernel may be normalized for the Convolve method.
 %
 %    o compose: How to handle or merge multi-kernel results.
-%               If 'Undefined' use default of the Morphology method.
-%               If 'No' force image to be re-iterated by each kernel.
-%               Otherwise merge the results using the mathematical compose
-%               method given.
+%          If 'UndefinedCompositeOp' use default for the Morphology method.
+%          If 'NoCompositeOp' force image to be re-iterated by each kernel.
+%          Otherwise merge the results using the compose method given.
 %
 %    o bias: Convolution Output Bias.
 %
@@ -2388,7 +2457,8 @@ static void CalcKernelMetaData(KernelInfo *kernel)
 
 /* Apply a Morphology Primative to an image using the given kernel.
 ** Two pre-created images must be provided, no image is created.
-** Returning the number of pixels that changed.
+** It returns the number of pixels that changed betwene the images
+** for convergence determination.
 */
 static size_t MorphologyPrimitive(const Image *image, Image
      *result_image, const MorphologyMethod method, const ChannelType channel,
@@ -2452,14 +2522,208 @@ static size_t MorphologyPrimitive(const Image *image, Image
       break;
   }
 
+
+  if ( method == ConvolveMorphology && kernel->width == 1 )
+  { /* Special handling (for speed) of vertical (blur) kernels.
+    ** This performs its handling in columns rather than in rows.
+    ** This is only done fo convolve as it is the only method that
+    ** generates very large 1-D vertical kernels (such as a 'BlurKernel')
+    **
+    ** Timing tests (on single CPU laptop)
+    ** Using a vertical 1-d Blue with normal row-by-row (below)
+    **   time convert logo: -morphology Convolve Blur:0x10+90 null:
+    **      0.807u
+    ** Using this column method
+    **   time convert logo: -morphology Convolve Blur:0x10+90 null:
+    **      0.620u
+    **
+    ** Anthony Thyssen, 14 June 2010
+    */
+    register ssize_t
+      x;
+
+#if defined(MAGICKCORE_OPENMP_SUPPORT)
+#pragma omp parallel for schedule(dynamic,4) shared(progress,status)
+#endif
+    for (x=0; x < (ssize_t) image->columns; x++)
+    {
+      register const PixelPacket
+        *restrict p;
+
+      register const IndexPacket
+        *restrict p_indexes;
+
+      register PixelPacket
+        *restrict q;
+
+      register IndexPacket
+        *restrict q_indexes;
+
+      register ssize_t
+        y;
+
+      size_t
+        r;
+
+      if (status == MagickFalse)
+        continue;
+      p=GetCacheViewVirtualPixels(p_view, x,  -offy,1,
+          image->rows+kernel->height, exception);
+      q=GetCacheViewAuthenticPixels(q_view,x,0,1,result_image->rows,exception);
+      if ((p == (const PixelPacket *) NULL) || (q == (PixelPacket *) NULL))
+        {
+          status=MagickFalse;
+          continue;
+        }
+      p_indexes=GetCacheViewVirtualIndexQueue(p_view);
+      q_indexes=GetCacheViewAuthenticIndexQueue(q_view);
+      r = offy;  /* offset to the origin pixel in 'p' */
+
+      for (y=0; y < (ssize_t) image->rows; y++)
+      {
+        register ssize_t
+          v;
+
+        register const double
+          *restrict k;
+
+        register const PixelPacket
+          *restrict k_pixels;
+
+        register const IndexPacket
+          *restrict k_indexes;
+
+        MagickPixelPacket
+          result;
+
+        /* Copy input image to the output image for unused channels
+        * This removes need for 'cloning' a new image every iteration
+        */
+        *q = p[r];
+        if (image->colorspace == CMYKColorspace)
+          q_indexes[y] = p_indexes[r];
+
+        /* Set the bias of the weighted average output */
+        result.red     =
+        result.green   =
+        result.blue    =
+        result.opacity =
+        result.index   = bias;
+
+
+        /* Weighted Average of pixels using reflected kernel
+        **
+        ** NOTE for correct working of this operation for asymetrical
+        ** kernels, the kernel needs to be applied in its reflected form.
+        ** That is its values needs to be reversed.
+        */
+        k = &kernel->values[ kernel->height-1 ];
+        k_pixels = p;
+        k_indexes = p_indexes;
+        if ( ((channel & SyncChannels) == 0 ) ||
+                             (image->matte == MagickFalse) )
+          { /* No 'Sync' involved.
+            ** Convolution is simple greyscale channel operation
+            */
+            for (v=0; v < (ssize_t) kernel->height; v++) {
+              if ( IsNan(*k) ) continue;
+              result.red     += (*k)*k_pixels->red;
+              result.green   += (*k)*k_pixels->green;
+              result.blue    += (*k)*k_pixels->blue;
+              result.opacity += (*k)*k_pixels->opacity;
+              if ( image->colorspace == CMYKColorspace)
+                result.index += (*k)*(*k_indexes);
+              k--;
+              k_pixels++;
+              k_indexes++;
+            }
+            if ((channel & RedChannel) != 0)
+              q->red = ClampToQuantum(result.red);
+            if ((channel & GreenChannel) != 0)
+              q->green = ClampToQuantum(result.green);
+            if ((channel & BlueChannel) != 0)
+              q->blue = ClampToQuantum(result.blue);
+            if ((channel & OpacityChannel) != 0
+                && image->matte == MagickTrue )
+              q->opacity = ClampToQuantum(result.opacity);
+            if ((channel & IndexChannel) != 0
+                && image->colorspace == CMYKColorspace)
+              q_indexes[x] = ClampToQuantum(result.index);
+          }
+        else
+          { /* Channel 'Sync' Flag, and Alpha Channel enabled.
+            ** Weight the color channels with Alpha Channel so that
+            ** transparent pixels are not part of the results.
+            */
+            MagickRealType
+              alpha,  /* alpha weighting of colors : kernel*alpha  */
+              gamma;  /* divisor, sum of color weighting values */
+
+            gamma=0.0;
+            for (v=0; v < (ssize_t) kernel->height; v++) {
+              if ( IsNan(*k) ) continue;
+              alpha=(*k)*(QuantumScale*(QuantumRange-k_pixels->opacity));
+              gamma += alpha;
+              result.red     += alpha*k_pixels->red;
+              result.green   += alpha*k_pixels->green;
+              result.blue    += alpha*k_pixels->blue;
+              result.opacity += (*k)*k_pixels->opacity;
+              if ( image->colorspace == CMYKColorspace)
+                result.index += alpha*(*k_indexes);
+              k--;
+              k_pixels++;
+              k_indexes++;
+            }
+            /* Sync'ed channels, all channels are modified */
+            gamma=1.0/(fabs((double) gamma) <= MagickEpsilon ? 1.0 : gamma);
+            q->red = ClampToQuantum(gamma*result.red);
+            q->green = ClampToQuantum(gamma*result.green);
+            q->blue = ClampToQuantum(gamma*result.blue);
+            q->opacity = ClampToQuantum(result.opacity);
+            if (image->colorspace == CMYKColorspace)
+              q_indexes[x] = ClampToQuantum(gamma*result.index);
+          }
+
+        /* Count up changed pixels */
+        if (   ( p[r].red != q->red )
+            || ( p[r].green != q->green )
+            || ( p[r].blue != q->blue )
+            || ( p[r].opacity != q->opacity )
+            || ( image->colorspace == CMYKColorspace &&
+                    p_indexes[r] != q_indexes[x] ) )
+          changed++;  /* The pixel was changed in some way! */
+        p++;
+        q++;
+      } /* y */
+      if ( SyncCacheViewAuthenticPixels(q_view,exception) == MagickFalse)
+        status=MagickFalse;
+      if (image->progress_monitor != (MagickProgressMonitor) NULL)
+        {
+          MagickBooleanType
+            proceed;
+
+#if defined(MAGICKCORE_OPENMP_SUPPORT)
+  #pragma omp critical (MagickCore_MorphologyImage)
+#endif
+          proceed=SetImageProgress(image,MorphologyTag,progress++,image->rows);
+          if (proceed == MagickFalse)
+            status=MagickFalse;
+        }
+    } /* x */
+    result_image->type=image->type;
+    q_view=DestroyCacheView(q_view);
+    p_view=DestroyCacheView(p_view);
+    return(status ? (size_t) changed : 0);
+  }
+
+  /*
+  ** Normal handling of horizontal or rectangular kernels (row by row)
+  */
 #if defined(MAGICKCORE_OPENMP_SUPPORT)
   #pragma omp parallel for schedule(dynamic,4) shared(progress,status)
 #endif
   for (y=0; y < (ssize_t) image->rows; y++)
   {
-    MagickBooleanType
-      sync;
-
     register const PixelPacket
       *restrict p;
 
@@ -2491,7 +2755,7 @@ static size_t MorphologyPrimitive(const Image *image, Image
       }
     p_indexes=GetCacheViewVirtualIndexQueue(p_view);
     q_indexes=GetCacheViewAuthenticIndexQueue(q_view);
-    r = (image->columns+kernel->width)*offy+offx; /* constant */
+    r = (image->columns+kernel->width)*offy+offx; /* offset to origin in 'p' */
 
     for (x=0; x < (ssize_t) image->columns; x++)
     {
@@ -2515,7 +2779,7 @@ static size_t MorphologyPrimitive(const Image *image, Image
         min,
         max;
 
-      /* Copy input to ouput image for unused channels
+      /* Copy input image to the output image for unused channels
        * This removes need for 'cloning' a new image every iteration
        */
       *q = p[r];
@@ -2544,7 +2808,7 @@ static size_t MorphologyPrimitive(const Image *image, Image
 
       switch (method) {
         case ConvolveMorphology:
-          /* Set the user defined bias of the weighted average output */
+          /* Set the bias of the weighted average output */
           result.red     =
           result.green   =
           result.blue    =
@@ -2580,20 +2844,50 @@ static size_t MorphologyPrimitive(const Image *image, Image
             ** For more details of Correlation vs Convolution see
             **   http://www.cs.umd.edu/~djacobs/CMSC426/Convolution.pdf
             */
-            if (((channel & SyncChannels) != 0 ) &&
-                      (image->matte == MagickTrue))
-              { /* Channel has a 'Sync' Flag, and Alpha Channel enabled.
+            k = &kernel->values[ kernel->width*kernel->height-1 ];
+            k_pixels = p;
+            k_indexes = p_indexes;
+            if ( ((channel & SyncChannels) == 0 ) ||
+                                 (image->matte == MagickFalse) )
+              { /* No 'Sync' involved.
+                ** Convolution is simple greyscale channel operation
+                */
+                for (v=0; v < (ssize_t) kernel->height; v++) {
+                  for (u=0; u < (ssize_t) kernel->width; u++, k--) {
+                    if ( IsNan(*k) ) continue;
+                    result.red     += (*k)*k_pixels[u].red;
+                    result.green   += (*k)*k_pixels[u].green;
+                    result.blue    += (*k)*k_pixels[u].blue;
+                    result.opacity += (*k)*k_pixels[u].opacity;
+                    if ( image->colorspace == CMYKColorspace)
+                      result.index   += (*k)*k_indexes[u];
+                  }
+                  k_pixels += image->columns+kernel->width;
+                  k_indexes += image->columns+kernel->width;
+                }
+                if ((channel & RedChannel) != 0)
+                  q->red = ClampToQuantum(result.red);
+                if ((channel & GreenChannel) != 0)
+                  q->green = ClampToQuantum(result.green);
+                if ((channel & BlueChannel) != 0)
+                  q->blue = ClampToQuantum(result.blue);
+                if ((channel & OpacityChannel) != 0
+                    && image->matte == MagickTrue )
+                  q->opacity = ClampToQuantum(result.opacity);
+                if ((channel & IndexChannel) != 0
+                    && image->colorspace == CMYKColorspace)
+                  q_indexes[x] = ClampToQuantum(result.index);
+              }
+            else
+              { /* Channel 'Sync' Flag, and Alpha Channel enabled.
                 ** Weight the color channels with Alpha Channel so that
                 ** transparent pixels are not part of the results.
                 */
                 MagickRealType
-                  alpha,  /* color channel weighting : kernel*alpha  */
-                  gamma;  /* divisor, sum of weighting values */
+                  alpha,  /* alpha weighting of colors : kernel*alpha  */
+                  gamma;  /* divisor, sum of color weighting values */
 
                 gamma=0.0;
-                k = &kernel->values[ kernel->width*kernel->height-1 ];
-                k_pixels = p;
-                k_indexes = p_indexes;
                 for (v=0; v < (ssize_t) kernel->height; v++) {
                   for (u=0; u < (ssize_t) kernel->width; u++, k--) {
                     if ( IsNan(*k) ) continue;
@@ -2603,41 +2897,21 @@ static size_t MorphologyPrimitive(const Image *image, Image
                     result.red     += alpha*k_pixels[u].red;
                     result.green   += alpha*k_pixels[u].green;
                     result.blue    += alpha*k_pixels[u].blue;
-                    result.opacity += (*k)*(QuantumRange-k_pixels[u].opacity);
+                    result.opacity += (*k)*k_pixels[u].opacity;
                     if ( image->colorspace == CMYKColorspace)
                       result.index   += alpha*k_indexes[u];
                   }
                   k_pixels += image->columns+kernel->width;
                   k_indexes += image->columns+kernel->width;
                 }
+                /* Sync'ed channels, all channels are modified */
                 gamma=1.0/(fabs((double) gamma) <= MagickEpsilon ? 1.0 : gamma);
-                result.red *= gamma;
-                result.green *= gamma;
-                result.blue *= gamma;
-                result.opacity *= gamma;
-                result.index *= gamma;
-              }
-            else
-              {
-                /* No 'Sync' flag, or no Alpha involved.
-                ** Convolution is simple individual channel weigthed sum.
-                */
-                k = &kernel->values[ kernel->width*kernel->height-1 ];
-                k_pixels = p;
-                k_indexes = p_indexes;
-                for (v=0; v < (ssize_t) kernel->height; v++) {
-                  for (u=0; u < (ssize_t) kernel->width; u++, k--) {
-                    if ( IsNan(*k) ) continue;
-                    result.red     += (*k)*k_pixels[u].red;
-                    result.green   += (*k)*k_pixels[u].green;
-                    result.blue    += (*k)*k_pixels[u].blue;
-                    result.opacity += (*k)*(QuantumRange-k_pixels[u].opacity);
-                    if ( image->colorspace == CMYKColorspace)
-                      result.index   += (*k)*k_indexes[u];
-                  }
-                  k_pixels += image->columns+kernel->width;
-                  k_indexes += image->columns+kernel->width;
-                }
+                q->red = ClampToQuantum(gamma*result.red);
+                q->green = ClampToQuantum(gamma*result.green);
+                q->blue = ClampToQuantum(gamma*result.blue);
+                q->opacity = ClampToQuantum(result.opacity);
+                if (image->colorspace == CMYKColorspace)
+                  q_indexes[x] = ClampToQuantum(gamma*result.index);
               }
             break;
 
@@ -2668,7 +2942,6 @@ static size_t MorphologyPrimitive(const Image *image, Image
               k_indexes += image->columns+kernel->width;
             }
             break;
-
 
         case DilateMorphology:
             /* Maximum Value within kernel neighbourhood
@@ -2757,7 +3030,7 @@ static size_t MorphologyPrimitive(const Image *image, Image
             /* Select Pixel with Minimum Intensity within kernel neighbourhood
             **
             ** WARNING: the intensity test fails for CMYK and does not
-            ** take into account the moderating effect of teh alpha channel
+            ** take into account the moderating effect of the alpha channel
             ** on the intensity.
             **
             ** NOTE that the kernel is not reflected for this operation!
@@ -2884,6 +3157,7 @@ static size_t MorphologyPrimitive(const Image *image, Image
       /* Assign the resulting pixel values - Clamping Result */
       switch ( method ) {
         case UndefinedMorphology:
+        case ConvolveMorphology:
         case DilateIntensityMorphology:
         case ErodeIntensityMorphology:
           break;  /* full pixel was directly assigned - not a channel method */
@@ -2909,12 +3183,11 @@ static size_t MorphologyPrimitive(const Image *image, Image
           || ( p[r].opacity != q->opacity )
           || ( image->colorspace == CMYKColorspace &&
                   p_indexes[r] != q_indexes[x] ) )
-        changed++;  /* The pixel had some value changed! */
+        changed++;  /* The pixel was changed in some way! */
       p++;
       q++;
     } /* x */
-    sync=SyncCacheViewAuthenticPixels(q_view,exception);
-    if (sync == MagickFalse)
+    if ( SyncCacheViewAuthenticPixels(q_view,exception) == MagickFalse)
       status=MagickFalse;
     if (image->progress_monitor != (MagickProgressMonitor) NULL)
       {
