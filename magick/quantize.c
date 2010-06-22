@@ -199,7 +199,11 @@
 /*
   Define declarations.
 */
+#if !defined(__APPLE__) && !defined(TARGET_OS_IPHONE)
 #define CacheShift  2
+#else
+#define CacheShift  3
+#endif
 #define ErrorQueueLength  16
 #define MaxNodes  266817
 #define MaxTreeDepth  8
@@ -1346,6 +1350,27 @@ MagickExport QuantizeInfo *DestroyQuantizeInfo(QuantizeInfo *quantize_info)
 %
 */
 
+static inline ssize_t CacheOffset(CubeInfo *cube_info,
+  const RealPixelPacket *pixel)
+{
+#define RedShift(pixel) (((pixel) >> CacheShift) << (0*(8-CacheShift)))
+#define GreenShift(pixel) (((pixel) >> CacheShift) << (1*(8-CacheShift)))
+#define BlueShift(pixel) (((pixel) >> CacheShift) << (2*(8-CacheShift)))
+#define AlphaShift(pixel) (((pixel) >> CacheShift) << (3*(8-CacheShift)))
+
+  ssize_t
+    offset;
+
+  offset=(ssize_t)
+    RedShift(ScaleQuantumToChar(ClampToUnsignedQuantum(pixel->red))) |
+    GreenShift(ScaleQuantumToChar(ClampToUnsignedQuantum(pixel->green))) |
+    BlueShift(ScaleQuantumToChar(ClampToUnsignedQuantum(pixel->blue)));
+  if (cube_info->associate_alpha != MagickFalse)
+    offset|=
+      AlphaShift(ScaleQuantumToChar(ClampToUnsignedQuantum(pixel->opacity)));
+  return(offset);
+}
+
 static MagickBooleanType FloydSteinbergDither(Image *image,CubeInfo *cube_info)
 {
 #define DitherImageTag  "Dither/Image"
@@ -1447,12 +1472,7 @@ static MagickBooleanType FloydSteinbergDither(Image *image,CubeInfo *cube_info)
       pixel.blue=(MagickRealType) ClampToUnsignedQuantum(pixel.blue);
       if (cube_info->associate_alpha != MagickFalse)
         pixel.opacity=(MagickRealType) ClampToUnsignedQuantum(pixel.opacity);
-      i=(ssize_t) ((ScaleQuantumToChar(ClampToUnsignedQuantum(pixel.red)) >> CacheShift) |
-        (ScaleQuantumToChar(ClampToUnsignedQuantum(pixel.green)) >> CacheShift) << 6 |
-        (ScaleQuantumToChar(ClampToUnsignedQuantum(pixel.blue)) >> CacheShift) << 12);
-      if (cube_info->associate_alpha != MagickFalse)
-        i|=((ScaleQuantumToChar(ClampToUnsignedQuantum(pixel.opacity)) >> CacheShift)
-          << 18);
+      i=CacheOffset(cube_info,&pixel);
       if (p->cache[i] < 0)
         {
           register NodeInfo
@@ -1665,12 +1685,7 @@ static MagickBooleanType RiemersmaDither(Image *image,CacheView *image_view,
       pixel.blue=(MagickRealType) ClampToUnsignedQuantum(pixel.blue);
       if (cube_info->associate_alpha != MagickFalse)
         pixel.opacity=(MagickRealType) ClampToUnsignedQuantum(pixel.opacity);
-      i=(ssize_t) ((ScaleQuantumToChar(ClampToUnsignedQuantum(pixel.red)) >> CacheShift) |
-        (ScaleQuantumToChar(ClampToUnsignedQuantum(pixel.green)) >> CacheShift) << 6 |
-        (ScaleQuantumToChar(ClampToUnsignedQuantum(pixel.blue)) >> CacheShift) << 12);
-      if (cube_info->associate_alpha != MagickFalse)
-        i|=((ScaleQuantumToChar(ClampToUnsignedQuantum(pixel.opacity)) >> CacheShift)
-          << 18);
+      i=CacheOffset(cube_info,&pixel);
       if (p->cache[i] < 0)
         {
           register NodeInfo

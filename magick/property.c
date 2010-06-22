@@ -1979,8 +1979,7 @@ MagickExport const char *GetImageProperty(const Image *image,
         image->properties);
       return(p);
     }
-  if ((image->properties != (void *) NULL) &&
-      (LocaleNCompare("fx:",property,3) != 0))
+  if (image->properties != (void *) NULL)
     {
       p=(const char *) GetValueFromSplayTree((SplayTreeInfo *)
         image->properties,property);
