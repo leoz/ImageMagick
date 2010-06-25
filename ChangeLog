@@ -1,3 +1,11 @@
+2010-06-22  6.6.2-8 Cristy  <quetzlzacatenango@image...>
+  * Skip byte when DDS bitcount is 32 (reference
+    http://www.imagemagick.org/discourse-server/viewtopic.php?f=3&t=16487).
+  * Montage now uses final background setting (e.g. montage -background none ...
+    -background lightblue show:).
+  * Do not annotate directory paths in ListFiles().
+  * Reset the image matte for png:color-type=2.
+
 2010-06-17  6.6.2-7 Cristy  <quetzlzacatenango@image...>
   * Support new label:pointsize property.
   * Miscellany->Slide Show, in the display program, now cycles through the
