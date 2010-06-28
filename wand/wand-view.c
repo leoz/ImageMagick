@@ -2,12 +2,11 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                                                                             %
 %                                                                             %
-%                                                                             %
-%                      PPPP   IIIII  X   X  EEEEE  L                          %
-%                      P   P    I     X X   E      L                          %
-%                      PPPP     I      X    EEE    L                          %
-%                      P        I     X X   E      L                          %
-%                      P      IIIII  X   X  EEEEE  LLLLL                      %
+%                        W   W   AAA   N   N  DDDD                            %
+%                        W   W  A   A  NN  N  D   D                           %
+%                        W W W  AAAAA  N N N  D   D                           %
+%                        WW WW  A   A  N  NN  D   D                           %
+%                        W   W  A   A  N   N  DDDD                            %
 %                                                                             %
 %                        V   V  IIIII  EEEEE  W   W                           %
 %                        V   V    I    E      W   W                           %
@@ -16,7 +15,7 @@
 %                          V    IIIII  EEEEE  W   W                           %
 %                                                                             %
 %                                                                             %
-%                       MagickWand Pixel View Methods                         %
+%                        MagickWand Wand View Methods                         %
 %                                                                             %
 %                              Software Design                                %
 %                                John Cristy                                  %
@@ -55,21 +54,22 @@
 /*
  Define declarations.
 */
-#define PixelViewId  "PixelView"
+#define WandViewId  "WandView"
 
 /*
   Typedef declarations.
 */
-struct _PixelView
+struct _WandView
 {
   size_t
     id;
 
   char
-    name[MaxTextExtent];
+    name[MaxTextExtent],
+    *description;
 
-  ExceptionInfo
-    *exception;
+  RectangleInfo
+    extent;
 
   MagickWand
     *wand;
@@ -77,14 +77,14 @@ struct _PixelView
   CacheView
     *view;
 
-  RectangleInfo
-    region;
-
   size_t
     number_threads;
 
   PixelWand
     ***pixel_wands;
+
+  ExceptionInfo
+    *exception;
 
   MagickBooleanType
     debug;
@@ -98,52 +98,53 @@ struct _PixelView
 %                                                                             %
 %                                                                             %
 %                                                                             %
-%   C l o n e P i x e l V i e w                                               %
+%   C l o n e W a n d V i e w                                                 %
 %                                                                             %
 %                                                                             %
 %                                                                             %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-%  ClonePixelView() makes a copy of the specified pixel view.
+%  CloneWandView() makes a copy of the specified wand view.
 %
-%  The format of the ClonePixelView method is:
+%  The format of the CloneWandView method is:
 %
-%      PixelView *ClonePixelView(const PixelView *pixel_view)
+%      WandView *CloneWandView(const WandView *wand_view)
 %
 %  A description of each parameter follows:
 %
-%    o pixel_view: the pixel view.
+%    o wand_view: the wand view.
 %
 */
-WandExport PixelView *ClonePixelView(const PixelView *pixel_view)
+WandExport WandView *CloneWandView(const WandView *wand_view)
 {
-  PixelView
+  WandView
     *clone_view;
 
   register ssize_t
     i;
 
-  assert(pixel_view != (PixelView *) NULL);
-  assert(pixel_view->signature == WandSignature);
-  if (pixel_view->debug != MagickFalse)
-    (void) LogMagickEvent(WandEvent,GetMagickModule(),"%s",pixel_view->name);
-  clone_view=(PixelView *) AcquireAlignedMemory(1,sizeof(*clone_view));
-  if (clone_view == (PixelView *) NULL)
+  assert(wand_view != (WandView *) NULL);
+  assert(wand_view->signature == WandSignature);
+  if (wand_view->debug != MagickFalse)
+    (void) LogMagickEvent(WandEvent,GetMagickModule(),"%s",wand_view->name);
+  clone_view=(WandView *) AcquireAlignedMemory(1,sizeof(*clone_view));
+  if (clone_view == (WandView *) NULL)
     ThrowWandFatalException(ResourceLimitFatalError,"MemoryAllocationFailed",
-      pixel_view->name);
+      wand_view->name);
   (void) ResetMagickMemory(clone_view,0,sizeof(*clone_view));
   clone_view->id=AcquireWandId();
   (void) FormatMagickString(clone_view->name,MaxTextExtent,"%s-%.20g",
-    PixelViewId,(double) clone_view->id);
+    WandViewId,(double) clone_view->id);
+  clone_view->description=ConstantString(wand_view->description);
+  clone_view->view=CloneCacheView(wand_view->view);
+  clone_view->extent=wand_view->extent;
+  clone_view->number_threads=wand_view->number_threads;
   clone_view->exception=AcquireExceptionInfo();
-  InheritException(clone_view->exception,pixel_view->exception);
-  clone_view->view=CloneCacheView(pixel_view->view);
-  clone_view->region=pixel_view->region;
-  clone_view->number_threads=pixel_view->number_threads;
-  for (i=0; i < (ssize_t) pixel_view->number_threads; i++)
+  InheritException(clone_view->exception,wand_view->exception);
+  for (i=0; i < (ssize_t) wand_view->number_threads; i++)
     clone_view->pixel_wands[i]=ClonePixelWands((const PixelWand **)
-      pixel_view->pixel_wands[i],pixel_view->region.width);
-  clone_view->debug=pixel_view->debug;
+      wand_view->pixel_wands[i],wand_view->extent.width);
+  clone_view->debug=wand_view->debug;
   if (clone_view->debug != MagickFalse)
     (void) LogMagickEvent(WandEvent,GetMagickModule(),"%s",clone_view->name);
   clone_view->signature=WandSignature;
@@ -155,26 +156,21 @@ WandExport PixelView *ClonePixelView(const PixelView *pixel_view)
 %                                                                             %
 %                                                                             %
 %                                                                             %
-%   D e s t r o y P i x e l V i e w                                           %
+%   D e s t r o y W a n d V i e w                                             %
 %                                                                             %
 %                                                                             %
 %                                                                             %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-%  DestroyPixelView() deallocates memory associated with a pixel view.
+%  DestroyWandView() deallocates memory associated with a wand view.
 %
-%  The format of the DestroyPixelView method is:
+%  The format of the DestroyWandView method is:
 %
-%      PixelView *DestroyPixelView(PixelView *pixel_view,
-%        const size_t number_wands,const size_t number_threads)
+%      WandView *DestroyWandView(WandView *wand_view)
 %
 %  A description of each parameter follows:
 %
-%    o pixel_view: the pixel view.
-%
-%    o number_wand: the number of pixel wands.
-%
-%    o number_threads: number of threads.
+%    o wand_view: the wand view.
 %
 */
 
@@ -192,18 +188,18 @@ static PixelWand ***DestroyPixelsThreadSet(PixelWand ***pixel_wands,
   return(pixel_wands);
 }
 
-WandExport PixelView *DestroyPixelView(PixelView *pixel_view)
+WandExport WandView *DestroyWandView(WandView *wand_view)
 {
-  assert(pixel_view != (PixelView *) NULL);
-  assert(pixel_view->signature == WandSignature);
-  pixel_view->pixel_wands=DestroyPixelsThreadSet(pixel_view->pixel_wands,
-    pixel_view->region.width,pixel_view->number_threads);
-  pixel_view->view=DestroyCacheView(pixel_view->view);
-  pixel_view->exception=DestroyExceptionInfo(pixel_view->exception);
-  pixel_view->signature=(~WandSignature);
-  RelinquishWandId(pixel_view->id);
-  pixel_view=(PixelView *) RelinquishMagickMemory(pixel_view);
-  return(pixel_view);
+  assert(wand_view != (WandView *) NULL);
+  assert(wand_view->signature == WandSignature);
+  wand_view->pixel_wands=DestroyPixelsThreadSet(wand_view->pixel_wands,
+    wand_view->extent.width,wand_view->number_threads);
+  wand_view->view=DestroyCacheView(wand_view->view);
+  wand_view->exception=DestroyExceptionInfo(wand_view->exception);
+  wand_view->signature=(~WandSignature);
+  RelinquishWandId(wand_view->id);
+  wand_view=(WandView *) RelinquishMagickMemory(wand_view);
+  return(wand_view);
 }
 
 /*
@@ -211,52 +207,56 @@ WandExport PixelView *DestroyPixelView(PixelView *pixel_view)
 %                                                                             %
 %                                                                             %
 %                                                                             %
-%   D u p l e x T r a n s f e r P i x e l V i e w I t e r a t o r             %
+%   D u p l e x T r a n s f e r W a n d V i e w I t e r a t o r               %
 %                                                                             %
 %                                                                             %
 %                                                                             %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-%  DuplexTransferPixelViewIterator() iterates over three pixel views in
+%  DuplexTransferWandViewIterator() iterates over three wand views in
 %  parallel and calls your transfer method for each scanline of the view.  The
-%  source and duplex pixel region is not confined to the image canvas-- that is
+%  source and duplex pixel extent is not confined to the image canvas-- that is
 %  you can include negative offsets or widths or heights that exceed the image
-%  dimension.  However, the destination pixel view is confined to the image
+%  dimension.  However, the destination wand view is confined to the image
 %  canvas-- that is no negative offsets or widths or heights that exceed the
 %  image dimension are permitted.
 %
-%  Use this pragma:
+%  The callback signature is:
+%
+%      MagickBooleanType DuplexTransferImageViewMethod(const WandView *source,
+%        const WandView *duplex,WandView *destination,const ssize_t y,
+%        const int thread_id,void *context)
+%
+%  Use this pragma if the view is not single threaded:
 %
 %    #pragma omp critical
 %
 %  to define a section of code in your callback transfer method that must be
 %  executed by a single thread at a time.
 %
-%  The format of the DuplexTransferPixelViewIterator method is:
+%  The format of the DuplexTransferWandViewIterator method is:
 %
-%      MagickBooleanType DuplexTransferPixelViewIterator(PixelView *source,
-%        PixelView *duplex,PixelView *destination,
-%        DuplexTransferPixelViewMethod transfer,void *context)
+%      MagickBooleanType DuplexTransferWandViewIterator(WandView *source,
+%        WandView *duplex,WandView *destination,
+%        DuplexTransferWandViewMethod transfer,void *context)
 %
 %  A description of each parameter follows:
 %
-%    o source: the source pixel view.
+%    o source: the source wand view.
 %
-%    o duplex: the duplex pixel view.
+%    o duplex: the duplex wand view.
 %
-%    o destination: the destination pixel view.
+%    o destination: the destination wand view.
 %
 %    o transfer: the transfer callback method.
 %
 %    o context: the user defined context.
 %
 */
-WandExport MagickBooleanType DuplexTransferPixelViewIterator(
-  PixelView *source,PixelView *duplex,PixelView *destination,
-  DuplexTransferPixelViewMethod transfer,void *context)
+WandExport MagickBooleanType DuplexTransferWandViewIterator(WandView *source,
+  WandView *duplex,WandView *destination,DuplexTransferWandViewMethod transfer,
+  void *context)
 {
-#define DuplexTransferPixelViewTag  "PixelView/DuplexTransfer"
-
   ExceptionInfo
     *exception;
 
@@ -274,9 +274,9 @@ WandExport MagickBooleanType DuplexTransferPixelViewIterator(
   ssize_t
     y;
 
-  assert(source != (PixelView *) NULL);
+  assert(source != (WandView *) NULL);
   assert(source->signature == WandSignature);
-  if (transfer == (DuplexTransferPixelViewMethod) NULL)
+  if (transfer == (DuplexTransferWandViewMethod) NULL)
     return(MagickFalse);
   source_image=source->wand->images;
   duplex_image=duplex->wand->images;
@@ -289,7 +289,7 @@ WandExport MagickBooleanType DuplexTransferPixelViewIterator(
 #if defined(MAGICKCORE_OPENMP_SUPPORT)
   #pragma omp parallel for schedule(static,1) shared(progress,status)
 #endif
-  for (y=source->region.y; y < (ssize_t) source->region.height; y++)
+  for (y=source->extent.y; y < (ssize_t) source->extent.height; y++)
   {
     MagickBooleanType
       sync;
@@ -315,63 +315,63 @@ WandExport MagickBooleanType DuplexTransferPixelViewIterator(
     if (status == MagickFalse)
       continue;
     id=GetOpenMPThreadId();
-    pixels=GetCacheViewVirtualPixels(source->view,source->region.x,y,
-      source->region.width,1,source->exception);
+    pixels=GetCacheViewVirtualPixels(source->view,source->extent.x,y,
+      source->extent.width,1,source->exception);
     if (pixels == (const PixelPacket *) NULL)
       {
         status=MagickFalse;
         continue;
       }
     indexes=GetCacheViewVirtualIndexQueue(source->view);
-    for (x=0; x < (ssize_t) source->region.width; x++)
+    for (x=0; x < (ssize_t) source->extent.width; x++)
       PixelSetQuantumColor(source->pixel_wands[id][x],pixels+x);
     if (source_image->colorspace == CMYKColorspace)
-      for (x=0; x < (ssize_t) source->region.width; x++)
+      for (x=0; x < (ssize_t) source->extent.width; x++)
         PixelSetBlackQuantum(source->pixel_wands[id][x],indexes[x]);
     if (source_image->storage_class == PseudoClass)
-      for (x=0; x < (ssize_t) source->region.width; x++)
+      for (x=0; x < (ssize_t) source->extent.width; x++)
         PixelSetIndex(source->pixel_wands[id][x],indexes[x]);
-    duplex_pixels=GetCacheViewVirtualPixels(duplex->view,duplex->region.x,y,
-      duplex->region.width,1,duplex->exception);
+    duplex_pixels=GetCacheViewVirtualPixels(duplex->view,duplex->extent.x,y,
+      duplex->extent.width,1,duplex->exception);
     if (duplex_pixels == (const PixelPacket *) NULL)
       {
         status=MagickFalse;
         continue;
       }
     duplex_indexes=GetCacheViewVirtualIndexQueue(duplex->view);
-    for (x=0; x < (ssize_t) duplex->region.width; x++)
+    for (x=0; x < (ssize_t) duplex->extent.width; x++)
       PixelSetQuantumColor(duplex->pixel_wands[id][x],duplex_pixels+x);
     if (duplex_image->colorspace == CMYKColorspace)
-      for (x=0; x < (ssize_t) duplex->region.width; x++)
+      for (x=0; x < (ssize_t) duplex->extent.width; x++)
         PixelSetBlackQuantum(duplex->pixel_wands[id][x],duplex_indexes[x]);
     if (duplex_image->storage_class == PseudoClass)
-      for (x=0; x < (ssize_t) duplex->region.width; x++)
+      for (x=0; x < (ssize_t) duplex->extent.width; x++)
         PixelSetIndex(duplex->pixel_wands[id][x],duplex_indexes[x]);
     destination_pixels=GetCacheViewAuthenticPixels(destination->view,
-      destination->region.x,y,destination->region.width,1,exception);
+      destination->extent.x,y,destination->extent.width,1,exception);
     if (destination_pixels == (PixelPacket *) NULL)
       {
         status=MagickFalse;
         continue;
       }
     destination_indexes=GetCacheViewAuthenticIndexQueue(destination->view);
-    for (x=0; x < (ssize_t) destination->region.width; x++)
+    for (x=0; x < (ssize_t) destination->extent.width; x++)
       PixelSetQuantumColor(destination->pixel_wands[id][x],
         destination_pixels+x);
     if (destination_image->colorspace == CMYKColorspace)
-      for (x=0; x < (ssize_t) destination->region.width; x++)
+      for (x=0; x < (ssize_t) destination->extent.width; x++)
         PixelSetBlackQuantum(destination->pixel_wands[id][x],
           destination_indexes[x]);
     if (destination_image->storage_class == PseudoClass)
-      for (x=0; x < (ssize_t) destination->region.width; x++)
+      for (x=0; x < (ssize_t) destination->extent.width; x++)
         PixelSetIndex(destination->pixel_wands[id][x],destination_indexes[x]);
-    if (transfer(source,duplex,destination,context) == MagickFalse)
+    if (transfer(source,duplex,destination,y,id,context) == MagickFalse)
       status=MagickFalse;
-    for (x=0; x < (ssize_t) destination->region.width; x++)
+    for (x=0; x < (ssize_t) destination->extent.width; x++)
       PixelGetQuantumColor(destination->pixel_wands[id][x],
         destination_pixels+x);
     if (destination_image->colorspace == CMYKColorspace)
-      for (x=0; x < (ssize_t) destination->region.width; x++)
+      for (x=0; x < (ssize_t) destination->extent.width; x++)
         destination_indexes[x]=PixelGetBlackQuantum(
           destination->pixel_wands[id][x]);
     sync=SyncCacheViewAuthenticPixels(destination->view,exception);
@@ -387,10 +387,10 @@ WandExport MagickBooleanType DuplexTransferPixelViewIterator(
           proceed;
 
 #if defined(MAGICKCORE_OPENMP_SUPPORT)
-  #pragma omp critical (MagickWand_DuplexTransferPixelViewIterator)
+  #pragma omp critical (MagickWand_DuplexTransferWandViewIterator)
 #endif
-        proceed=SetImageProgress(source_image,DuplexTransferPixelViewTag,
-          progress++,source->region.height);
+        proceed=SetImageProgress(source_image,source->description,progress++,
+          source->extent.height);
         if (proceed == MagickFalse)
           status=MagickFalse;
       }
@@ -403,54 +403,54 @@ WandExport MagickBooleanType DuplexTransferPixelViewIterator(
 %                                                                             %
 %                                                                             %
 %                                                                             %
-%   G e t P i x e l V i e w E x c e p t i o n                                 %
+%   G e t W a n d V i e w E x c e p t i o n                                   %
 %                                                                             %
 %                                                                             %
 %                                                                             %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-%  GetPixelViewException() returns the severity, reason, and description of any
-%  error that occurs when utilizing a pixel view.
+%  GetWandViewException() returns the severity, reason, and description of any
+%  error that occurs when utilizing a wand view.
 %
-%  The format of the GetPixelViewException method is:
+%  The format of the GetWandViewException method is:
 %
-%      char *GetPixelViewException(const PixelWand *pixel_view,
+%      char *GetWandViewException(const PixelWand *wand_view,
 %        ExceptionType *severity)
 %
 %  A description of each parameter follows:
 %
-%    o pixel_view: the pixel pixel_view.
+%    o wand_view: the pixel wand_view.
 %
 %    o severity: the severity of the error is returned here.
 %
 */
-WandExport char *GetPixelViewException(const PixelView *pixel_view,
+WandExport char *GetWandViewException(const WandView *wand_view,
   ExceptionType *severity)
 {
   char
     *description;
 
-  assert(pixel_view != (const PixelView *) NULL);
-  assert(pixel_view->signature == WandSignature);
-  if (pixel_view->debug != MagickFalse)
-    (void) LogMagickEvent(WandEvent,GetMagickModule(),"%s",pixel_view->name);
+  assert(wand_view != (const WandView *) NULL);
+  assert(wand_view->signature == WandSignature);
+  if (wand_view->debug != MagickFalse)
+    (void) LogMagickEvent(WandEvent,GetMagickModule(),"%s",wand_view->name);
   assert(severity != (ExceptionType *) NULL);
-  *severity=pixel_view->exception->severity;
+  *severity=wand_view->exception->severity;
   description=(char *) AcquireQuantumMemory(2UL*MaxTextExtent,
     sizeof(*description));
   if (description == (char *) NULL)
     ThrowWandFatalException(ResourceLimitFatalError,"MemoryAllocationFailed",
-      pixel_view->name);
+      wand_view->name);
   *description='\0';
-  if (pixel_view->exception->reason != (char *) NULL)
+  if (wand_view->exception->reason != (char *) NULL)
     (void) CopyMagickString(description,GetLocaleExceptionMessage(
-      pixel_view->exception->severity,pixel_view->exception->reason),
+      wand_view->exception->severity,wand_view->exception->reason),
         MaxTextExtent);
-  if (pixel_view->exception->description != (char *) NULL)
+  if (wand_view->exception->description != (char *) NULL)
     {
       (void) ConcatenateMagickString(description," (",MaxTextExtent);
       (void) ConcatenateMagickString(description,GetLocaleExceptionMessage(
-        pixel_view->exception->severity,pixel_view->exception->description),
+        wand_view->exception->severity,wand_view->exception->description),
         MaxTextExtent);
       (void) ConcatenateMagickString(description,")",MaxTextExtent);
     }
@@ -462,28 +462,28 @@ WandExport char *GetPixelViewException(const PixelView *pixel_view,
 %                                                                             %
 %                                                                             %
 %                                                                             %
-%   G e t P i x e l V i e w H e i g h t                                       %
+%   G e t W a n d V i e w E x t e n t                                         %
 %                                                                             %
 %                                                                             %
 %                                                                             %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-%  GetPixelViewHeight() returns the pixel view height.
+%  GetWandViewExtent() returns the wand view extent.
 %
-%  The format of the GetPixelViewHeight method is:
+%  The format of the GetWandViewExtent method is:
 %
-%      size_t GetPixelViewHeight(const PixelView *pixel_view)
+%      RectangleInfo GetWandViewExtent(const WandView *wand_view)
 %
 %  A description of each parameter follows:
 %
-%    o pixel_view: the pixel view.
+%    o wand_view: the wand view.
 %
 */
-WandExport size_t GetPixelViewHeight(const PixelView *pixel_view)
+WandExport RectangleInfo GetWandViewExtent(const WandView *wand_view)
 {
-  assert(pixel_view != (PixelView *) NULL);
-  assert(pixel_view->signature == WandSignature);
-  return(pixel_view->region.height);
+  assert(wand_view != (WandView *) NULL);
+  assert(wand_view->signature == WandSignature);
+  return(wand_view->extent);
 }
 
 /*
@@ -491,44 +491,47 @@ WandExport size_t GetPixelViewHeight(const PixelView *pixel_view)
 %                                                                             %
 %                                                                             %
 %                                                                             %
-%   G e t P i x e l V i e w I t e r a t o r                                   %
+%   G e t W a n d V i e w I t e r a t o r                                     %
 %                                                                             %
 %                                                                             %
 %                                                                             %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-%  GetPixelViewIterator() iterates over the pixel view in parallel and calls
-%  your get method for each scanline of the view.  The pixel region is
+%  GetWandViewIterator() iterates over the wand view in parallel and calls
+%  your get method for each scanline of the view.  The pixel extent is
 %  not confined to the image canvas-- that is you can include negative offsets
 %  or widths or heights that exceed the image dimension.  Any updates to
 %  the pixels in your callback are ignored.
 %
-%  Use this pragma:
+%  The callback signature is:
+%
+%      MagickBooleanType GetImageViewMethod(const WandView *source,
+%        const ssize_t y,const int thread_id,void *context)
+%
+%  Use this pragma if the view is not single threaded:
 %
 %    #pragma omp critical
 %
 %  to define a section of code in your callback get method that must be
 %  executed by a single thread at a time.
 %
-%  The format of the GetPixelViewIterator method is:
+%  The format of the GetWandViewIterator method is:
 %
-%      MagickBooleanType GetPixelViewIterator(PixelView *source,
-%        GetPixelViewMethod get,void *context)
+%      MagickBooleanType GetWandViewIterator(WandView *source,
+%        GetWandViewMethod get,void *context)
 %
 %  A description of each parameter follows:
 %
-%    o source: the source pixel view.
+%    o source: the source wand view.
 %
 %    o get: the get callback method.
 %
 %    o context: the user defined context.
 %
 */
-WandExport MagickBooleanType GetPixelViewIterator(PixelView *source,
-  GetPixelViewMethod get,void *context)
+WandExport MagickBooleanType GetWandViewIterator(WandView *source,
+  GetWandViewMethod get,void *context)
 {
-#define GetPixelViewTag  "PixelView/Get"
-
   Image
     *source_image;
 
@@ -541,9 +544,9 @@ WandExport MagickBooleanType GetPixelViewIterator(PixelView *source,
   ssize_t
     y;
 
-  assert(source != (PixelView *) NULL);
+  assert(source != (WandView *) NULL);
   assert(source->signature == WandSignature);
-  if (get == (GetPixelViewMethod) NULL)
+  if (get == (GetWandViewMethod) NULL)
     return(MagickFalse);
   source_image=source->wand->images;
   status=MagickTrue;
@@ -551,7 +554,7 @@ WandExport MagickBooleanType GetPixelViewIterator(PixelView *source,
 #if defined(MAGICKCORE_OPENMP_SUPPORT)
   #pragma omp parallel for schedule(static,1) shared(progress,status)
 #endif
-  for (y=source->region.y; y < (ssize_t) source->region.height; y++)
+  for (y=source->extent.y; y < (ssize_t) source->extent.height; y++)
   {
     register const IndexPacket
       *indexes;
@@ -566,23 +569,23 @@ WandExport MagickBooleanType GetPixelViewIterator(PixelView *source,
     if (status == MagickFalse)
       continue;
     id=GetOpenMPThreadId();
-    pixels=GetCacheViewVirtualPixels(source->view,source->region.x,y,
-      source->region.width,1,source->exception);
+    pixels=GetCacheViewVirtualPixels(source->view,source->extent.x,y,
+      source->extent.width,1,source->exception);
     if (pixels == (const PixelPacket *) NULL)
       {
         status=MagickFalse;
         continue;
       }
     indexes=GetCacheViewVirtualIndexQueue(source->view);
-    for (x=0; x < (ssize_t) source->region.width; x++)
+    for (x=0; x < (ssize_t) source->extent.width; x++)
       PixelSetQuantumColor(source->pixel_wands[id][x],pixels+x);
     if (source_image->colorspace == CMYKColorspace)
-      for (x=0; x < (ssize_t) source->region.width; x++)
+      for (x=0; x < (ssize_t) source->extent.width; x++)
         PixelSetBlackQuantum(source->pixel_wands[id][x],indexes[x]);
     if (source_image->storage_class == PseudoClass)
-      for (x=0; x < (ssize_t) source->region.width; x++)
+      for (x=0; x < (ssize_t) source->extent.width; x++)
         PixelSetIndex(source->pixel_wands[id][x],indexes[x]);
-    if (get(source,context) == MagickFalse)
+    if (get(source,y,id,context) == MagickFalse)
       status=MagickFalse;
     if (source_image->progress_monitor != (MagickProgressMonitor) NULL)
       {
@@ -590,10 +593,10 @@ WandExport MagickBooleanType GetPixelViewIterator(PixelView *source,
           proceed;
 
 #if defined(MAGICKCORE_OPENMP_SUPPORT)
-  #pragma omp critical (MagickWand_GetPixelViewIterator)
+  #pragma omp critical (MagickWand_GetWandViewIterator)
 #endif
-        proceed=SetImageProgress(source_image,GetPixelViewTag,progress++,
-          source->region.height);
+        proceed=SetImageProgress(source_image,source->description,progress++,
+          source->extent.height);
         if (proceed == MagickFalse)
           status=MagickFalse;
       }
@@ -606,32 +609,32 @@ WandExport MagickBooleanType GetPixelViewIterator(PixelView *source,
 %                                                                             %
 %                                                                             %
 %                                                                             %
-%   G e t P i x e l V i e w P i x e l s                                       %
+%   G e t W a n d V i e w P i x e l s                                         %
 %                                                                             %
 %                                                                             %
 %                                                                             %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-%  GetPixelViewPixels() returns the pixel view pixel_wands.
+%  GetWandViewPixels() returns the wand view pixel_wands.
 %
-%  The format of the GetPixelViewPixels method is:
+%  The format of the GetWandViewPixels method is:
 %
-%      PixelWand *GetPixelViewPixels(const PixelView *pixel_view)
+%      PixelWand *GetWandViewPixels(const WandView *wand_view)
 %
 %  A description of each parameter follows:
 %
-%    o pixel_view: the pixel view.
+%    o wand_view: the wand view.
 %
 */
-WandExport PixelWand **GetPixelViewPixels(const PixelView *pixel_view)
+WandExport PixelWand **GetWandViewPixels(const WandView *wand_view)
 {
   ssize_t
     id;
 
-  assert(pixel_view != (PixelView *) NULL);
-  assert(pixel_view->signature == WandSignature);
+  assert(wand_view != (WandView *) NULL);
+  assert(wand_view->signature == WandSignature);
   id=GetOpenMPThreadId();
-  return(pixel_view->pixel_wands[id]);
+  return(wand_view->pixel_wands[id]);
 }
 
 /*
@@ -639,28 +642,28 @@ WandExport PixelWand **GetPixelViewPixels(const PixelView *pixel_view)
 %                                                                             %
 %                                                                             %
 %                                                                             %
-%   G e t P i x e l V i e w W a n d                                           %
+%   G e t W a n d V i e w W a n d                                             %
 %                                                                             %
 %                                                                             %
 %                                                                             %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-%  GetPixelViewWand() returns the magick wand associated with the pixel view.
+%  GetWandViewWand() returns the magick wand associated with the wand view.
 %
-%  The format of the GetPixelViewWand method is:
+%  The format of the GetWandViewWand method is:
 %
-%      MagickWand *GetPixelViewWand(const PixelView *pixel_view)
+%      MagickWand *GetWandViewWand(const WandView *wand_view)
 %
 %  A description of each parameter follows:
 %
-%    o pixel_view: the pixel view.
+%    o wand_view: the wand view.
 %
 */
-WandExport MagickWand *GetPixelViewWand(const PixelView *pixel_view)
+WandExport MagickWand *GetWandViewWand(const WandView *wand_view)
 {
-  assert(pixel_view != (PixelView *) NULL);
-  assert(pixel_view->signature == WandSignature);
-  return(pixel_view->wand);
+  assert(wand_view != (WandView *) NULL);
+  assert(wand_view->signature == WandSignature);
+  return(wand_view->wand);
 }
 
 /*
@@ -668,122 +671,35 @@ WandExport MagickWand *GetPixelViewWand(const PixelView *pixel_view)
 %                                                                             %
 %                                                                             %
 %                                                                             %
-%   G e t P i x e l V i e w W i d t h                                         %
+%   I s W a n d V i e w                                                       %
 %                                                                             %
 %                                                                             %
 %                                                                             %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-%  GetPixelViewWidth() returns the pixel view width.
+%  IsWandView() returns MagickTrue if the the parameter is verified as a wand
+%  view object.
 %
-%  The format of the GetPixelViewWidth method is:
+%  The format of the IsWandView method is:
 %
-%      size_t GetPixelViewWidth(const PixelView *pixel_view)
+%      MagickBooleanType IsWandView(const WandView *wand_view)
 %
 %  A description of each parameter follows:
 %
-%    o pixel_view: the pixel view.
+%    o wand_view: the wand view.
 %
 */
-WandExport size_t GetPixelViewWidth(const PixelView *pixel_view)
-{
-  assert(pixel_view != (PixelView *) NULL);
-  assert(pixel_view->signature == WandSignature);
-  return(pixel_view->region.width);
-}
-
-/*
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%                                                                             %
-%                                                                             %
-%                                                                             %
-%   G e t P i x e l V i e w X                                                 %
-%                                                                             %
-%                                                                             %
-%                                                                             %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%
-%  GetPixelViewX() returns the pixel view x offset.
-%
-%  The format of the GetPixelViewX method is:
-%
-%      ssize_t GetPixelViewX(const PixelView *pixel_view)
-%
-%  A description of each parameter follows:
-%
-%    o pixel_view: the pixel view.
-%
-*/
-WandExport ssize_t GetPixelViewX(const PixelView *pixel_view)
-{
-  assert(pixel_view != (PixelView *) NULL);
-  assert(pixel_view->signature == WandSignature);
-  return(pixel_view->region.x);
-}
-
-/*
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%                                                                             %
-%                                                                             %
-%                                                                             %
-%   G e t P i x e l V i e w Y                                                 %
-%                                                                             %
-%                                                                             %
-%                                                                             %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%
-%  GetPixelViewY() returns the pixel view y offset.
-%
-%  The format of the GetPixelViewY method is:
-%
-%      ssize_t GetPixelViewY(const PixelView *pixel_view)
-%
-%  A description of each parameter follows:
-%
-%    o pixel_view: the pixel view.
-%
-*/
-WandExport ssize_t GetPixelViewY(const PixelView *pixel_view)
-{
-  assert(pixel_view != (PixelView *) NULL);
-  assert(pixel_view->signature == WandSignature);
-  return(pixel_view->region.y);
-}
-
-/*
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%                                                                             %
-%                                                                             %
-%                                                                             %
-%   I s P i x e l V i e w                                                     %
-%                                                                             %
-%                                                                             %
-%                                                                             %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%
-%  IsPixelView() returns MagickTrue if the the parameter is verified as a pixel
-%  view container.
-%
-%  The format of the IsPixelView method is:
-%
-%      MagickBooleanType IsPixelView(const PixelView *pixel_view)
-%
-%  A description of each parameter follows:
-%
-%    o pixel_view: the pixel view.
-%
-*/
-WandExport MagickBooleanType IsPixelView(const PixelView *pixel_view)
+WandExport MagickBooleanType IsWandView(const WandView *wand_view)
 {
   size_t
     length;
 
-  if (pixel_view == (const PixelView *) NULL)
+  if (wand_view == (const WandView *) NULL)
     return(MagickFalse);
-  if (pixel_view->signature != WandSignature)
+  if (wand_view->signature != WandSignature)
     return(MagickFalse);
-  length=strlen(PixelViewId);
-  if (LocaleNCompare(pixel_view->name,PixelViewId,length) != 0)
+  length=strlen(WandViewId);
+  if (LocaleNCompare(wand_view->name,WandViewId,length) != 0)
     return(MagickFalse);
   return(MagickTrue);
 }
@@ -793,18 +709,18 @@ WandExport MagickBooleanType IsPixelView(const PixelView *pixel_view)
 %                                                                             %
 %                                                                             %
 %                                                                             %
-%   N e w P i x e l V i e w                                                   %
+%   N e w W a n d V i e w                                                     %
 %                                                                             %
 %                                                                             %
 %                                                                             %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-%  NewPixelView() returns a pixel view required for all other methods in the
-%  Pixel View API.
+%  NewWandView() returns a wand view required for all other methods in the
+%  Wand View API.
 %
-%  The format of the NewPixelView method is:
+%  The format of the NewWandView method is:
 %
-%      PixelView *NewPixelView(MagickWand *wand)
+%      WandView *NewWandView(MagickWand *wand)
 %
 %  A description of each parameter follows:
 %
@@ -835,35 +751,36 @@ static PixelWand ***AcquirePixelsThreadSet(const size_t number_wands,
   return(pixel_wands);
 }
 
-WandExport PixelView *NewPixelView(MagickWand *wand)
+WandExport WandView *NewWandView(MagickWand *wand)
 {
-  PixelView
-    *pixel_view;
+  WandView
+    *wand_view;
 
   assert(wand != (MagickWand *) NULL);
-  assert(wand->signature == MagickSignature);
-  pixel_view=(PixelView *) AcquireAlignedMemory(1,sizeof(*pixel_view));
-  if (pixel_view == (PixelView *) NULL)
+  assert(wand->signature == WandSignature);
+  wand_view=(WandView *) AcquireAlignedMemory(1,sizeof(*wand_view));
+  if (wand_view == (WandView *) NULL)
     ThrowWandFatalException(ResourceLimitFatalError,"MemoryAllocationFailed",
       GetExceptionMessage(errno));
-  (void) ResetMagickMemory(pixel_view,0,sizeof(*pixel_view));
-  pixel_view->id=AcquireWandId();
-  (void) FormatMagickString(pixel_view->name,MaxTextExtent,"%s-%.20g",
-    PixelViewId,(double) pixel_view->id);
-  pixel_view->exception=AcquireExceptionInfo();
-  pixel_view->wand=wand;
-  pixel_view->view=AcquireCacheView(pixel_view->wand->images);
-  pixel_view->region.width=wand->images->columns;
-  pixel_view->region.height=wand->images->rows;
-  pixel_view->number_threads=GetOpenMPMaximumThreads();
-  pixel_view->pixel_wands=AcquirePixelsThreadSet(pixel_view->region.width,
-    pixel_view->number_threads);
-  if (pixel_view->pixel_wands == (PixelWand ***) NULL)
+  (void) ResetMagickMemory(wand_view,0,sizeof(*wand_view));
+  wand_view->id=AcquireWandId();
+  (void) FormatMagickString(wand_view->name,MaxTextExtent,"%s-%.20g",
+    WandViewId,(double) wand_view->id);
+  wand_view->description=ConstantString("WandView");
+  wand_view->wand=wand;
+  wand_view->view=AcquireCacheView(wand_view->wand->images);
+  wand_view->extent.width=wand->images->columns;
+  wand_view->extent.height=wand->images->rows;
+  wand_view->number_threads=GetOpenMPMaximumThreads();
+  wand_view->pixel_wands=AcquirePixelsThreadSet(wand_view->extent.width,
+    wand_view->number_threads);
+  wand_view->exception=AcquireExceptionInfo();
+  if (wand_view->pixel_wands == (PixelWand ***) NULL)
     ThrowWandFatalException(ResourceLimitFatalError,"MemoryAllocationFailed",
       GetExceptionMessage(errno));
-  pixel_view->debug=IsEventLogging();
-  pixel_view->signature=WandSignature;
-  return(pixel_view);
+  wand_view->debug=IsEventLogging();
+  wand_view->signature=WandSignature;
+  return(wand_view);
 }
 
 /*
@@ -871,60 +788,61 @@ WandExport PixelView *NewPixelView(MagickWand *wand)
 %                                                                             %
 %                                                                             %
 %                                                                             %
-%   N e w P i x e l V i e w R e g i o n                                       %
+%   N e w W a n d V i e w E x t e n t                                         %
 %                                                                             %
 %                                                                             %
 %                                                                             %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-%  NewPixelViewRegion() returns a pixel view required for all other methods
-%  in the Pixel View API.
+%  NewWandViewExtent() returns a wand view required for all other methods
+%  in the Wand View API.
 %
-%  The format of the NewPixelViewRegion method is:
+%  The format of the NewWandViewExtent method is:
 %
-%      PixelView *NewPixelViewRegion(MagickWand *wand,const ssize_t x,
+%      WandView *NewWandViewExtent(MagickWand *wand,const ssize_t x,
 %        const ssize_t y,const size_t width,const size_t height)
 %
 %  A description of each parameter follows:
 %
 %    o wand: the magick wand.
 %
-%    o x,y,columns,rows:  These values define the perimeter of a region of
+%    o x,y,columns,rows:  These values define the perimeter of a extent of
 %      pixel_wands view.
 %
 */
-WandExport PixelView *NewPixelViewRegion(MagickWand *wand,const ssize_t x,
+WandExport WandView *NewWandViewExtent(MagickWand *wand,const ssize_t x,
   const ssize_t y,const size_t width,const size_t height)
 {
-  PixelView
-    *pixel_view;
+  WandView
+    *wand_view;
 
   assert(wand != (MagickWand *) NULL);
-  assert(wand->signature == MagickSignature);
-  pixel_view=(PixelView *) AcquireAlignedMemory(1,sizeof(*pixel_view));
-  if (pixel_view == (PixelView *) NULL)
+  assert(wand->signature == WandSignature);
+  wand_view=(WandView *) AcquireAlignedMemory(1,sizeof(*wand_view));
+  if (wand_view == (WandView *) NULL)
     ThrowWandFatalException(ResourceLimitFatalError,"MemoryAllocationFailed",
       GetExceptionMessage(errno));
-  (void) ResetMagickMemory(pixel_view,0,sizeof(*pixel_view));
-  pixel_view->id=AcquireWandId();
-  (void) FormatMagickString(pixel_view->name,MaxTextExtent,"%s-%.20g",
-    PixelViewId,(double) pixel_view->id);
-  pixel_view->exception=AcquireExceptionInfo();
-  pixel_view->view=AcquireCacheView(pixel_view->wand->images);
-  pixel_view->wand=wand;
-  pixel_view->region.width=width;
-  pixel_view->region.height=height;
-  pixel_view->region.x=x;
-  pixel_view->region.y=y;
-  pixel_view->number_threads=GetOpenMPMaximumThreads();
-  pixel_view->pixel_wands=AcquirePixelsThreadSet(pixel_view->region.width,
-    pixel_view->number_threads);
-  if (pixel_view->pixel_wands == (PixelWand ***) NULL)
+  (void) ResetMagickMemory(wand_view,0,sizeof(*wand_view));
+  wand_view->id=AcquireWandId();
+  (void) FormatMagickString(wand_view->name,MaxTextExtent,"%s-%.20g",
+    WandViewId,(double) wand_view->id);
+  wand_view->description=ConstantString("WandView");
+  wand_view->view=AcquireCacheView(wand_view->wand->images);
+  wand_view->wand=wand;
+  wand_view->extent.width=width;
+  wand_view->extent.height=height;
+  wand_view->extent.x=x;
+  wand_view->extent.y=y;
+  wand_view->number_threads=GetOpenMPMaximumThreads();
+  wand_view->exception=AcquireExceptionInfo();
+  wand_view->pixel_wands=AcquirePixelsThreadSet(wand_view->extent.width,
+    wand_view->number_threads);
+  if (wand_view->pixel_wands == (PixelWand ***) NULL)
     ThrowWandFatalException(ResourceLimitFatalError,"MemoryAllocationFailed",
       GetExceptionMessage(errno));
-  pixel_view->debug=IsEventLogging();
-  pixel_view->signature=WandSignature;
-  return(pixel_view);
+  wand_view->debug=IsEventLogging();
+  wand_view->signature=WandSignature;
+  return(wand_view);
 }
 
 /*
@@ -932,45 +850,80 @@ WandExport PixelView *NewPixelViewRegion(MagickWand *wand,const ssize_t x,
 %                                                                             %
 %                                                                             %
 %                                                                             %
-%   S e t P i x e l V i e w I t e r a t o r                                   %
+%   S e t W a n d V i e w D e s c r i p t i o n                               %
 %                                                                             %
 %                                                                             %
 %                                                                             %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-%  SetPixelViewIterator() iterates over the pixel view in parallel and calls
-%  your set method for each scanline of the view.  The pixel region is
+%  SetWandViewDescription() associates a description with an image view.
+%
+%  The format of the SetWandViewDescription method is:
+%
+%      void SetWandViewDescription(WandView *image_view,const char *description)
+%
+%  A description of each parameter follows:
+%
+%    o wand_view: the wand view.
+%
+%    o description: the wand view description.
+%
+*/
+MagickExport void SetWandViewDescription(WandView *wand_view,
+  const char *description)
+{
+  assert(wand_view != (WandView *) NULL);
+  assert(wand_view->signature == WandSignature);
+  wand_view->description=ConstantString(description);
+}
+
+/*
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                                             %
+%                                                                             %
+%                                                                             %
+%   S e t W a n d V i e w I t e r a t o r                                     %
+%                                                                             %
+%                                                                             %
+%                                                                             %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%  SetWandViewIterator() iterates over the wand view in parallel and calls
+%  your set method for each scanline of the view.  The pixel extent is
 %  confined to the image canvas-- that is no negative offsets or widths or
 %  heights that exceed the image dimension.  The pixels are initiallly
 %  undefined and any settings you make in the callback method are automagically
 %  synced back to your image.
 %
-%  Use this pragma:
+%  The callback signature is:
+%
+%      MagickBooleanType SetImageViewMethod(ImageView *destination,
+%        const ssize_t y,const int thread_id,void *context)
+%
+%  Use this pragma if the view is not single threaded:
 %
 %    #pragma omp critical
 %
 %  to define a section of code in your callback set method that must be
 %  executed by a single thread at a time.
 %
-%  The format of the SetPixelViewIterator method is:
+%  The format of the SetWandViewIterator method is:
 %
-%      MagickBooleanType SetPixelViewIterator(PixelView *destination,
-%        SetPixelViewMethod set,void *context)
+%      MagickBooleanType SetWandViewIterator(WandView *destination,
+%        SetWandViewMethod set,void *context)
 %
 %  A description of each parameter follows:
 %
-%    o destination: the pixel view.
+%    o destination: the wand view.
 %
 %    o set: the set callback method.
 %
 %    o context: the user defined context.
 %
 */
-WandExport MagickBooleanType SetPixelViewIterator(PixelView *destination,
-  SetPixelViewMethod set,void *context)
+WandExport MagickBooleanType SetWandViewIterator(WandView *destination,
+  SetWandViewMethod set,void *context)
 {
-#define SetPixelViewTag  "PixelView/Set"
-
   ExceptionInfo
     *exception;
 
@@ -986,9 +939,9 @@ WandExport MagickBooleanType SetPixelViewIterator(PixelView *destination,
   ssize_t
     y;
 
-  assert(destination != (PixelView *) NULL);
+  assert(destination != (WandView *) NULL);
   assert(destination->signature == WandSignature);
-  if (set == (SetPixelViewMethod) NULL)
+  if (set == (SetWandViewMethod) NULL)
     return(MagickFalse);
   destination_image=destination->wand->images;
   if (SetImageStorageClass(destination_image,DirectClass) == MagickFalse)
@@ -999,7 +952,7 @@ WandExport MagickBooleanType SetPixelViewIterator(PixelView *destination,
 #if defined(MAGICKCORE_OPENMP_SUPPORT)
   #pragma omp parallel for schedule(static,1) shared(progress,status)
 #endif
-  for (y=destination->region.y; y < (ssize_t) destination->region.height; y++)
+  for (y=destination->extent.y; y < (ssize_t) destination->extent.height; y++)
   {
     MagickBooleanType
       sync;
@@ -1017,8 +970,8 @@ WandExport MagickBooleanType SetPixelViewIterator(PixelView *destination,
     if (status == MagickFalse)
       continue;
     id=GetOpenMPThreadId();
-    pixels=GetCacheViewAuthenticPixels(destination->view,destination->region.x,
-      y,destination->region.width,1,exception);
+    pixels=GetCacheViewAuthenticPixels(destination->view,destination->extent.x,
+      y,destination->extent.width,1,exception);
     if (pixels == (PixelPacket *) NULL)
       {
         InheritException(destination->exception,GetCacheViewException(
@@ -1027,12 +980,12 @@ WandExport MagickBooleanType SetPixelViewIterator(PixelView *destination,
         continue;
       }
     indexes=GetCacheViewAuthenticIndexQueue(destination->view);
-    if (set(destination,context) == MagickFalse)
+    if (set(destination,y,id,context) == MagickFalse)
       status=MagickFalse;
-    for (x=0; x < (ssize_t) destination->region.width; x++)
+    for (x=0; x < (ssize_t) destination->extent.width; x++)
       PixelGetQuantumColor(destination->pixel_wands[id][x],pixels+x);
     if (destination_image->colorspace == CMYKColorspace)
-      for (x=0; x < (ssize_t) destination->region.width; x++)
+      for (x=0; x < (ssize_t) destination->extent.width; x++)
         indexes[x]=PixelGetBlackQuantum(destination->pixel_wands[id][x]);
     sync=SyncCacheViewAuthenticPixels(destination->view,exception);
     if (sync == MagickFalse)
@@ -1047,10 +1000,10 @@ WandExport MagickBooleanType SetPixelViewIterator(PixelView *destination,
           proceed;
 
 #if defined(MAGICKCORE_OPENMP_SUPPORT)
-  #pragma omp critical (MagickWand_SetPixelViewIterator)
+  #pragma omp critical (MagickWand_SetWandViewIterator)
 #endif
-        proceed=SetImageProgress(destination_image,SetPixelViewTag,progress++,
-          destination->region.height);
+        proceed=SetImageProgress(destination_image,destination->description,
+          progress++,destination->extent.height);
         if (proceed == MagickFalse)
           status=MagickFalse;
       }
@@ -1063,48 +1016,52 @@ WandExport MagickBooleanType SetPixelViewIterator(PixelView *destination,
 %                                                                             %
 %                                                                             %
 %                                                                             %
-%   T r a n s f e r P i x e l V i e w I t e r a t o r                         %
+%   T r a n s f e r W a n d V i e w I t e r a t o r                           %
 %                                                                             %
 %                                                                             %
 %                                                                             %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-%  TransferPixelViewIterator() iterates over two pixel views in parallel and
+%  TransferWandViewIterator() iterates over two wand views in parallel and
 %  calls your transfer method for each scanline of the view.  The source pixel
-%  region is not confined to the image canvas-- that is you can include
+%  extent is not confined to the image canvas-- that is you can include
 %  negative offsets or widths or heights that exceed the image dimension.
-%  However, the destination pixel view is confined to the image canvas-- that
+%  However, the destination wand view is confined to the image canvas-- that
 %  is no negative offsets or widths or heights that exceed the image dimension
 %  are permitted.
 %
-%  Use this pragma:
+%  The callback signature is:
+%
+%      MagickBooleanType TransferImageViewMethod(const WandView *source,
+%        WandView *destination,const ssize_t y,const int thread_id,
+%        void *context)
+%
+%  Use this pragma if the view is not single threaded:
 %
 %    #pragma omp critical
 %
 %  to define a section of code in your callback transfer method that must be
 %  executed by a single thread at a time.
 %
-%  The format of the TransferPixelViewIterator method is:
+%  The format of the TransferWandViewIterator method is:
 %
-%      MagickBooleanType TransferPixelViewIterator(PixelView *source,
-%        PixelView *destination,TransferPixelViewMethod transfer,void *context)
+%      MagickBooleanType TransferWandViewIterator(WandView *source,
+%        WandView *destination,TransferWandViewMethod transfer,void *context)
 %
 %  A description of each parameter follows:
 %
-%    o source: the source pixel view.
+%    o source: the source wand view.
 %
-%    o destination: the destination pixel view.
+%    o destination: the destination wand view.
 %
 %    o transfer: the transfer callback method.
 %
 %    o context: the user defined context.
 %
 */
-WandExport MagickBooleanType TransferPixelViewIterator(PixelView *source,
-  PixelView *destination,TransferPixelViewMethod transfer,void *context)
+WandExport MagickBooleanType TransferWandViewIterator(WandView *source,
+  WandView *destination,TransferWandViewMethod transfer,void *context)
 {
-#define TransferPixelViewTag  "PixelView/Transfer"
-
   ExceptionInfo
     *exception;
 
@@ -1121,9 +1078,9 @@ WandExport MagickBooleanType TransferPixelViewIterator(PixelView *source,
   ssize_t
     y;
 
-  assert(source != (PixelView *) NULL);
+  assert(source != (WandView *) NULL);
   assert(source->signature == WandSignature);
-  if (transfer == (TransferPixelViewMethod) NULL)
+  if (transfer == (TransferWandViewMethod) NULL)
     return(MagickFalse);
   source_image=source->wand->images;
   destination_image=destination->wand->images;
@@ -1135,7 +1092,7 @@ WandExport MagickBooleanType TransferPixelViewIterator(PixelView *source,
 #if defined(MAGICKCORE_OPENMP_SUPPORT)
   #pragma omp parallel for schedule(static,1) shared(progress,status)
 #endif
-  for (y=source->region.y; y < (ssize_t) source->region.height; y++)
+  for (y=source->extent.y; y < (ssize_t) source->extent.height; y++)
   {
     MagickBooleanType
       sync;
@@ -1159,45 +1116,45 @@ WandExport MagickBooleanType TransferPixelViewIterator(PixelView *source,
     if (status == MagickFalse)
       continue;
     id=GetOpenMPThreadId();
-    pixels=GetCacheViewVirtualPixels(source->view,source->region.x,y,
-      source->region.width,1,source->exception);
+    pixels=GetCacheViewVirtualPixels(source->view,source->extent.x,y,
+      source->extent.width,1,source->exception);
     if (pixels == (const PixelPacket *) NULL)
       {
         status=MagickFalse;
         continue;
       }
     indexes=GetCacheViewVirtualIndexQueue(source->view);
-    for (x=0; x < (ssize_t) source->region.width; x++)
+    for (x=0; x < (ssize_t) source->extent.width; x++)
       PixelSetQuantumColor(source->pixel_wands[id][x],pixels+x);
     if (source_image->colorspace == CMYKColorspace)
-      for (x=0; x < (ssize_t) source->region.width; x++)
+      for (x=0; x < (ssize_t) source->extent.width; x++)
         PixelSetBlackQuantum(source->pixel_wands[id][x],indexes[x]);
     if (source_image->storage_class == PseudoClass)
-      for (x=0; x < (ssize_t) source->region.width; x++)
+      for (x=0; x < (ssize_t) source->extent.width; x++)
         PixelSetIndex(source->pixel_wands[id][x],indexes[x]);
     destination_pixels=GetCacheViewAuthenticPixels(destination->view,
-      destination->region.x,y,destination->region.width,1,exception);
+      destination->extent.x,y,destination->extent.width,1,exception);
     if (destination_pixels == (PixelPacket *) NULL)
       {
         status=MagickFalse;
         continue;
       }
     destination_indexes=GetCacheViewAuthenticIndexQueue(destination->view);
-    for (x=0; x < (ssize_t) destination->region.width; x++)
+    for (x=0; x < (ssize_t) destination->extent.width; x++)
       PixelSetQuantumColor(destination->pixel_wands[id][x],pixels+x);
     if (destination_image->colorspace == CMYKColorspace)
-      for (x=0; x < (ssize_t) destination->region.width; x++)
+      for (x=0; x < (ssize_t) destination->extent.width; x++)
         PixelSetBlackQuantum(destination->pixel_wands[id][x],indexes[x]);
     if (destination_image->storage_class == PseudoClass)
-      for (x=0; x < (ssize_t) destination->region.width; x++)
+      for (x=0; x < (ssize_t) destination->extent.width; x++)
         PixelSetIndex(destination->pixel_wands[id][x],indexes[x]);
-    if (transfer(source,destination,context) == MagickFalse)
+    if (transfer(source,destination,y,id,context) == MagickFalse)
       status=MagickFalse;
-    for (x=0; x < (ssize_t) destination->region.width; x++)
+    for (x=0; x < (ssize_t) destination->extent.width; x++)
       PixelGetQuantumColor(destination->pixel_wands[id][x],
         destination_pixels+x);
     if (destination_image->colorspace == CMYKColorspace)
-      for (x=0; x < (ssize_t) destination->region.width; x++)
+      for (x=0; x < (ssize_t) destination->extent.width; x++)
         destination_indexes[x]=PixelGetBlackQuantum(
           destination->pixel_wands[id][x]);
     sync=SyncCacheViewAuthenticPixels(destination->view,exception);
@@ -1213,10 +1170,10 @@ WandExport MagickBooleanType TransferPixelViewIterator(PixelView *source,
           proceed;
 
 #if defined(MAGICKCORE_OPENMP_SUPPORT)
-  #pragma omp critical (MagickWand_TransferPixelViewIterator)
+  #pragma omp critical (MagickWand_TransferWandViewIterator)
 #endif
-        proceed=SetImageProgress(source_image,TransferPixelViewTag,progress++,
-          source->region.height);
+        proceed=SetImageProgress(source_image,source->description,progress++,
+          source->extent.height);
         if (proceed == MagickFalse)
           status=MagickFalse;
       }
@@ -1229,44 +1186,47 @@ WandExport MagickBooleanType TransferPixelViewIterator(PixelView *source,
 %                                                                             %
 %                                                                             %
 %                                                                             %
-%   U p d a t e P i x e l V i e w I t e r a t o r                             %
+%   U p d a t e W a n d V i e w I t e r a t o r                               %
 %                                                                             %
 %                                                                             %
 %                                                                             %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-%  UpdatePixelViewIterator() iterates over the pixel view in parallel and calls
-%  your update method for each scanline of the view.  The pixel region is
+%  UpdateWandViewIterator() iterates over the wand view in parallel and calls
+%  your update method for each scanline of the view.  The pixel extent is
 %  confined to the image canvas-- that is no negative offsets or widths or
 %  heights that exceed the image dimension are permitted.  Updates to pixels
 %  in your callback are automagically synced back to the image.
 %
-%  Use this pragma:
+%  The callback signature is:
+%
+%      MagickBooleanType UpdateImageViewMethod(WandView *source,const ssize_t y,
+%        const int thread_id,void *context)
+%
+%  Use this pragma if the view is not single threaded:
 %
 %    #pragma omp critical
 %
 %  to define a section of code in your callback update method that must be
 %  executed by a single thread at a time.
 %
-%  The format of the UpdatePixelViewIterator method is:
+%  The format of the UpdateWandViewIterator method is:
 %
-%      MagickBooleanType UpdatePixelViewIterator(PixelView *source,
-%        UpdatePixelViewMethod update,void *context)
+%      MagickBooleanType UpdateWandViewIterator(WandView *source,
+%        UpdateWandViewMethod update,void *context)
 %
 %  A description of each parameter follows:
 %
-%    o source: the source pixel view.
+%    o source: the source wand view.
 %
 %    o update: the update callback method.
 %
 %    o context: the user defined context.
 %
 */
-WandExport MagickBooleanType UpdatePixelViewIterator(PixelView *source,
-  UpdatePixelViewMethod update,void *context)
+WandExport MagickBooleanType UpdateWandViewIterator(WandView *source,
+  UpdateWandViewMethod update,void *context)
 {
-#define UpdatePixelViewTag  "PixelView/Update"
-
   ExceptionInfo
     *exception;
 
@@ -1282,9 +1242,9 @@ WandExport MagickBooleanType UpdatePixelViewIterator(PixelView *source,
   ssize_t
     y;
 
-  assert(source != (PixelView *) NULL);
+  assert(source != (WandView *) NULL);
   assert(source->signature == WandSignature);
-  if (update == (UpdatePixelViewMethod) NULL)
+  if (update == (UpdateWandViewMethod) NULL)
     return(MagickFalse);
   source_image=source->wand->images;
   if (SetImageStorageClass(source_image,DirectClass) == MagickFalse)
@@ -1295,7 +1255,7 @@ WandExport MagickBooleanType UpdatePixelViewIterator(PixelView *source,
 #if defined(MAGICKCORE_OPENMP_SUPPORT)
   #pragma omp parallel for schedule(static,1) shared(progress,status)
 #endif
-  for (y=source->region.y; y < (ssize_t) source->region.height; y++)
+  for (y=source->extent.y; y < (ssize_t) source->extent.height; y++)
   {
     register IndexPacket
       *restrict indexes;
@@ -1310,8 +1270,8 @@ WandExport MagickBooleanType UpdatePixelViewIterator(PixelView *source,
     if (status == MagickFalse)
       continue;
     id=GetOpenMPThreadId();
-    pixels=GetCacheViewAuthenticPixels(source->view,source->region.x,y,
-      source->region.width,1,exception);
+    pixels=GetCacheViewAuthenticPixels(source->view,source->extent.x,y,
+      source->extent.width,1,exception);
     if (pixels == (PixelPacket *) NULL)
       {
         InheritException(source->exception,GetCacheViewException(
@@ -1320,17 +1280,17 @@ WandExport MagickBooleanType UpdatePixelViewIterator(PixelView *source,
         continue;
       }
     indexes=GetCacheViewAuthenticIndexQueue(source->view);
-    for (x=0; x < (ssize_t) source->region.width; x++)
+    for (x=0; x < (ssize_t) source->extent.width; x++)
       PixelSetQuantumColor(source->pixel_wands[id][x],pixels+x);
     if (source_image->colorspace == CMYKColorspace)
-      for (x=0; x < (ssize_t) source->region.width; x++)
+      for (x=0; x < (ssize_t) source->extent.width; x++)
         PixelSetBlackQuantum(source->pixel_wands[id][x],indexes[x]);
-    if (update(source,context) == MagickFalse)
+    if (update(source,y,id,context) == MagickFalse)
       status=MagickFalse;
-    for (x=0; x < (ssize_t) source->region.width; x++)
+    for (x=0; x < (ssize_t) source->extent.width; x++)
       PixelGetQuantumColor(source->pixel_wands[id][x],pixels+x);
     if (source_image->colorspace == CMYKColorspace)
-      for (x=0; x < (ssize_t) source->region.width; x++)
+      for (x=0; x < (ssize_t) source->extent.width; x++)
         indexes[x]=PixelGetBlackQuantum(source->pixel_wands[id][x]);
     if (SyncCacheViewAuthenticPixels(source->view,exception) == MagickFalse)
       {
@@ -1343,10 +1303,10 @@ WandExport MagickBooleanType UpdatePixelViewIterator(PixelView *source,
           proceed;
 
 #if defined(MAGICKCORE_OPENMP_SUPPORT)
-  #pragma omp critical (MagickWand_UpdatePixelViewIterator)
+  #pragma omp critical (MagickWand_UpdateWandViewIterator)
 #endif
-        proceed=SetImageProgress(source_image,UpdatePixelViewTag,progress++,
-          source->region.height);
+        proceed=SetImageProgress(source_image,source->description,progress++,
+          source->extent.height);
         if (proceed == MagickFalse)
           status=MagickFalse;
       }
