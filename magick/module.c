@@ -356,12 +356,14 @@ MagickExport const ModuleInfo **GetModuleInfoList(const char *pattern,
 %
 %  The format of the GetModuleList function is:
 %
-%      char **GetModuleList(const char *pattern,size_t *number_modules,
-%        ExceptionInfo *exception)
+%      char **GetModuleList(const char *pattern,const MagickModuleType type,
+%        size_t *number_modules,ExceptionInfo *exception)
 %
 %  A description of each parameter follows:
 %
 %    o pattern: Specifies a pointer to a text string containing a pattern.
+%
+%    o type: choose from MagickImageCoderModule or MagickImageFilterModule.
 %
 %    o number_modules:  This integer returns the number of modules in the
 %      list.
@@ -403,7 +405,7 @@ static inline int MagickReadDirectory(DIR *directory,struct dirent *entry,
 }
 
 MagickExport char **GetModuleList(const char *pattern,
-  size_t *number_modules,ExceptionInfo *exception)
+  const MagickModuleType type,size_t *number_modules,ExceptionInfo *exception)
 {
   char
     **modules,
@@ -421,22 +423,34 @@ MagickExport char **GetModuleList(const char *pattern,
     i;
 
   size_t
-    length;
+    max_entries;
 
   struct dirent
     *buffer,
     *entry;
 
-  size_t
-    max_entries;
-
   /*
-    Locate all modules in the coder path.
+    Locate all modules in the image coder or filter path.
   */
-  TagToCoderModuleName("magick",filename);
-  length=GetMagickModulePath(filename,MagickImageCoderModule,module_path,
-    exception);
-  if (length == 0)
+  switch (type)
+  {
+    case MagickImageCoderModule:
+    default:
+    {
+      TagToCoderModuleName("magick",filename);
+      status=GetMagickModulePath(filename,MagickImageCoderModule,module_path,
+        exception);
+      break;
+    }
+    case MagickImageFilterModule:
+    {
+      TagToFilterModuleName("analyze",filename);
+      status=GetMagickModulePath(filename,MagickImageFilterModule,module_path,
+        exception);
+      break;
+    }
+  }
+  if (status == MagickFalse)
     return((char **) NULL);
   GetPathComponent(module_path,HeadPath,path);
   max_entries=255;
@@ -451,7 +465,8 @@ MagickExport char **GetModuleList(const char *pattern,
       modules=(char **) RelinquishMagickMemory(modules);
       return((char **) NULL);
     }
-  buffer=(struct dirent *) AcquireAlignedMemory(1,sizeof(*buffer)+FILENAME_MAX+1);
+  buffer=(struct dirent *) AcquireAlignedMemory(1,sizeof(*buffer)+
+    FILENAME_MAX+1);
   if (buffer == (struct dirent *) NULL)
     ThrowFatalException(ResourceLimitFatalError,"MemoryAllocationFailed");
   i=0;
@@ -478,7 +493,6 @@ MagickExport char **GetModuleList(const char *pattern,
     */
     modules[i]=AcquireString((char *) NULL);
     GetPathComponent(entry->d_name,BasePath,modules[i]);
-    LocaleUpper(modules[i]);
     if (LocaleNCompare("IM_MOD_",modules[i],7) == 0)
       {
         (void) CopyMagickString(modules[i],modules[i]+10,MaxTextExtent);
@@ -595,7 +609,7 @@ static MagickBooleanType GetMagickModulePath(const char *filename,
       module_path=DestroyString(module_path);
     }
 #if defined(MAGICKCORE_INSTALLED_SUPPORT)
-   else
+  else
 #if defined(MAGICKCORE_CODER_PATH)
     {
       const char
@@ -927,14 +941,14 @@ MagickExport MagickBooleanType InvokeDynamicImageFilter(const char *tag,
   ImageFilterHandler
     *image_filter;
 
+  MagickBooleanType
+    status;
+
   ModuleHandle
     handle;
 
   PolicyRights
     rights;
-
-  size_t
-    length;
 
   /*
     Find the module.
@@ -963,9 +977,13 @@ MagickExport MagickBooleanType InvokeDynamicImageFilter(const char *tag,
       return(MagickFalse);
     }
   TagToFilterModuleName(tag,name);
-  length=GetMagickModulePath(name,MagickImageFilterModule,path,exception);
-  if (length == 0)
-    return(MagickFalse);
+  status=GetMagickModulePath(name,MagickImageFilterModule,path,exception);
+  if (status == MagickFalse)
+    {
+      (void) ThrowMagickException(exception,GetMagickModule(),ModuleError,
+        "UnableToLoadModule","`%s': %s",name,path);
+      return(MagickFalse);
+    }
   /*
     Open the module.
   */
@@ -1046,8 +1064,11 @@ MagickExport MagickBooleanType InvokeDynamicImageFilter(const char *tag,
 MagickExport MagickBooleanType ListModuleInfo(FILE *file,
   ExceptionInfo *exception)
 {
-  const ModuleInfo
-    **module_info;
+  char
+    filename[MaxTextExtent],
+    module_path[MaxTextExtent],
+    **modules,
+    path[MaxTextExtent];
 
   register ssize_t
     i;
@@ -1057,30 +1078,58 @@ MagickExport MagickBooleanType ListModuleInfo(FILE *file,
 
   if (file == (const FILE *) NULL)
     file=stdout;
-  module_info=GetModuleInfoList("*",&number_modules,exception);
-  if (module_info == (const ModuleInfo **) NULL)
+  /*
+    List image coders.
+  */
+  modules=GetModuleList("*",MagickImageCoderModule,&number_modules,exception);
+  if (modules == (char **) NULL)
     return(MagickFalse);
-  if (module_info[0]->path != (char *) NULL)
-    {
-      char
-        path[MaxTextExtent];
-
-      GetPathComponent(module_info[0]->path,HeadPath,path);
-      (void) fprintf(file,"\nPath: %s\n\n",path);
-    }
-  (void) fprintf(file,"Module\n");
+  TagToCoderModuleName("magick",filename);
+  (void) GetMagickModulePath(filename,MagickImageCoderModule,module_path,
+    exception);
+  GetPathComponent(module_path,HeadPath,path);
+  (void) fprintf(file,"\nPath: %s\n\n",path);
+  (void) fprintf(file,"Image Coder\n");
   (void) fprintf(file,"-------------------------------------------------"
     "------------------------------\n");
   for (i=0; i < (ssize_t) number_modules; i++)
   {
-    if (module_info[i]->stealth != MagickFalse)
-      continue;
-    (void) fprintf(file,"%s",module_info[i]->tag);
+    (void) fprintf(file,"%s",modules[i]);
     (void) fprintf(file,"\n");
   }
   (void) fflush(file);
-  module_info=(const ModuleInfo **)
-    RelinquishMagickMemory((void *) module_info);
+  /*
+    Relinquish resources.
+  */
+  for (i=0; i < (ssize_t) number_modules; i++)
+    modules[i]=DestroyString(modules[i]);
+  modules=(char **) RelinquishMagickMemory(modules);
+  /*
+    List image filters.
+  */
+  modules=GetModuleList("*",MagickImageFilterModule,&number_modules,exception);
+  if (modules == (char **) NULL)
+    return(MagickFalse);
+  TagToFilterModuleName("analyze",filename);
+  (void) GetMagickModulePath(filename,MagickImageFilterModule,module_path,
+    exception);
+  GetPathComponent(module_path,HeadPath,path);
+  (void) fprintf(file,"\nPath: %s\n\n",path);
+  (void) fprintf(file,"Image Filter\n");
+  (void) fprintf(file,"-------------------------------------------------"
+    "------------------------------\n");
+  for (i=0; i < (ssize_t) number_modules; i++)
+  {
+    (void) fprintf(file,"%s",modules[i]);
+    (void) fprintf(file,"\n");
+  }
+  (void) fflush(file);
+  /*
+    Relinquish resources.
+  */
+  for (i=0; i < (ssize_t) number_modules; i++)
+    modules[i]=DestroyString(modules[i]);
+  modules=(char **) RelinquishMagickMemory(modules);
   return(MagickTrue);
 }
 
@@ -1177,6 +1226,9 @@ MagickExport MagickBooleanType OpenModule(const char *module,
     name[MaxTextExtent],
     path[MaxTextExtent];
 
+  MagickBooleanType
+    status;
+
   ModuleHandle
     handle;
 
@@ -1185,9 +1237,6 @@ MagickExport MagickBooleanType OpenModule(const char *module,
 
   register const CoderInfo
     *p;
-
-  size_t
-    length;
 
   size_t
     signature;
@@ -1213,8 +1262,8 @@ MagickExport MagickBooleanType OpenModule(const char *module,
   (void) LogMagickEvent(ModuleEvent,GetMagickModule(),
     "Searching for module \"%s\" using filename \"%s\"",module_name,filename);
   *path='\0';
-  length=GetMagickModulePath(filename,MagickImageCoderModule,path,exception);
-  if (length == 0)
+  status=GetMagickModulePath(filename,MagickImageCoderModule,path,exception);
+  if (status == MagickFalse)
     return(MagickFalse);
   /*
     Load module
@@ -1312,7 +1361,7 @@ MagickExport MagickBooleanType OpenModules(ExceptionInfo *exception)
   */
   (void) GetMagickInfo((char *) NULL,exception);
   number_modules=0;
-  modules=GetModuleList("*",&number_modules,exception);
+  modules=GetModuleList("*",MagickImageCoderModule,&number_modules,exception);
   if (modules == (char **) NULL)
     return(MagickFalse);
   for (i=0; i < (ssize_t) number_modules; i++)
@@ -1455,7 +1504,6 @@ static void TagToFilterModuleName(const char *tag,char *name)
   (void) FormatMagickString(name,MaxTextExtent,"%s.dll",tag);
 #else
   (void) FormatMagickString(name,MaxTextExtent,"%s.la",tag);
-  (void) LocaleLower(name);
 #endif
 }
 
@@ -1568,27 +1616,57 @@ MagickExport MagickBooleanType ListModuleInfo(FILE *magick_unused(file),
 MagickExport MagickBooleanType InvokeDynamicImageFilter(const char *tag,
   Image **image,const int argc,const char **argv,ExceptionInfo *exception)
 {
-#if !defined(MAGICKCORE_BUILD_MODULES)
+  PolicyRights
+    rights;
+
+  assert(image != (Image **) NULL);
+  assert((*image)->signature == MagickSignature);
+  if ((*image)->debug != MagickFalse)
+    (void) LogMagickEvent(TraceEvent,GetMagickModule(),"%s",(*image)->filename);
+  rights=ReadPolicyRights;
+  if (IsRightsAuthorized(FilterPolicyDomain,rights,tag) == MagickFalse)
+    {
+      errno=EPERM;
+      (void) ThrowMagickException(exception,GetMagickModule(),PolicyError,
+        "NotAuthorized","`%s'",tag);
+      return(MagickFalse);
+    }
+#if defined(MAGICKCORE_BUILD_MODULES)
+  (void) tag;
+  (void) argc;
+  (void) argv;
+  (void) exception;
+#else
   {
     extern size_t
-      analyzeImage(Image **,const int,const char **,ExceptionInfo *);
+      analyzeImage(Image **,const int,char **,ExceptionInfo *);
 
     ImageFilterHandler
       *image_filter;
 
     image_filter=(ImageFilterHandler *) NULL;
     if (LocaleCompare("analyze",tag) == 0)
-      image_filter=analyzeImage;
-    if (image_filter != (ImageFilterHandler *) NULL)
+      image_filter=(ImageFilterHandler *) analyzeImage;
+    if (image_filter == (ImageFilterHandler *) NULL)
+      (void) ThrowMagickException(exception,GetMagickModule(),ModuleError,
+        "UnableToLoadModule","`%s'",tag);
+    else
       {
         size_t
           signature;
 
+        if ((*image)->debug != MagickFalse)
+          (void) LogMagickEvent(CoderEvent,GetMagickModule(),
+            "Invoking \"%s\" static image filter",tag);
         signature=image_filter(image,argc,argv,exception);
+        if ((*image)->debug != MagickFalse)
+          (void) LogMagickEvent(CoderEvent,GetMagickModule(),"\"%s\" completes",
+            tag);
         if (signature != MagickImageFilterSignature)
           {
             (void) ThrowMagickException(exception,GetMagickModule(),ModuleError,
-              "ImageFilterSignatureMismatch","`%s': %8lx != %8lx",tag,signature,
+              "ImageFilterSignatureMismatch","`%s': %8lx != %8lx",tag,
+              (unsigned long) signature,(unsigned long)
               MagickImageFilterSignature);
             return(MagickFalse);
           }
