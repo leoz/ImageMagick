@@ -491,8 +491,8 @@ static void TIFFErrors(const char *module,const char *format,va_list error)
   (void) ConcatenateMagickString(message,".",MaxTextExtent);
   exception=(ExceptionInfo *) MagickGetThreadValue(tiff_exception);
   if (exception != (ExceptionInfo *) NULL)
-    (void) ThrowMagickException(exception,GetMagickModule(),CoderWarning,
-      message,"`%s'",module);
+    (void) ThrowMagickException(exception,GetMagickModule(),CoderError,message,
+      "`%s'",module);
 }
 
 static void TIFFGetProfiles(TIFF *tiff,Image *image)
@@ -1707,6 +1707,7 @@ ModuleExport size_t RegisterTIFFImage(void)
   entry->raw=MagickTrue;
   entry->endian_support=MagickTrue;
   entry->adjoin=MagickFalse;
+  entry->format_type=ImplicitFormatType;
   entry->seekable_stream=MagickTrue;
   entry->thread_support=NoThreadSupport;
   entry->description=ConstantString("Raw CCITT Group4");

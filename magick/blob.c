@@ -868,7 +868,8 @@ MagickExport unsigned char *FileToBlob(const char *filename,const size_t extent,
         if ((size_t) (i+count) >= extent)
           break;
       }
-      file=close(file);
+      if (LocaleCompare(filename,"-") != 0)
+        file=close(file);
       if (blob == (unsigned char *) NULL)
         {
           (void) ThrowMagickException(exception,GetMagickModule(),
@@ -892,7 +893,7 @@ MagickExport unsigned char *FileToBlob(const char *filename,const size_t extent,
       sizeof(*blob));
   if (blob == (unsigned char *) NULL)
     {
-      file=close(file)-1;
+      file=close(file);
       (void) ThrowMagickException(exception,GetMagickModule(),
         ResourceLimitError,"MemoryAllocationFailed","`%s'",filename);
       return((unsigned char *) NULL);
@@ -926,7 +927,8 @@ MagickExport unsigned char *FileToBlob(const char *filename,const size_t extent,
         }
     }
   blob[*length]='\0';
-  file=close(file);
+  if (LocaleCompare(filename,"-") != 0)
+    file=close(file);
   if (file == -1)
     {
       blob=(unsigned char *) RelinquishMagickMemory(blob);
@@ -1582,7 +1584,8 @@ MagickExport MagickBooleanType ImageToFile(Image *image,char *filename,
     if (i < length)
       break;
   }
-  file=close(file);
+  if (LocaleCompare(filename,"-") != 0)
+    file=close(file);
   buffer=(unsigned char *) RelinquishMagickMemory(buffer);
   if ((file == -1) || (i < length))
     {
@@ -2425,50 +2428,50 @@ MagickExport MagickBooleanType OpenBlob(const ImageInfo *image_info,
                   image->blob->type=BZipStream;
               }
 #endif
-          if (image->blob->type == FileStream)
-            {
-              const MagickInfo
-                *magick_info;
+            if (image->blob->type == FileStream)
+              {
+                const MagickInfo
+                  *magick_info;
 
-              ExceptionInfo
-                *sans_exception;
+                ExceptionInfo
+                  *sans_exception;
 
-              struct stat
-                *properties;
+                struct stat
+                  *properties;
 
-              sans_exception=AcquireExceptionInfo();
-              magick_info=GetMagickInfo(image_info->magick,sans_exception);
-              sans_exception=DestroyExceptionInfo(sans_exception);
-              properties=(&image->blob->properties);
-              if ((magick_info != (const MagickInfo *) NULL) &&
-                  (GetMagickBlobSupport(magick_info) != MagickFalse) &&
-                  (properties->st_size <= MagickMaxBufferExtent))
-                {
-                  size_t
-                    length;
+                sans_exception=AcquireExceptionInfo();
+                magick_info=GetMagickInfo(image_info->magick,sans_exception);
+                sans_exception=DestroyExceptionInfo(sans_exception);
+                properties=(&image->blob->properties);
+                if ((magick_info != (const MagickInfo *) NULL) &&
+                    (GetMagickBlobSupport(magick_info) != MagickFalse) &&
+                    (properties->st_size <= MagickMaxBufferExtent))
+                  {
+                    size_t
+                      length;
 
-                  void
-                    *blob;
+                    void
+                      *blob;
 
-                  length=(size_t) properties->st_size;
-                  blob=MapBlob(fileno(image->blob->file),ReadMode,0,length);
-                  if (blob != (void *) NULL)
-                    {
-                      /*
-                        Format supports blobs-- use memory-mapped I/O.
-                      */
-                      if (image_info->file != (FILE *) NULL)
-                        image->blob->exempt=MagickFalse;
-                      else
-                        {
-                          (void) fclose(image->blob->file);
-                          image->blob->file=(FILE *) NULL;
-                        }
-                      AttachBlob(image->blob,blob,length);
-                      image->blob->mapped=MagickTrue;
-                    }
-                }
-            }
+                    length=(size_t) properties->st_size;
+                    blob=MapBlob(fileno(image->blob->file),ReadMode,0,length);
+                    if (blob != (void *) NULL)
+                      {
+                        /*
+                          Format supports blobs-- use memory-mapped I/O.
+                        */
+                        if (image_info->file != (FILE *) NULL)
+                          image->blob->exempt=MagickFalse;
+                        else
+                          {
+                            (void) fclose(image->blob->file);
+                            image->blob->file=(FILE *) NULL;
+                          }
+                        AttachBlob(image->blob,blob,length);
+                        image->blob->mapped=MagickTrue;
+                      }
+                  }
+              }
           }
         }
       else
