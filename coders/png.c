@@ -9237,11 +9237,14 @@ static MagickBooleanType WriteMNGImage(const ImageInfo *image_info,Image *image)
                  /*
                    It's probably a GIF with loop; don't run it *too* fast.
                  */
-                 final_delay=10;
-                 (void) ThrowMagickException(&image->exception,
-                    GetMagickModule(),CoderError,
-                   "input has zero delay between all frames; assuming 10 cs",
-                   "`%s'","");
+                 if (mng_info->adjoin)
+                   {
+                     final_delay=10;
+                     (void) ThrowMagickException(&image->exception,
+                        GetMagickModule(),CoderWarning,
+                       "input has zero delay between all frames; assuming",
+                       " 10 cs `%s'","");
+                   }
                }
              else
                mng_info->ticks_per_second=0;
