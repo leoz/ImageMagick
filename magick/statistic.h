@@ -32,6 +32,8 @@ typedef struct _ChannelStatistics
     maxima,
     sum,
     sum_squared,
+    sum_cubed,
+    sum_fourth_power,
     mean,
     variance,
     standard_deviation,
@@ -68,7 +70,8 @@ typedef enum
   CosineEvaluateOperator,
   SineEvaluateOperator,
   AddModulusEvaluateOperator,
-  MeanEvaluateOperator
+  MeanEvaluateOperator,
+  AbsEvaluateOperator
 } MagickEvaluateOperator;
 
 typedef enum

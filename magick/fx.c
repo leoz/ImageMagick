@@ -98,6 +98,7 @@
 #define NotEqualOperator 0xfa
 #define LogicalAndOperator 0xfb
 #define LogicalOrOperator 0xfc
+#define ExponentialNotation 0xfd
 
 struct _FxInfo
 {
@@ -192,26 +193,26 @@ MagickExport FxInfo *AcquireFxInfo(const Image *image,const char *expression)
       /*
         Convert scientific notation.
       */
-      (void) SubstituteString(&fx_info->expression,"0e+","0*10^");
-      (void) SubstituteString(&fx_info->expression,"1e+","1*10^");
-      (void) SubstituteString(&fx_info->expression,"2e+","2*10^");
-      (void) SubstituteString(&fx_info->expression,"3e+","3*10^");
-      (void) SubstituteString(&fx_info->expression,"4e+","4*10^");
-      (void) SubstituteString(&fx_info->expression,"5e+","5*10^");
-      (void) SubstituteString(&fx_info->expression,"6e+","6*10^");
-      (void) SubstituteString(&fx_info->expression,"7e+","7*10^");
-      (void) SubstituteString(&fx_info->expression,"8e+","8*10^");
-      (void) SubstituteString(&fx_info->expression,"9e+","9*10^");
-      (void) SubstituteString(&fx_info->expression,"0e-","0*10^-");
-      (void) SubstituteString(&fx_info->expression,"1e-","1*10^-");
-      (void) SubstituteString(&fx_info->expression,"2e-","2*10^-");
-      (void) SubstituteString(&fx_info->expression,"3e-","3*10^-");
-      (void) SubstituteString(&fx_info->expression,"4e-","4*10^-");
-      (void) SubstituteString(&fx_info->expression,"5e-","5*10^-");
-      (void) SubstituteString(&fx_info->expression,"6e-","6*10^-");
-      (void) SubstituteString(&fx_info->expression,"7e-","7*10^-");
-      (void) SubstituteString(&fx_info->expression,"8e-","8*10^-");
-      (void) SubstituteString(&fx_info->expression,"9e-","9*10^-");
+      (void) SubstituteString(&fx_info->expression,"0e+","0**10^");
+      (void) SubstituteString(&fx_info->expression,"1e+","1**10^");
+      (void) SubstituteString(&fx_info->expression,"2e+","2**10^");
+      (void) SubstituteString(&fx_info->expression,"3e+","3**10^");
+      (void) SubstituteString(&fx_info->expression,"4e+","4**10^");
+      (void) SubstituteString(&fx_info->expression,"5e+","5**10^");
+      (void) SubstituteString(&fx_info->expression,"6e+","6**10^");
+      (void) SubstituteString(&fx_info->expression,"7e+","7**10^");
+      (void) SubstituteString(&fx_info->expression,"8e+","8**10^");
+      (void) SubstituteString(&fx_info->expression,"9e+","9**10^");
+      (void) SubstituteString(&fx_info->expression,"0e-","0**10^-");
+      (void) SubstituteString(&fx_info->expression,"1e-","1**10^-");
+      (void) SubstituteString(&fx_info->expression,"2e-","2**10^-");
+      (void) SubstituteString(&fx_info->expression,"3e-","3**10^-");
+      (void) SubstituteString(&fx_info->expression,"4e-","4**10^-");
+      (void) SubstituteString(&fx_info->expression,"5e-","5**10^-");
+      (void) SubstituteString(&fx_info->expression,"6e-","6**10^-");
+      (void) SubstituteString(&fx_info->expression,"7e-","7**10^-");
+      (void) SubstituteString(&fx_info->expression,"8e-","8**10^-");
+      (void) SubstituteString(&fx_info->expression,"9e-","9**10^-");
     }
   /*
     Convert complex to simple operators.
@@ -233,6 +234,8 @@ MagickExport FxInfo *AcquireFxInfo(const Image *image,const char *expression)
   (void) SubstituteString(&fx_info->expression,"&&",fx_op);
   *fx_op=(char) LogicalOrOperator;
   (void) SubstituteString(&fx_info->expression,"||",fx_op);
+  *fx_op=(char) ExponentialNotation;
+  (void) SubstituteString(&fx_info->expression,"**",fx_op);
   return(fx_info);
 }
 
@@ -1851,6 +1854,7 @@ static const char *FxOperatorPrecedence(const char *expression,
     NullPrecedence,
     BitwiseComplementPrecedence,
     ExponentPrecedence,
+    ExponentialNotationPrecedence,
     MultiplyPrecedence,
     AdditionPrecedence,
     ShiftPrecedence,
@@ -1938,6 +1942,7 @@ static const char *FxOperatorPrecedence(const char *expression,
           break;
         }
         case '^':
+        case '@':
         {
           precedence=ExponentPrecedence;
           break;
@@ -2007,6 +2012,11 @@ static const char *FxOperatorPrecedence(const char *expression,
         case LogicalOrOperator:
         {
           precedence=LogicalOrPrecedence;
+          break;
+        }
+        case ExponentialNotation:
+        {
+          precedence=ExponentialNotationPrecedence;
           break;
         }
         case ':':
@@ -2114,6 +2124,7 @@ static MagickRealType FxEvaluateSubexpression(FxInfo *fx_info,
           return(*beta);
         }
         case '*':
+        case ExponentialNotation:
         {
           *beta=FxEvaluateSubexpression(fx_info,channel,x,y,++p,beta,exception);
           return(alpha*(*beta));
@@ -2501,7 +2512,7 @@ static MagickRealType FxEvaluateSubexpression(FxInfo *fx_info,
         {
           alpha=FxEvaluateSubexpression(fx_info,channel,x,y,expression+3,beta,
             exception);
-          return((MagickRealType) floor(alpha+0.5));
+          return((MagickRealType) floor(alpha));
         }
       if (LocaleCompare(expression,"i") == 0)
         return(FxGetSymbol(fx_info,channel,x,y,expression,exception));
@@ -2639,9 +2650,7 @@ static MagickRealType FxEvaluateSubexpression(FxInfo *fx_info,
         {
           alpha=FxEvaluateSubexpression(fx_info,channel,x,y,expression+5,beta,
             exception);
-          if (alpha >= 0.0)
-            return((MagickRealType) floor((double) alpha+0.5));
-          return((MagickRealType) ceil((double) alpha-0.5));
+          return((MagickRealType) floor((double) alpha+0.5));
         }
       if (LocaleCompare(expression,"r") == 0)
         return(FxGetSymbol(fx_info,channel,x,y,expression,exception));
@@ -2707,6 +2716,14 @@ static MagickRealType FxEvaluateSubexpression(FxInfo *fx_info,
         }
       if (LocaleCompare(expression,"Transparent") == 0)
         return(0.0);
+      if (LocaleNCompare(expression,"trunc",5) == 0)
+        {
+          alpha=FxEvaluateSubexpression(fx_info,channel,x,y,expression+5,beta,
+            exception);
+          if (alpha >= 0.0)
+            return((MagickRealType) floor((double) alpha));
+          return((MagickRealType) ceil((double) alpha));
+        }
       if (LocaleCompare(expression,"t") == 0)
         return(FxGetSymbol(fx_info,channel,x,y,expression,exception));
       break;
