@@ -1138,9 +1138,6 @@ static Image *ReadTIFFImage(const ImageInfo *image_info,
     if ((photometric == PHOTOMETRIC_MINISBLACK) ||
         (photometric == PHOTOMETRIC_MINISWHITE))
       method=ReadSingleSampleMethod;
-    if ((photometric == PHOTOMETRIC_RGB) &&
-        (bits_per_sample <= 8))
-      method=ReadGenericMethod;
     if ((photometric != PHOTOMETRIC_SEPARATED) &&
         (interlace == PLANARCONFIG_SEPARATE))
       method=ReadGenericMethod;
@@ -1566,7 +1563,8 @@ static Image *ReadTIFFImage(const ImageInfo *image_info,
             q->green=ScaleCharToQuantum((unsigned char) TIFFGetG(*p));
             q->blue=ScaleCharToQuantum((unsigned char) TIFFGetB(*p));
             if (image->matte != MagickFalse)
-              q->opacity=ScaleCharToQuantum((unsigned char) TIFFGetA(*p));
+              q->opacity=(Quantum) (QuantumRange-
+                ScaleCharToQuantum((unsigned char) TIFFGetA(*p)));
             p--;
             q--;
           }
