@@ -1579,8 +1579,6 @@ WandExport MagickBooleanType MogrifyImage(ImageInfo *image_info,const int argc,
               geometry.width=(*image)->columns;
             if (geometry.height == 0)
               geometry.height=(*image)->rows;
-            geometry.x=(-geometry.x);
-            geometry.y=(-geometry.y);
             extent_image=ExtentImage(*image,&geometry,exception);
             if (extent_image == (Image *) NULL)
               break;
@@ -3765,7 +3763,7 @@ static MagickBooleanType MogrifyUsage(void)
     },
     *sequence_operators[]=
     {
-      "-append              append an image sequence",
+      "-append              append an image sequence top to bottom",
       "-clut                apply a color lookup table to the image",
       "-coalesce            merge a sequence of images",
       "-combine             combine a sequence of images",
