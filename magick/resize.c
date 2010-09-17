@@ -97,7 +97,7 @@ struct _ResizeFilter
 static MagickRealType
   I0(MagickRealType x),
   BesselOrderOne(MagickRealType),
-  SincTrig(const MagickRealType, const ResizeFilter *),
+  Sinc(const MagickRealType, const ResizeFilter *),
   SincFast(const MagickRealType, const ResizeFilter *);
 
 /*
@@ -301,7 +301,8 @@ static MagickRealType Lagrange(const MagickRealType x,
   if (x > resize_filter->support)
     return(0.0);
   order=(ssize_t) (2.0*resize_filter->window_support);  /* number of pieces */
-  n=(ssize_t) ((1.0*order)/2.0+x);  /* which piece does x bessize_t to */
+  /*n=(ssize_t)((1.0*order)/2.0+x);   --  which piece does x belong to */
+  n = (ssize_t)(resize_filter->window_support + x);
   value=1.0f;
   for (i=0; i < order; i++)
     if (i != n)
@@ -435,7 +436,7 @@ static MagickRealType Quadratic(const MagickRealType x,
   return(0.0);
 }
 
-static MagickRealType SincTrig(const MagickRealType x,
+static MagickRealType Sinc(const MagickRealType x,
   const ResizeFilter *magick_unused(resize_filter))
 {
   /*
@@ -615,7 +616,7 @@ static MagickRealType Welsh(const MagickRealType x,
 %  a 3 lobe support, rather that the default 4 lobe support of the windowed
 %  sinc filters.
 %
-%  Two forms of Sinc Function is available  SincTrig and SincFast. the former
+%  Two forms of Sinc Function is available  Sinc and SincFast. the former
 %  is the tradional form and what will be selected is the user specifically
 %  specifies the use of a Sinc Filter. the later is a faster polynomial form
 %  that will be used by default in most cases.
@@ -773,7 +774,7 @@ MagickExport ResizeFilter *AcquireResizeFilter(const Image *image,
     the range to scale with to use that function as a sinc windowing function,
     (typ 1.0).
 
-    Note that the filter_type -> function is 1 to 1 except for SincTrig(),
+    Note that the filter_type -> function is 1 to 1 except for Sinc(),
     SincFast(), and CubicBC()  functions, which may have multiple filter to
     function associations.
     See "filter:verbose" handling below for the function -> filter mapping.
@@ -787,30 +788,30 @@ MagickExport ResizeFilter *AcquireResizeFilter(const Image *image,
       B,C;      /* Cubic Filter factors for a CubicBC function, else ignored */
   } const filters[SentinelFilter] =
   {
-    { Box,       0.0f,  0.5f, 0.0f, 0.0f }, /* Undefined */
-    { Box,       0.0f,  0.5f, 0.0f, 0.0f }, /* Point */
-    { Box,       0.5f,  0.5f, 0.0f, 0.0f }, /* Box */
-    { Triangle,  1.0f,  1.0f, 0.0f, 0.0f }, /* Triangle */
-    { CubicBC,   1.0f,  1.0f, 0.0f, 0.0f }, /* Hermite, Cubic B=C=0 */
-    { Hanning,   1.0f,  1.0f, 0.0f, 0.0f }, /* Hanning, Cosine window */
-    { Hamming,   1.0f,  1.0f, 0.0f, 0.0f }, /* Hamming, '' variation */
-    { Blackman,  1.0f,  1.0f, 0.0f, 0.0f }, /* Blackman, 2*cos window */
-    { Gaussian,  1.5f,  1.5f, 0.0f, 0.0f }, /* Gaussian */
-    { Quadratic, 1.5f,  1.5f, 0.0f, 0.0f }, /* Quadratic Gaussian */
-    { CubicBC,   2.0f,  2.0f, 1.0f, 0.0f }, /* Cubic B-Spline  B=1 C=0 */
-    { CubicBC,   2.0f,  1.0f, 0.0f, 0.5f }, /* Catmull-Rom     B=0 C=1/2 */
-    { CubicBC,   2.0f,  1.0f, 1.f/3.f, 1.f/3.f }, /* Mitchell  B=C=1/3 */
-    { SincFast,  3.0f,  1.0f, 0.0f, 0.0f }, /* Lanczos, 3 lobed Sinc-Sinc */
-    { Bessel,    3.2383f,1.2197f,.0f,.0f }, /* Raw 3 lobed Bessel */
-    { SincTrig,  4.0f,  1.0f, 0.0f, 0.0f }, /* Raw 4 lobed Sinc   */
-    { Kaiser,    1.0f,  1.0f, 0.0f, 0.0f }, /* Kaiser, sq-root windowing */
-    { Welsh,     1.0f,  1.0f, 0.0f, 0.0f }, /* Welsh, Parabolic windowing */
-    { CubicBC,   2.0f,  2.0f, 1.0f, 0.0f }, /* Parzen, B-Spline windowing */
-    { Lagrange,  2.0f,  1.0f, 0.0f, 0.0f }, /* Lagrangian Filter */
-    { Bohman,    1.0f,  1.0f, 0.0f, 0.0f }, /* Bohman, 2*Cosine windowing */
-    { Triangle,  1.0f,  1.0f, 0.0f, 0.0f }, /* Bartlett, Triangle windowing */
-    { SincFast,  4.0f,  1.0f, 0.0f, 0.0f }, /* Raw Fast Sinc (Polynomial) */
-    { LanczosFast, 3.f, 1.f, 0.f, 0.f }   /* Speed Optimized Lanczos (exper) */
+    { Box,       0.0,  0.5, 0.0, 0.0 },  /* Undefined */
+    { Box,       0.0,  0.5, 0.0, 0.0 },  /* Point */
+    { Box,       0.5,  0.5, 0.0, 0.0 },  /* Box */
+    { Triangle,  1.0,  1.0, 0.0, 0.0 },  /* Triangle */
+    { CubicBC,   1.0,  1.0, 0.0, 0.0 },  /* Hermite, Cubic B=C=0 */
+    { Hanning,   1.0,  1.0, 0.0, 0.0 },  /* Hanning, Cosine window */
+    { Hamming,   1.0,  1.0, 0.0, 0.0 },  /* Hamming, '' variation */
+    { Blackman,  1.0,  1.0, 0.0, 0.0 },  /* Blackman, 2*cos window */
+    { Gaussian,  1.5,  1.5, 0.0, 0.0 },  /* Gaussian */
+    { Quadratic, 1.5,  1.5, 0.0, 0.0 },  /* Quadratic Gaussian */
+    { CubicBC,   2.0,  2.0, 1.0, 0.0 },  /* Cubic B-Spline  B=1 C=0 */
+    { CubicBC,   2.0,  1.0, 0.0, 0.5 },  /* Catmull-Rom     B=0 C=1/2 */
+    { CubicBC,   2.0,  1.0, 1./3., 1./3. }, /* Mitchell  B=C=1/3 */
+    { SincFast,  3.0,  1.0, 0.0, 0.0 },  /* Lanczos, 3 lobed Sinc-Sinc */
+    { Bessel,    3.2383,1.2197,.0,.0 },  /* Raw 3 lobed Bessel */
+    { Sinc,  4.0,  1.0, 0.0, 0.0 },  /* Raw 4 lobed Sinc   */
+    { Kaiser,    1.0,  1.0, 0.0, 0.0 },  /* Kaiser, sq-root windowing */
+    { Welsh,     1.0,  1.0, 0.0, 0.0 },  /* Welsh, Parabolic windowing */
+    { CubicBC,   2.0,  2.0, 1.0, 0.0 },  /* Parzen, B-Spline windowing */
+    { Lagrange,  2.0,  1.0, 0.0, 0.0 },  /* Lagrangian Filter */
+    { Bohman,    1.0,  1.0, 0.0, 0.0 },  /* Bohman, 2*Cosine windowing */
+    { Triangle,  1.0,  1.0, 0.0, 0.0 },  /* Bartlett, Triangle windowing */
+    { SincFast,  4.0,  1.0, 0.0, 0.0 },  /* Raw Fast Sinc (Polynomial) */
+    { LanczosFast, 3., 1.0, 0.0, 0.0 }   /* Speed Optimized Lanczos (exper) */
   };
   /*
     The known zero crossings of the Bessel() or the Jinc(x*PI) function found
@@ -821,22 +822,22 @@ MagickExport ResizeFilter *AcquireResizeFilter(const Image *image,
   static MagickRealType
     bessel_zeros[16] =
     {
-      1.21966989126651f,
-      2.23313059438153f,
-      3.23831548416624f,
-      4.24106286379607f,
-      5.24276437687019f,
-      6.24392168986449f,
-      7.24475986871996f,
-      8.24539491395205f,
-      9.24589268494948f,
-      10.2462933487549f,
-      11.2466227948779f,
-      12.2468984611381f,
-      13.2471325221811f,
-      14.2473337358069f,
-      15.2475085630373f,
-      16.247661874701f
+      1.21966989126651,
+      2.23313059438153,
+      3.23831548416624,
+      4.24106286379607,
+      5.24276437687019,
+      6.24392168986449,
+      7.24475986871996,
+      8.24539491395205,
+      9.24589268494948,
+      10.2462933487549,
+      11.2466227948779,
+      12.2468984611381,
+      13.2471325221811,
+      14.2473337358069,
+      15.2475085630373,
+      16.247661874701
    };
 
   /*
@@ -1056,7 +1057,7 @@ MagickExport ResizeFilter *AcquireResizeFilter(const Image *image,
         * 'function' is returned, not the user selection.  Specifically this
         * is needed for the Sinc and Cubic compound filters.
         */
-        if ( resize_filter->filter == SincTrig )
+        if ( resize_filter->filter == Sinc )
           filter_type=SincFilter;
         if ( resize_filter->filter == SincFast )
           filter_type=SincFastFilter;

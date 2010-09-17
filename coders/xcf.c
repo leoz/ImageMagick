@@ -766,9 +766,6 @@ static MagickBooleanType load_hierarchy(Image *image,XCFDocInfo *inDocInfo,
 static MagickBooleanType ReadOneLayer(Image* image,XCFDocInfo* inDocInfo,
   XCFLayerInfo *outLayer )
 {
-  ssize_t
-    i;
-
   MagickOffsetType
     offset;
 
@@ -841,8 +838,9 @@ static MagickBooleanType ReadOneLayer(Image* image,XCFDocInfo* inDocInfo,
       break;
      case PROP_PARASITES:
      {
-        for (i=0; i < (ssize_t) prop_size; i++ )
-          (void) ReadBlobByte(image);
+       if (DiscardBlobBytes(image,prop_size) == MagickFalse)
+         ThrowFileException(&image->exception,CorruptImageError,
+           "UnexpectedEndOfFile",image->filename);
 
         /*
        ssize_t base = info->cp;
@@ -1069,8 +1067,9 @@ static Image *ReadXCFImage(const ImageInfo *image_info,ExceptionInfo *exception)
            by some Gimp versions.
         */
         size_t num_colours = ReadBlobMSBLong(image);
-        for (i=0; i < (ssize_t) (3L*num_colours); i++ )
-          (void) ReadBlobByte(image);
+        if (DiscardBlobBytes(image,3*num_colours) == MagickFalse)
+          ThrowFileException(&image->exception,CorruptImageError,
+            "UnexpectedEndOfFile",image->filename);
     /*
       if (info->file_version == 0)
       {
@@ -1116,10 +1115,9 @@ static Image *ReadXCFImage(const ImageInfo *image_info,ExceptionInfo *exception)
       case PROP_GUIDES:
       {
          /* just skip it - we don't care about guides */
-        for (i=0; i < (ssize_t) prop_size; i++ )
-          if (ReadBlobByte(image) == EOF)
-            ThrowFileException(exception,CorruptImageError,
-              "UnexpectedEndOfFile",image->filename);
+        if (DiscardBlobBytes(image,prop_size) == MagickFalse)
+          ThrowFileException(&image->exception,CorruptImageError,
+            "UnexpectedEndOfFile",image->filename);
       }
       break;
 
@@ -1157,11 +1155,9 @@ static Image *ReadXCFImage(const ImageInfo *image_info,ExceptionInfo *exception)
     case PROP_PARASITES:
       {
         /* BOGUS: we may need these for IPTC stuff */
-        for (i=0; i < (ssize_t) prop_size; i++ )
-          if (ReadBlobByte(image) == EOF)
-            ThrowFileException(exception,CorruptImageError,
-              "UnexpectedEndOfFile",image->filename);
-
+        if (DiscardBlobBytes(image,prop_size) == MagickFalse)
+          ThrowFileException(&image->exception,CorruptImageError,
+            "UnexpectedEndOfFile",image->filename);
         /*
       gssize_t         base = info->cp;
       GimpParasite *p;
@@ -1188,10 +1184,9 @@ static Image *ReadXCFImage(const ImageInfo *image_info,ExceptionInfo *exception)
     case PROP_PATHS:
       {
       /* BOGUS: just skip it for now */
-        for (i=0; i< (ssize_t) prop_size; i++ )
-          if (ReadBlobByte(image) == EOF)
-            ThrowFileException(exception,CorruptImageError,
-              "UnexpectedEndOfFile",image->filename);
+        if (DiscardBlobBytes(image,prop_size) == MagickFalse)
+          ThrowFileException(&image->exception,CorruptImageError,
+            "UnexpectedEndOfFile",image->filename);
 
         /*
       PathList *paths = xcf_load_bzpaths (gimage, info);

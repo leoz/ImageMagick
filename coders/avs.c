@@ -95,9 +95,6 @@ static Image *ReadAVSImage(const ImageInfo *image_info,ExceptionInfo *exception)
   Image
     *image;
 
-  ssize_t
-    y;
-
   MagickBooleanType
     status;
 
@@ -110,18 +107,17 @@ static Image *ReadAVSImage(const ImageInfo *image_info,ExceptionInfo *exception)
   register unsigned char
     *p;
 
-  ssize_t
-    count;
-
   size_t
-    length;
+    height,
+    length,
+    width;
+
+  ssize_t
+    count,
+    y;
 
   unsigned char
     *pixels;
-
-  size_t
-    height,
-    width;
 
   /*
     Open image file.
@@ -313,9 +309,6 @@ ModuleExport void UnregisterAVSImage(void)
 */
 static MagickBooleanType WriteAVSImage(const ImageInfo *image_info,Image *image)
 {
-  ssize_t
-    y;
-
   MagickBooleanType
     status;
 
@@ -332,7 +325,8 @@ static MagickBooleanType WriteAVSImage(const ImageInfo *image_info,Image *image)
     *restrict q;
 
   ssize_t
-    count;
+    count,
+    y;
 
   unsigned char
     *pixels;

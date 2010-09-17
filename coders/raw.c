@@ -115,14 +115,11 @@ static Image *ReadRAWImage(const ImageInfo *image_info,
   QuantumType
     quantum_type;
 
-  register ssize_t
-    i;
+  size_t
+    length;
 
   ssize_t
     count;
-
-  size_t
-    length;
 
   unsigned char
     *pixels;
@@ -146,13 +143,9 @@ static Image *ReadRAWImage(const ImageInfo *image_info,
       image=DestroyImageList(image);
       return((Image *) NULL);
     }
-  for (i=0; i < image->offset; i++)
-    if (ReadBlobByte(image) == EOF)
-      {
-        ThrowFileException(exception,CorruptImageError,"UnexpectedEndOfFile",
-          image->filename);
-        break;
-      }
+  if (DiscardBlobBytes(image,image->offset) == MagickFalse)
+    ThrowFileException(exception,CorruptImageError,"UnexpectedEndOfFile",
+      image->filename);
   /*
     Create virtual canvas to support cropping (i.e. image.gray[100x100+10+20]).
   */
