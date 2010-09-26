@@ -145,8 +145,8 @@ static MagickRealType Bessel(const MagickRealType x,
     http://www.ph.ed.ac.uk/%7ewjh/teaching/mo/slides/lens/lens.pdf.
   */
   if (x == 0.0)
-    return((MagickRealType) (0.25*MagickPIL));
-  return(BesselOrderOne((MagickRealType) (MagickPIL*x))/(x+x));
+    return(0.25*MagickPIL);
+  return(BesselOrderOne(MagickPIL*x)/(x+x));
 }
 
 static MagickRealType Blackman(const MagickRealType x,
@@ -174,18 +174,18 @@ static MagickRealType Bohman(const MagickRealType x,
   */
   const double cospix = cos((double) (MagickPIL*x));
   const double sinpix = sqrt(1.0-cospix*cospix);
-  return((MagickRealType) ((1.0-x)*cospix+(1.0/MagickPIL)*sinpix));
+  return((1.0-x)*cospix+(1.0/MagickPIL)*sinpix);
 }
 
-static MagickRealType Box(const MagickRealType x,
-  const ResizeFilter *resize_filter)
+static MagickRealType Box(const MagickRealType magick_unused(x),
+  const ResizeFilter *magick_unused(resize_filter))
 {
   /*
-    Return a Box filter up to its support size.
+    A Box filter is a equal weighting function (all weights tha same).
+    DO NOT LIMIT results by support or resize point sampling will work
+    as it requests points beyond its normal 0.0 support size.
   */
-  if ( x < resize_filter->support )
-    return(1.0);
-  return(0.0);
+  return(1.0);
 }
 
 static MagickRealType CubicBC(const MagickRealType x,
@@ -336,7 +336,7 @@ static MagickRealType Sinc(const MagickRealType x,
     const MagickRealType pix = (MagickRealType) (MagickPIL*x);
     return(sin((double) pix)/pix);
   }
-  return(1.0);
+  return((MagickRealType) 1.0);
 }
 
 static MagickRealType SincFast(const MagickRealType x,
@@ -515,7 +515,8 @@ static MagickRealType Welsh(const MagickRealType x,
 %
 %  FIR filters are used as is, and are limited by that filters support
 %  window (unless over-ridden).  'Gaussian' while classed as an IIR
-%  filter, is also simply clipped by its support size (1.5).
+%  filter, is also simply clipped by its support size (currently 1.5
+%  but probably should be 2.0 for better use from EWA resampling)
 %
 %  The users "-filter" selection ise used to lookup the default
 %  'expert' settings for that filter from a internal table.  However
@@ -669,8 +670,8 @@ MagickExport ResizeFilter *AcquireResizeFilter(const Image *image,
       window;
   } const mapping[SentinelFilter] =
   {
-    { UndefinedFilter,   BoxFilter },      /* Undefined                       */
-    { PointFilter,       BoxFilter },    /* SPECIAL: nearest neighbour filter */
+    { UndefinedFilter,   BoxFilter },      /* Undefined (default to Box)      */
+    { PointFilter,       BoxFilter },      /* SPECIAL: Nearest neighbour      */
     { BoxFilter,         BoxFilter },      /* Box averaging filter            */
     { TriangleFilter,    BoxFilter },      /* Linear interpolation filter     */
     { HermiteFilter,     BoxFilter },      /* Hermite interpolation filter    */
@@ -715,8 +716,8 @@ MagickExport ResizeFilter *AcquireResizeFilter(const Image *image,
       B,C;      /* Cubic Filter factors for a CubicBC function, else ignored */
   } const filters[SentinelFilter] =
   {
-    { Box,         0.0,    0.5,    0.0, 0.0 }, /* Undefined                   */
-    { Box,         0.0,    0.5,    0.0, 0.0 }, /* Point                       */
+    { Box,         0.5,    0.5,    0.0, 0.0 }, /* Undefined (default to Box)  */
+    { Box,         0.0,    0.5,    0.0, 0.0 }, /* Point (special handling)    */
     { Box,         0.5,    0.5,    0.0, 0.0 }, /* Box                         */
     { Triangle,    1.0,    1.0,    0.0, 0.0 }, /* Triangle                    */
     { CubicBC,     1.0,    1.0,    0.0, 0.0 }, /* Hermite (cubic  B=C=0)      */
@@ -982,17 +983,16 @@ MagickExport ResizeFilter *AcquireResizeFilter(const Image *image,
           x;
 
         /*
-          Reset the filter_type for specific compound filters so the
-          actual 'function' is returned, not the user selection.
-          Specifically this is needed for the Sinc and Cubic compound
-          filters.
+          Set the weighting function properly when the weighting
+          function may not exactly match the filter of the same name.
+          EG: a Point filter really uses a Box weighting function
+          with a different support than is typically used.
+
         */
-        if (resize_filter->filter == Sinc)
-          filter_type=SincFilter;
-        if (resize_filter->filter == SincFast)
-          filter_type=SincFastFilter;
-        if (resize_filter->filter == CubicBC)
-          filter_type=CubicFilter;
+        if (resize_filter->filter == Box)       filter_type=BoxFilter;
+        if (resize_filter->filter == Sinc)      filter_type=SincFilter;
+        if (resize_filter->filter == SincFast)  filter_type=SincFastFilter;
+        if (resize_filter->filter == CubicBC)   filter_type=CubicFilter;
         /*
           Report Filter Details.
         */
@@ -1001,14 +1001,14 @@ MagickExport ResizeFilter *AcquireResizeFilter(const Image *image,
         (void) fprintf(stdout,"# filter = %s\n",MagickOptionToMnemonic(
            MagickFilterOptions,filter_type));
         (void) fprintf(stdout,"# window = %s\n",MagickOptionToMnemonic(
-          MagickFilterOptions, window_type));
+           MagickFilterOptions, window_type));
         (void) fprintf(stdout,"# support = %.*g\n",GetMagickPrecision(),
-          (double) resize_filter->support);
+           (double) resize_filter->support);
         (void) fprintf(stdout,"# win-support = %.*g\n",GetMagickPrecision(),
-		       (double) resize_filter->window_support);
+           (double) resize_filter->window_support);
         (void) fprintf(stdout,"# blur = %.*g\n",GetMagickPrecision(),
            (double) resize_filter->blur);
-        (void) fprintf(stdout,"# blurred_support = %.*g\n",GetMagickPrecision(),
+       (void) fprintf(stdout,"# blurred_support = %.*g\n",GetMagickPrecision(),
            (double) support);
         (void) fprintf(stdout,"# B,C = %.*g,%.*g\n",GetMagickPrecision(),
            (double) B,GetMagickPrecision(),(double) C);
@@ -1454,8 +1454,8 @@ MagickExport MagickRealType GetResizeFilterWeight(
   const ResizeFilter *resize_filter,const MagickRealType x)
 {
   MagickRealType
-    x_blur,
-    scale;
+    scale,
+    x_blur;
 
   /*
     Windowing function - scale the weighting filter by this amount.
