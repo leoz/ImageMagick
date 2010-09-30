@@ -270,7 +270,7 @@ MagickExport MagickBooleanType AcquireMagickResource(const ResourceType type,
 %                                                                             %
 %                                                                             %
 %                                                                             %
-+   A s y n c h r o n o u s R e s o u r c e C o m p o n e n t T e r m i n u s %
+temporary_resource=DestroyString((char *) temporary_resource);
 %                                                                             %
 %                                                                             %
 %                                                                             %
@@ -332,6 +332,7 @@ MagickExport void AsynchronousResourceComponentTerminus(void)
 static void *DestroyTemporaryResources(void *temporary_resource)
 {
   (void) remove((char *) temporary_resource);
+  temporary_resource=DestroyString((char *) temporary_resource);
   return((void *) NULL);
 }
 
@@ -414,9 +415,6 @@ MagickExport int AcquireUniqueFileResource(char *path)
 # define TMP_MAX  238328
 #endif
 
-  char
-    *resource;
-
   int
     c,
     file;
@@ -477,10 +475,10 @@ MagickExport int AcquireUniqueFileResource(char *path)
   LockSemaphoreInfo(resource_semaphore);
   if (temporary_resources == (SplayTreeInfo *) NULL)
     temporary_resources=NewSplayTree(CompareSplayTreeString,
-      RelinquishMagickMemory,DestroyTemporaryResources);
+      DestroyTemporaryResources,(void *(*)(void *)) NULL);
   UnlockSemaphoreInfo(resource_semaphore);
-  resource=ConstantString(path);
-  (void) AddValueToSplayTree(temporary_resources,resource,resource);
+  (void) AddValueToSplayTree(temporary_resources,ConstantString(path),
+    (const void *) NULL);
   return(file);
 }
 
@@ -973,7 +971,7 @@ MagickExport MagickBooleanType ResourceComponentGenesis(void)
 #endif
 #if defined(MAGICKCORE_HAVE_GETDTABLESIZE) && defined(MAGICKCORE_POSIX_SUPPORT)
   if (files < 0)
-    files=getdtablesize();
+    files=(ssize_t) getdtablesize();
 #endif
   if (files < 0)
     files=64;

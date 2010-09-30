@@ -64,15 +64,17 @@
   EWA Resampling Options
 */
 #define WLUT_WIDTH 1024       /* size of the filter cache */
-#define HQ_EWA 1              /* High Quality EWA? */
-#define DEBUG_NO_HIT_PIXELS 0 /* Make pixels that fail to 'hit' anything red */
+
+/* select ONE resampling method */
+#define EWA 1                 /* Normal EWA handling - raw or clamped */
+                              /* if 0 then use "High Quality EWA" */
+#define EWA_CLAMP 1           /* EWA Clamping from Nicolas Robidoux */
+
+/* output debugging information */
 #define DEBUG_ELLIPSE 0       /* output ellipse info for debug */
-#define DEBUG_HIT_MISS 0      /* output hit/miss pixels with above switch */
+#define DEBUG_HIT_MISS 0      /* output hit/miss pixels (as gnuplot commands) */
+#define DEBUG_NO_PIXEL_HIT 0  /* Make pixels that fail to hit anything - RED */
 
-
-#if ! DEBUG_ELLIPSE
-#define DEBUG_HIT_MISS 0
-#endif
 /*
   Typedef declarations.
 */
@@ -156,11 +158,12 @@ struct _ResampleFilter
 %
 %  Usage Example...
 %      resample_filter=AcquireResampleFilter(image,exception);
+%      SetResampleFilter(resample_filter, GaussianFilter, 1.0);
 %      for (y=0; y < (ssize_t) image->rows; y++) {
 %        for (x=0; x < (ssize_t) image->columns; x++) {
-%          X= ....;   Y= ....;
+%          u= ....;   v= ....;
 %          ScaleResampleFilter(resample_filter, ... scaling vectors ...);
-%          (void) ResamplePixelColor(resample_filter,X,Y,&pixel);
+%          (void) ResamplePixelColor(resample_filter,u,v,&pixel);
 %          ... assign resampled pixel value ...
 %        }
 %      }
@@ -213,9 +216,6 @@ MagickExport ResampleFilter *AcquireResampleFilter(const Image *image,
     resample_filter->image->blur);
   resample_filter->interpolate = resample_filter->image->interpolate;
   resample_filter->virtual_pixel=GetImageVirtualPixelMethod(image);
-
-  /* init scale to a default of a unit circle */
-  ScaleResampleFilter(resample_filter, 1.0, 0.0, 0.0, 1.0);
 
   return(resample_filter);
 }
@@ -391,6 +391,7 @@ static MagickBooleanType InterpolateResampleFilter(
   assert(resample_filter != (ResampleFilter *) NULL);
   assert(resample_filter->signature == MagickSignature);
   status=MagickTrue;
+
   switch (method)
   {
     case AverageInterpolatePixel:
@@ -876,10 +877,6 @@ MagickExport MagickBooleanType ResamplePixelColor(
   assert(resample_filter != (ResampleFilter *) NULL);
   assert(resample_filter->signature == MagickSignature);
 
-#if DEBUG_ELLIPSE
-  fprintf(stderr, "u0=%lf; v0=%lf;\n", u0, v0);
-#endif
-
   status=MagickTrue;
   GetMagickPixelPacket(resample_filter->image,pixel);
   if ( resample_filter->do_interpolate ) {
@@ -887,6 +884,10 @@ MagickExport MagickBooleanType ResamplePixelColor(
       resample_filter->interpolate,u0,v0,pixel);
     return(status);
   }
+
+#if DEBUG_ELLIPSE
+  fprintf(stderr, "u0=%lf; v0=%lf;\n", u0, v0);
+#endif
 
   /*
     Does resample area Miss the image?
@@ -1202,6 +1203,280 @@ MagickExport MagickBooleanType ResamplePixelColor(
   return(MagickTrue);
 }
 
+#if EWA && EWA_CLAMP
+/*
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                                             %
+%                                                                             %
+%                                                                             %
+-   C l a m p U p A x e s                                                     %
+%                                                                             %
+%                                                                             %
+%                                                                             %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% ClampUpAxes() function converts the input vectors into a major and
+% minor axis unit vectors, and their magnatude.  This form allows us
+% to ensure that the ellipse generated is never smaller than the unit
+% circle and thus never too small for use in EWA resampling.
+%
+% This purely mathematical 'magic' was provided by Professor Nicolas
+% Robidoux and his Masters student Chantal Racette.
+%
+% See Reference: "We Recommend Singular Value Decomposition", David Austin
+%   http://www.ams.org/samplings/feature-column/fcarc-svd
+%
+% By generating Major and Minor Axis vectors, we can actually use the
+% ellipse in its "canonical form", by remapping the dx,dy of the
+% sampled point into distances along the major and minor axis unit
+% vectors.
+%    http://en.wikipedia.org/wiki/Ellipse#Canonical_form
+*/
+static inline void ClampUpAxes(const double dux,
+			       const double dvx,
+			       const double duy,
+			       const double dvy,
+			       double *major_mag,
+			       double *minor_mag,
+			       double *major_unit_x,
+			       double *major_unit_y,
+			       double *minor_unit_x,
+			       double *minor_unit_y)
+{
+  /*
+   * ClampUpAxes takes an input 2x2 matrix
+   *
+   * [ a b ] = [ dux duy ]
+   * [ c d ] = [ dvx dvy ]
+   *
+   * and computes from it the major and minor axis vectors [major_x,
+   * major_y] and [minor_x,minor_y] of the smallest ellipse containing
+   * both the unit disk and the ellipse which is the image of the unit
+   * disk by the linear transformation
+   *
+   * [ dux duy ] [S] = [s]
+   * [ dvx dvy ] [T] = [t]
+   *
+   * (The vector [S,T] is the difference between a position in output
+   * space and [X,Y]; the vector [s,t] is the difference between a
+   * position in input space and [x,y].)
+   */
+  /*
+   * Outputs:
+   *
+   * major_mag is the half-length of the major axis of the "new"
+   * ellipse (in input space).
+   *
+   * minor_mag is the half-length of the minor axis of the "new"
+   * ellipse (in input space).
+   *
+   * major_unit_x is the x-coordinate of the major axis direction vector
+   * of both the "old" and "new" ellipses.
+   *
+   * major_unit_y is the y-coordinate of the major axis direction vector.
+   *
+   * minor_unit_x is the x-coordinate of the minor axis direction vector.
+   *
+   * minor_unit_y is the y-coordinate of the minor axis direction vector.
+   *
+   * Unit vectors are useful for computing projections, in particular,
+   * to compute the distance between a point in output space and the
+   * center (of a disk) from the position of the corresponding point
+   * in input space.
+   *
+   * Now, if you want to modify the input pair of tangent vectors so
+   * that it defines the modified ellipse, all you have to do is set
+   *
+   * newdux = major_mag * major_unit_x
+   * newdvx = major_mag * major_unit_y
+   * newduy = minor_mag * minor_unit_x = minor_mag * -major_unit_y
+   * newdvy = minor_mag * minor_unit_y = minor_mag *  major_unit_x
+   *
+   * and use these new tangent vectors "as if" they were the original
+   * ones.  Most of the time this is a rather drastic change in the
+   * tangent vectors (even if the singular values are large enough not
+   * to be clampled). A technical explanation of why things still work
+   * is found at the end of the discussion below.
+   *
+   */
+  /*
+   * Discussion:
+   *
+   * GOAL: Fix things so that the pullback, in input space, of a disk
+   * of radius r in output space is an ellipse which contains, at
+   * least, a disc of radius r. (Make this hold for any r>0.)
+   *
+   * METHOD: Find the singular values and (unit) left singular vectors
+   * of Jinv, clampling up the singular values to 1, and multiplying
+   * the unit left singular vectors by the new singular values in
+   * order to get the minor and major ellipse axis vectors.
+   *
+   * Inputs:
+   *
+   * The Jacobian matrix of the transformation at the output point
+   * under consideration is defined as follows:
+   *
+   * Consider the transformation (x,y) -> (X,Y) from input locations
+   * to output locations. (Anthony Thyssen, elsewhere in resample.c,
+   * uses the notation (u,v) -> (x,y) instead of (x,y) -> (X,Y).)
+   *
+   * The Jacobian matrix J is equal to
+   *
+   *   [ A, B ] = [ dX/dx, dX/dy ]
+   *   [ C, D ] = [ dY/dx, dY/dy ]
+   *
+   * Consequently, the vector [A,C] is the tangent vector
+   * corresponding to input changes in the horizontal direction, and
+   * the vector [B,D] is the tangent vector corresponding to input
+   * changes in the vertical direction.
+   *
+   * In the context of resampling, it is more natural to use the
+   * inverse Jacobian matrix Jinv. Jinv is
+   *
+   *   [ a, b ] = [ dx/dX, dx/dY ]
+   *   [ c, d ] = [ dy/dX, dy/dY ]
+   *
+   * Note: Jinv can be computed from J with the following matrix
+   * formula:
+   *
+   *   Jinv = 1/(A*D-B*C) [  D, -B ]
+   *                      [ -C,  A ]
+   *
+   * What we (implicitly) want to do is replace Jinv by a new Jinv
+   * which generates an ellipse which is as close as possible to the
+   * original but which contains the unit disk. This is accomplished
+   * as follows:
+   *
+   * Let
+   *
+   *   Jinv = U Sigma V^T
+   *
+   * be an SVD decomposition of Jinv. (The SVD is not unique. The
+   * final ellipse does not depend on the particular SVD.) In
+   * principle, what we want is to clamp up the entries of the
+   * diagonal matrix Sigma so that they are at least 1, and then set
+   *
+   *   Jinv = U newSigma V^T.
+   *
+   * However, we do not need to compute V^T for the following reason:
+   * V is an orthogonal matrix (that is, it represents a combination
+   * of a rotation and a reflexion). Consequently, V maps the unit
+   * circle to itself. For this reason, the exact value of V does not
+   * affect the final ellipse, and we choose the identity matrix.
+   * That is, we simply set
+   *
+   *   Jinv = U newSigma,
+   *
+   * omitting the V^T factor altogether. In the end, we return the two
+   * diagonal entries of newSigma together with the two columns of U,
+   * for a total of six returned quantities.
+   */
+  /*
+   * ClampUpAxes was written by Nicolas Robidoux and Chantal Racette
+   * of Laurentian University with funding from the National Science
+   * and Engineering Research Council of Canada.
+   *
+   * The idea of using the SVD to clamp the singular values of the
+   * linear part of the affine approximation of the pullback
+   * transformation comes from the astrophysicist Craig DeForest, who
+   * implemented it for use with (approximate) Gaussian filtering in
+   * his PDL::Transform code (PDL = Perl Data Language).
+   *
+   * The only (possibly) new math in the following is the selection of
+   * the largest row of the eigen matrix system in order to stabilize
+   * the computation in near rank-deficient cases, and the
+   * corresponding efficient repair of degenerate cases using the norm
+   * of this largest row. Omitting the "V^T" factor of the SVD may
+   * also be a new "trick."
+   */
+  const double a = dux;
+  const double b = duy;
+  const double c = dvx;
+  const double d = dvy;
+  /*
+   * n is the matrix Jinv * transpose(Jinv). Eigenvalues of n are the
+   * squares of the singular values of Jinv.
+   */
+  const double aa = a*a;
+  const double bb = b*b;
+  const double cc = c*c;
+  const double dd = d*d;
+  /*
+   * Eigenvectors of n are left singular vectors of Jinv.
+   */
+  const double n11 = aa+bb;
+  const double n12 = a*c+b*d;
+  const double n21 = n12;
+  const double n22 = cc+dd;
+  const double det = a*d-b*c;
+  const double twice_det = det+det;
+  const double frobenius_squared = n11+n22;
+  const double discriminant =
+    (frobenius_squared+twice_det)*(frobenius_squared-twice_det);
+  const double sqrt_discriminant = sqrt(discriminant);
+  /*
+   * s1 is the largest singular value of the inverse Jacobian
+   * matrix. In other words, its reciprocal is the smallest singular
+   * value of the Jacobian matrix itself.
+   * If s1 = 0, both singular values are 0, and any orthogonal pair of
+   * left and right factors produces a singular decomposition of Jinv.
+   */
+  /*
+   * Initially, we only compute the squares of the singular values.
+   */
+  const double s1s1 = 0.5*(frobenius_squared+sqrt_discriminant);
+  /*
+   * s2 the smallest singular value of the inverse Jacobian
+   * matrix. Its reciprocal is the largest singular value of the
+   * Jacobian matrix itself.
+   */
+  const double s2s2 = 0.5*(frobenius_squared-sqrt_discriminant);
+  const double s1s1minusn11 = s1s1-n11;
+  const double s1s1minusn22 = s1s1-n22;
+  /*
+   * u1, the first column of the U factor of a singular decomposition
+   * of Jinv, is a (non-normalized) left singular vector corresponding
+   * to s1. It has entries u11 and u21. We compute u1 from the fact
+   * that it is an eigenvector of n corresponding to the eigenvalue
+   * s1^2.
+   */
+  const double s1s1minusn11_squared = s1s1minusn11*s1s1minusn11;
+  const double s1s1minusn22_squared = s1s1minusn22*s1s1minusn22;
+  /*
+   * The following selects the largest row of n-s1^2 I as the one
+   * which is used to find the eigenvector. If both s1^2-n11 and
+   * s1^2-n22 are zero, n-s1^2 I is the zero matrix.  In that case,
+   * any vector is an eigenvector; in addition, norm below is equal to
+   * zero, and, in exact arithmetic, this is the only case in which
+   * norm = 0. So, setting u1 to the simple but arbitrary vector [1,0]
+   * if norm = 0 safely takes care of all cases.
+   */
+  const double temp_u11 =
+    ( (s1s1minusn11_squared>=s1s1minusn22_squared) ? n12 : s1s1minusn22 );
+  const double temp_u21 =
+    ( (s1s1minusn11_squared>=s1s1minusn22_squared) ? s1s1minusn11 : n21 );
+  const double norm = sqrt(temp_u11*temp_u11+temp_u21*temp_u21);
+  /*
+   * Finalize the entries of first left singular vector (associated
+   * with the largest singular value).
+   */
+  const double u11 = ( (norm>0.0) ? temp_u11/norm : 1.0 );
+  const double u21 = ( (norm>0.0) ? temp_u21/norm : 0.0 );
+  /*
+   * Clamp the singular values up to 1.
+   */
+  *major_mag = ( (s1s1<=1.0) ? 1.0 : sqrt(s1s1) );
+  *minor_mag = ( (s2s2<=1.0) ? 1.0 : sqrt(s2s2) );
+  /*
+   * Return the unit major and minor axis direction vectors.
+   */
+  *major_unit_x = u11;
+  *major_unit_y = u21;
+  *minor_unit_x = -u21;
+  *minor_unit_y = u11;
+}
+
+#endif
 /*
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                                                                             %
@@ -1228,20 +1503,23 @@ MagickExport MagickBooleanType ResamplePixelColor(
 %  calculated from other derivatives.  For example you could use  dr,da/r
 %  polar coordinate vector scaling vectors
 %
-%  If   u,v =  DistortEquation(x,y)
-%  Then the scaling vectors dx,dy (in u,v space) are the derivitives...
+%  If   u,v =  DistortEquation(x,y)   OR   u = Fu(x,y); v = Fv(x,y)
+%  Then the scaling vectors are determined from the deritives...
 %      du/dx, dv/dx     and    du/dy, dv/dy
-%  If the scaling is only othogonally aligned then...
+%  If the resulting scaling vectors is othogonally aligned then...
 %      dv/dx = 0   and   du/dy  =  0
-%  Producing an othogonally alligned ellipse for the area to be resampled.
+%  Producing an othogonally alligned ellipse in source space for the area to
+%  be resampled.
 %
 %  Note that scaling vectors are different to argument order.  Argument order
 %  is the general order the deritives are extracted from the distortion
-%  equations, EG: U(x,y), V(x,y).  Caution is advised if you are trying to
-%  define the ellipse directly from scaling vectors.
+%  equations, and not the scaling vectors. As such the middle two vaules
+%  may be swapped from what you expect.  Caution is advised.
 %
-%  It is assumed that the SetResampleFilter method has already been called,
-%  before this ScaleResampleFilter method.
+%  WARNING: It is assumed that any SetResampleFilter() method call will
+%  always be performed before the ScaleResampleFilter() method, so that the
+%  size of the ellipse will match the support for the resampling filter being
+%  used.
 %
 %  The format of the ScaleResampleFilter method is:
 %
@@ -1254,11 +1532,11 @@ MagickExport MagickBooleanType ResamplePixelColor(
 %      image being resampled
 %
 %    o dux,duy,dvx,dvy:
-%         The partial derivitives or scaling vectors for resampling.
-%           dx = du/dx, dv/dx    and  dy = du/dy, dv/dy
-%
-%         The values are used to define the size and angle of the
-%         elliptical resampling area, centered on the lookup point.
+%         The deritives or scaling vectors defining the EWA ellipse.
+%         NOTE: watch the order, which is based on the order deritives
+%         are usally determined from distortion equations (see above).
+%         The middle two values may need to be swapped if you are thinking
+%         in terms of scaling vectors.
 %
 */
 MagickExport void ScaleResampleFilter(ResampleFilter *resample_filter,
@@ -1270,13 +1548,16 @@ MagickExport void ScaleResampleFilter(ResampleFilter *resample_filter,
   assert(resample_filter->signature == MagickSignature);
 
   resample_filter->limit_reached = MagickFalse;
-  resample_filter->do_interpolate = MagickFalse;
 
   /* A 'point' filter forces use of interpolation instead of area sampling */
-  if ( resample_filter->filter == PointFilter ) {
-    resample_filter->do_interpolate = MagickTrue;
-    return;
-  }
+  if ( resample_filter->filter == PointFilter )
+    return; /* EWA turned off - nothing to do */
+
+#if DEBUG_ELLIPSE
+  fprintf(stderr, "# -----\n" );
+  fprintf(stderr, "dux=%lf; dvx=%lf;   duy=%lf; dvy=%lf;\n",
+       dux, dvx, duy, dvy);
+#endif
 
   /* Find Ellipse Coefficents such that
         A*u^2 + B*u*v + C*v^2 = F
@@ -1284,49 +1565,68 @@ MagickExport void ScaleResampleFilter(ResampleFilter *resample_filter,
      And the given scaling dx,dy vectors in u,v space
          du/dx,dv/dx   and  du/dy,dv/dy
   */
-#if ! HQ_EWA
+#if EWA
   /* Direct conversion of derivatives into elliptical coefficients
-    No scaling will result in F == 1.0 and a unit circle.
-    However if the ellipse becomes very small (magnification) or
-    very long and thin, the ellipse may miss all source pixels!
+     However when magnifying images, the scaling vectors will be small
+     resulting in a ellipse that is too small to sample properly.
+     As such we need to clamp the major/minor axis to a minumum of 1.0
+     to prevent it getting too small.
   */
+#if EWA_CLAMP
+  { double major_mag,
+           minor_mag,
+           major_x,
+           major_y,
+           minor_x,
+           minor_y;
+
+  ClampUpAxes(dux,dvx,duy,dvy, &major_mag, &minor_mag,
+                &major_x, &major_y, &minor_x, &minor_y);
+  major_x *= major_mag;  major_y *= major_mag; 
+  minor_x *= minor_mag;  minor_y *= minor_mag; 
+#if DEBUG_ELLIPSE
+  fprintf(stderr, "major_x=%lf; major_y=%lf;  minor_x=%lf; minor_y=%lf;\n",
+        major_x, major_y, minor_x, minor_y);
+#endif
+  A = major_y*major_y+minor_y*minor_y;
+  B = -2.0*(major_x*major_y+minor_x*minor_y);
+  C = major_x*major_x+minor_x*minor_x;
+  F = major_mag*minor_mag;
+  F *= F; /* square it */
+  }
+#else /* raw EWA */
   A = dvx*dvx+dvy*dvy;
   B = -2.0*(dux*dvx+duy*dvy);
   C = dux*dux+duy*duy;
-  F = dux*dvy+duy*dvx;
+  F = dux*dvy-duy*dvx;
   F *= F; /* square it */
-#define F_UNITY 1.0
+#endif
 
 #else /* HQ_EWA */
   /*
-    This Paul Heckbert's recomended "Higher Quality EWA" formula, from page
-    60 in his thesis, which adds a unit circle to the elliptical area so as
-    to do both Reconstruction and Prefiltering of the pixels in the
-    resampling.  It also means it is always likely to have at least 4 pixels
-    within the area of the ellipse, for weighted averaging.  No scaling will
-    result with F == 4.0 and a circle of radius 2.0, and F smaller than this
-    means magnification is being used.
+    This Paul Heckbert's "Higher Quality EWA" formula, from page 60 in his
+    thesis, which adds a unit circle to the elliptical area so as to do both
+    Reconstruction and Prefiltering of the pixels in the resampling.  It also
+    means it is always likely to have at least 4 pixels within the area of the
+    ellipse, for weighted averaging.  No scaling will result with F == 4.0 and
+    a circle of radius 2.0, and F smaller than this means magnification is
+    being used.
 
-    NOTE: This method prodces a very blury result at near unity scale while
+    NOTE: This method produces a very blury result at near unity scale while
     producing perfect results for string minitification and magnifications.
 
-    However filter support is fixed to 2.0 (no good for Windowed Sinc filters
+    However filter support is fixed to 2.0 (no good for Windowed Sinc filters)
   */
   A = dvx*dvx+dvy*dvy+1;
   B = -2.0*(dux*dvx+duy*dvy);
   C = dux*dux+duy*duy+1;
   F = A*C - B*B/4;
-#define F_UNITY 4.0
-
 #endif
 
 #if DEBUG_ELLIPSE
-  fprintf(stderr, "# -----\n" );
-  fprintf(stderr, "dux=%lf; dvx=%lf;   duy=%lf; dvy=%lf;\n",
-       dux, dvx, duy, dvy);
   fprintf(stderr, "A=%lf; B=%lf; C=%lf; F=%lf\n", A,B,C,F);
 
-  /* Figure out the Ellipses Major and Minor Axis, and other info.
+  /* Figure out the various information directly about the ellipse.
      This information currently not needed at this time, but may be
      needed later for better limit determination.
 
@@ -1350,64 +1650,49 @@ MagickExport void ScaleResampleFilter(ResampleFilter *resample_filter,
     /* other information about ellipse include... */
     Eccentricity = Major/Minor;
     Ellipse_Area = MagickPI*Major*Minor;
-    Ellipse_Angle =  atan2(B, A-C);
+    Ellipse_Angle = atan2(B, A-C);
 
-    fprintf(stderr, "# Angle=%lf Area=%lf\n",
-         RadiansToDegrees(Ellipse_Angle), Ellipse_Area );
+    fprintf(stderr, "# Angle=%lf   Area=%lf\n",
+         RadiansToDegrees(Ellipse_Angle), Ellipse_Area);
   }
 #endif
 
-  /* Is default elliptical area, too small? Then the image is being magnified.
-     Switch to using a orthogonal interpolation method,
-     unless 'filter' interpolation was specifically requested.
-  */
-  if ( F <= F_UNITY && resample_filter->interpolate != FilterInterpolatePixel ) {
-    resample_filter->do_interpolate = MagickTrue;
-    return;
-  }
-
-  /* The scaling vectors is impossibly large (producing a very large raw F
-     value), we may as well not bother doing any form of resampling, as you
-     risk an near infinite resampled area.  In this case some alturnative
-     means of pixel sampling, such as the average of the whole image is needed
-     to get a reasonable result.
+  /* If one or both of the scaling vectors is impossibly large
+     (producing a very large raw F value), we may as well not bother
+     doing any form of resampling since resampled area is very large.
+     In this case some alternative means of pixel sampling, such as
+     the average of the whole image is needed to get a reasonable
+     result. Calculate only as needed.
   */
   if ( (4*A*C - B*B) > MagickHuge ) {
     resample_filter->limit_reached = MagickTrue;
     return;
   }
 
-#if ! HQ_EWA
-  /* Clamp the ellipse size, stop it getting too small! */
-  A = A/F; B = B/F; C = C/F; F = 1.0;
-  if ( A > 1.0 ) B/=A/4, A=1.0;
-  if ( C > 1.0 ) B/=C/4, C=1.0;
-#endif
-
-  /* Scale ellipse by the appropriate size */
+  /* Scale ellipse by the support (that is, multiply F by the square
+     of the support).
+  */
   F *= resample_filter->support;
   F *= resample_filter->support;
 
-  /* Othogonal bounds of the Ellipse */
+  /* Orthogonal bounds of the ellipse */
   resample_filter->Ulimit = sqrt(4*C*F/(4*A*C-B*B));
   resample_filter->Vlimit = sqrt(4*A*F/(4*A*C-B*B));
 
-  /* Horizontally aligned Parallelogram fitted to Ellipse */
-  resample_filter->Uwidth = sqrt(F/A);   /* Parallelogram Width / 2 */
-  resample_filter->slope = -B/(2*A);     /* Slope of the parallelogram */
+  /* Horizontally aligned parallelogram fitted to Ellipse */
+  resample_filter->Uwidth = sqrt(F/A); /* Half of the parallelogram width */
+  resample_filter->slope = -B/(2*A); /* Reciprocal slope of the parallelogram */
 
 #if DEBUG_ELLIPSE
-  fprintf(stderr, "A=%lf; B=%lf; C=%lf; F=%lf\n", A,B,C,F);
-  fprintf(stderr, "# divisor=%lf, sqrt(divisor)=%lf  area=%ld\n",
-        divisor, sqrt(divisor), (long)4*resample_filter->image_area);
   fprintf(stderr, "Ulimit=%lf; Vlimit=%lf; UWidth=%lf; Slope=%lf;\n",
            resample_filter->Ulimit, resample_filter->Vlimit,
            resample_filter->Uwidth, resample_filter->slope );
 #endif
 
-  /* Check the absolute area of the Parallogram involved...
-   * This limit needs more work, as it gets too slow for
-   * larger images involved with tiled views of the horizon. */
+  /* Check the absolute area of the parallelogram involved.
+   * This limit needs more work, as it is too slow for larger images
+   * with tiled views of the horizon.
+  */
   if ( (resample_filter->Uwidth * resample_filter->Vlimit)
          > (4.0*resample_filter->image_area)) {
     resample_filter->limit_reached = MagickTrue;
@@ -1420,7 +1705,7 @@ MagickExport void ScaleResampleFilter(ResampleFilter *resample_filter,
     resample_filter->A = A*scale;
     resample_filter->B = B*scale;
     resample_filter->C = C*scale;
-    /* ..ple_filter->F = WLUT_WIDTH; -- hardcoded */
+    /* resample_filter->F = WLUT_WIDTH; -- hardcoded */
   }
 }
 
@@ -1472,13 +1757,17 @@ MagickExport void SetResampleFilter(ResampleFilter *resample_filter,
   assert(resample_filter != (ResampleFilter *) NULL);
   assert(resample_filter->signature == MagickSignature);
 
+  resample_filter->do_interpolate = MagickFalse;
   resample_filter->filter = filter;
 
   if ( filter == PointFilter )
-    return;  /* EWA turned off - nothing more to do */
+    {
+      resample_filter->do_interpolate = MagickTrue;
+      return;  /* EWA turned off - nothing more to do */
+    }
 
   if ( filter == UndefinedFilter )
-    resample_filter->filter = GaussianFilter;
+    resample_filter->filter = MitchellFilter;  /* a far less blurry filter */
 
   resize_filter = AcquireResizeFilter(resample_filter->image,
        resample_filter->filter,blur,MagickTrue,resample_filter->exception);
@@ -1490,13 +1779,12 @@ MagickExport void SetResampleFilter(ResampleFilter *resample_filter,
       resample_filter->filter = PointFilter;
     }
 
-  /* special handling for Gaussian filter */
+#if EWA
   resample_filter->support = GetResizeFilterSupport(resize_filter);
-#if HQ_EWA
-  resample_filter->support = 2.0;  /* fixed support */
-#else
   if ( resample_filter->filter == GaussianFilter )
-    resample_filter->support = 2.0;
+    resample_filter->support = 2.0;  /* larger gaussian support */
+#else
+  resample_filter->support = 2.0;  /* fixed support size for HQ-EWA */
 #endif
 
   /* Scale radius so the filter LUT covers the full support range */
@@ -1510,6 +1798,14 @@ MagickExport void SetResampleFilter(ResampleFilter *resample_filter,
   /* finished with the resize filter */
   resize_filter = DestroyResizeFilter(resize_filter);
 
+  /*
+    Adjust the scaling of the default unit circle
+    This assumes that any real scaling changes will always
+    take place AFTER the filter method has been initialized.
+  */
+
+  ScaleResampleFilter(resample_filter, 1.0, 0.0, 0.0, 1.0);
+
 #if 0
   This is old code kept for reference only.  It is very wrong.
   /*
@@ -1520,7 +1816,9 @@ MagickExport void SetResampleFilter(ResampleFilter *resample_filter,
     However the table is of length 1024, and equates to a radius of 2px
     thus needs to be scaled by  ALPHA*4/1024 and any blur factor squared
 
-    This is now known to be wrong -- very wrong!
+    The above came from some reference code provided by Fred Weinhaus
+    and seems to have been a guess that was appropriate for its use
+    in a 3d perspective landscape mapping program.
   */
   r_scale = -2.77258872223978123767/(WLUT_WIDTH*blur*blur);
   for(Q=0; Q<WLUT_WIDTH; Q++)
