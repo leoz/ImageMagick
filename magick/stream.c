@@ -152,7 +152,7 @@ MagickExport StreamInfo *AcquireStreamInfo(const ImageInfo *image_info)
   StreamInfo
     *stream_info;
 
-  stream_info=(StreamInfo *) AcquireAlignedMemory(1,sizeof(*stream_info));
+  stream_info=(StreamInfo *) AcquireQuantumMemory(1,sizeof(*stream_info));
   if (stream_info == (StreamInfo *) NULL)
     ThrowFatalException(ResourceLimitFatalError,"MemoryAllocationFailed");
   (void) ResetMagickMemory(stream_info,0,sizeof(*stream_info));
@@ -419,7 +419,8 @@ static PixelPacket *GetAuthenticPixelsFromStream(const Image *image)
 %  The format of the GetOneAuthenticPixelFromStream() method is:
 %
 %      MagickBooleanType GetOneAuthenticPixelFromStream(const Image image,
-%        const ssize_t x,const ssize_t y,PixelPacket *pixel,ExceptionInfo *exception)
+%        const ssize_t x,const ssize_t y,PixelPacket *pixel,
+%        ExceptionInfo *exception)
 %
 %  A description of each parameter follows:
 %
@@ -702,17 +703,21 @@ static const PixelPacket *GetVirtualPixelStream(const Image *image,
   /*
     Pixels are stored in a temporary buffer until they are synced to the cache.
   */
+  cache_info->active_index_channel=((image->storage_class == PseudoClass) ||
+    (image->colorspace == CMYKColorspace)) ? MagickTrue : MagickFalse;
   number_pixels=(MagickSizeType) columns*rows;
   length=(size_t) number_pixels*sizeof(PixelPacket);
-  if ((image->storage_class == PseudoClass) ||
-      (image->colorspace == CMYKColorspace))
+  if (cache_info->active_index_channel != MagickFalse)
     length+=number_pixels*sizeof(IndexPacket);
   if (cache_info->pixels == (PixelPacket *) NULL)
     {
       cache_info->length=length;
       status=AcquireStreamPixels(cache_info,exception);
       if (status == MagickFalse)
-        return((PixelPacket *) NULL);
+        {
+          cache_info->length=0;
+          return((PixelPacket *) NULL);
+        }
     }
   else
     if (cache_info->length != length)
@@ -721,11 +726,13 @@ static const PixelPacket *GetVirtualPixelStream(const Image *image,
         cache_info->length=length;
         status=AcquireStreamPixels(cache_info,exception);
         if (status == MagickFalse)
-          return((PixelPacket *) NULL);
+          {
+            cache_info->length=0;
+            return((PixelPacket *) NULL);
+          }
       }
   cache_info->indexes=(IndexPacket *) NULL;
-  if ((image->storage_class == PseudoClass) ||
-      (image->colorspace == CMYKColorspace))
+  if (cache_info->active_index_channel != MagickFalse)
     cache_info->indexes=(IndexPacket *) (cache_info->pixels+number_pixels);
   return(cache_info->pixels);
 }
@@ -821,8 +828,10 @@ static PixelPacket *QueueAuthenticPixelsStream(Image *image,const ssize_t x,
     Validate pixel cache geometry.
   */
   assert(image != (Image *) NULL);
-  if ((x < 0) || (y < 0) || ((x+(ssize_t) columns) > (ssize_t) image->columns) ||
-      ((y+(ssize_t) rows) > (ssize_t) image->rows) || (columns == 0) || (rows == 0))
+  if ((x < 0) || (y < 0) ||
+      ((x+(ssize_t) columns) > (ssize_t) image->columns) ||
+      ((y+(ssize_t) rows) > (ssize_t) image->rows) ||
+      (columns == 0) || (rows == 0))
     {
       (void) ThrowMagickException(exception,GetMagickModule(),StreamError,
         "ImageDoesNotContainTheStreamGeometry","`%s'",image->filename);
@@ -852,12 +861,13 @@ static PixelPacket *QueueAuthenticPixelsStream(Image *image,const ssize_t x,
   /*
     Pixels are stored in a temporary buffer until they are synced to the cache.
   */
+  cache_info->active_index_channel=((image->storage_class == PseudoClass) ||
+    (image->colorspace == CMYKColorspace)) ? MagickTrue : MagickFalse;
   cache_info->columns=columns;
   cache_info->rows=rows;
   number_pixels=(MagickSizeType) columns*rows;
   length=(size_t) number_pixels*sizeof(PixelPacket);
-  if ((image->storage_class == PseudoClass) ||
-      (image->colorspace == CMYKColorspace))
+  if (cache_info->active_index_channel != MagickFalse)
     length+=number_pixels*sizeof(IndexPacket);
   if (cache_info->pixels == (PixelPacket *) NULL)
     {
@@ -874,8 +884,7 @@ static PixelPacket *QueueAuthenticPixelsStream(Image *image,const ssize_t x,
   if (cache_info->pixels == (void *) NULL)
     return((PixelPacket *) NULL);
   cache_info->indexes=(IndexPacket *) NULL;
-  if ((image->storage_class == PseudoClass) ||
-      (image->colorspace == CMYKColorspace))
+  if (cache_info->active_index_channel != MagickFalse)
     cache_info->indexes=(IndexPacket *) (cache_info->pixels+number_pixels);
   return(cache_info->pixels);
 }

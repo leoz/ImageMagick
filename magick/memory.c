@@ -214,7 +214,7 @@ MagickExport void *AcquireAlignedMemory(const size_t count,const size_t quantum)
       return(memory);
   }
 #endif
-  return(malloc(size));
+  return(malloc(MagickMax(size,AlignedSize)));
 }
 
 #if defined(MAGICKCORE_EMBEDDABLE_SUPPORT)

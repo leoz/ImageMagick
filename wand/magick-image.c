@@ -99,7 +99,7 @@ static MagickWand *CloneMagickWandFromImages(const MagickWand *wand,
   assert(wand->signature == WandSignature);
   if (wand->debug != MagickFalse)
     (void) LogMagickEvent(WandEvent,GetMagickModule(),"%s",wand->name);
-  clone_wand=(MagickWand *) AcquireAlignedMemory(1,sizeof(*clone_wand));
+  clone_wand=(MagickWand *) AcquireQuantumMemory(1,sizeof(*clone_wand));
   if (clone_wand == (MagickWand *) NULL)
     ThrowWandFatalException(ResourceLimitFatalError,"MemoryAllocationFailed",
       images->filename);
@@ -11352,9 +11352,10 @@ WandExport MagickBooleanType MagickShearImage(MagickWand *wand,
 %
 %    o sharpen: Increase or decrease image contrast.
 %
-%    o alpha: control the "shoulder" of the contast curve.
+%    o alpha: strength of the contrast, the larger the number the more
+%      'threshold-like' it becomes.
 %
-%    o beta: control the "toe" of the contast curve.
+%    o beta: midpoint of the function as a color value 0 to QuantumRange.
 %
 */
 
