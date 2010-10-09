@@ -143,12 +143,12 @@ static MagickRealType Jinc(const MagickRealType x,
     http://mathworld.wolfram.com/JincFunction.html and page 11 of
     http://www.ph.ed.ac.uk/%7ewjh/teaching/mo/slides/lens/lens.pdf
 
-    The original "zoom" program by Paul Heckbert called this "Bessel"
-    But really its is more accuritally named "Jinc".
+    The original "zoom" program by Paul Heckbert called this "Bessel".
+    But really it is more accurately named "Jinc".
   */
   if (x == 0.0)
-    return(0.25*MagickPIL);
-  return(BesselOrderOne(MagickPIL*x)/(x+x));
+    return(0.5*MagickPIL);
+  return(BesselOrderOne(MagickPIL*x)/x);
 }
 
 static MagickRealType Blackman(const MagickRealType x,
@@ -415,7 +415,7 @@ static MagickRealType SincFast(const MagickRealType x,
     const MagickRealType c7 = -0.187208577776590710853865174371617338991e-11L;
     const MagickRealType c8 = 0.253524321426864752676094495396308636823e-13L;
     const MagickRealType c9 = -0.177084805010701112639035485248501049364e-15L;
-    const MagickRealType p = 
+    const MagickRealType p =
       c0+xx*(c1+xx*(c2+xx*(c3+xx*(c4+xx*(c5+xx*(c6+xx*(c7+xx*(c8+xx*c9))))))));
     return((xx-1.0)*(xx-4.0)*(xx-9.0)*(xx-16.0)*p);
 #else
@@ -492,6 +492,9 @@ static MagickRealType Welsh(const MagickRealType x,
 %      Blackman     Hanning     Hamming
 %      Kaiser       Lanczos
 %
+%  Special purpose Filters
+%      SincFast  Lanczos2D  Robidoux
+%
 %  The users "-filter" selection is used to lookup the default 'expert'
 %  settings for that filter from a internal table.  However any provided
 %  'expert' settings (see below) may override this selection.
@@ -523,11 +526,16 @@ static MagickRealType Welsh(const MagickRealType x,
 %  and rational (high Q) approximations, and will be used by default in
 %  most cases.
 %
+%  The Lanczos2D filter is just 2-lobed Lanczos using Sinc/Jinc as
+%  appropriate.  The  Robidoux  is the same thing but is  modified (through
+%  the blur setting) in order to make the results sharper in the 'no-op' case.
+%  (see notes below)
+%
 %  Special 'expert' options can be used to override any and all filter
 %  settings. This is not advised unless you have expert knowledge of
 %  the use of resampling filtered techniques.  Check on the results of
 %  your selections using the "filter:verbose" setting to make sure you
-%  got what you requested.
+%  get the exact filter that you are tring to achieve.
 %
 %    "filter:filter"    Select the main function associated with
 %        this filter name, as the weighting function of the filter.
@@ -671,6 +679,8 @@ MagickExport ResizeFilter *AcquireResizeFilter(const Image *image,
     { SincFastFilter,  BohmanFilter },   /* Bohman -- 2*cosine-sinc          */
     { SincFastFilter,  TriangleFilter }, /* Bartlett -- triangle-sinc        */
     { SincFastFilter,  BoxFilter },      /* Raw fast sinc ("Pade"-type)      */
+    { Lanczos2DFilter, JincFilter },     /* SPECIAL: 2-lobed jinc-jinc       */
+    { RobidouxFilter,  JincFilter },     /* SPECIAL: Lanzcos2D blurred       */
   };
   /*
     Table mapping the filter/window from the above table to an actual
@@ -689,44 +699,47 @@ MagickExport ResizeFilter *AcquireResizeFilter(const Image *image,
   {
     MagickRealType
       (*function)(const MagickRealType, const ResizeFilter*),
-      support,  /* default support size for function as a weighting filter */
+      lobes,    /* default lobes/support size of the weighting filter */
       scale,    /* windowing function range, for scaling windowing function */
       B,C;      /* Cubic Filter factors for a CubicBC function, else ignored */
   } const filters[SentinelFilter] =
   {
-    { Box,       0.5,    0.5,    0.0, 0.0 }, /* Undefined (default to Box)  */
-    { Box,       0.0,    0.5,    0.0, 0.0 }, /* Point (special handling)    */
-    { Box,       0.5,    0.5,    0.0, 0.0 }, /* Box                         */
-    { Triangle,  1.0,    1.0,    0.0, 0.0 }, /* Triangle                    */
-    { CubicBC,   1.0,    1.0,    0.0, 0.0 }, /* Hermite (cubic  B=C=0)      */
-    { Hanning,   1.0,    1.0,    0.0, 0.0 }, /* Hanning, cosine window      */
-    { Hamming,   1.0,    1.0,    0.0, 0.0 }, /* Hamming, '' variation       */
-    { Blackman,  1.0,    1.0,    0.0, 0.0 }, /* Blackman, 2*cosine window   */
-    { Gaussian,  1.5,    1.5,    0.0, 0.0 }, /* Gaussian                    */
-    { Quadratic, 1.5,    1.5,    0.0, 0.0 }, /* Quadratic gaussian          */
-    { CubicBC,   2.0,    2.0,    1.0, 0.0 }, /* Cubic B-Spline (B=1,C=0)    */
-    { CubicBC,   2.0,    1.0,    0.0, 0.5 }, /* Catmull-Rom    (B=0,C=1/2)  */
-    { CubicBC,   2.0,    1.0, 1./3., 1./3. }, /* Mitchell      (B=C=1/3)    */
-    { SincFast,  3.0,    1.0,    0.0, 0.0 }, /* Lanczos, 3-lobed sinc-sinc  */
-    { Jinc,      3.2383, 1.2197, 0.0, 0.0 }, /* Raw 3-lobed Jinc          */
-    { Sinc,      4.0,    1.0,    0.0, 0.0 }, /* Raw 4-lobed Sinc            */
-    { Kaiser,    1.0,    1.0,    0.0, 0.0 }, /* Kaiser (square root window) */
-    { Welsh,     1.0,    1.0,    0.0, 0.0 }, /* Welsh (parabolic window)    */
-    { CubicBC,   2.0,    2.0,    1.0, 0.0 }, /* Parzen (B-Spline window)    */
-    { Lagrange,  2.0,    1.0,    0.0, 0.0 }, /* Lagrange sinc approximation */
-    { Bohman,    1.0,    1.0,    0.0, 0.0 }, /* Bohman, 2*Cosine window     */
-    { Triangle,  1.0,    1.0,    0.0, 0.0 }, /* Bartlett (triangle window)  */
-    { SincFast,  4.0,    1.0,    0.0, 0.0 }, /* Raw fast sinc ("Pade"-type) */
+    { Box,       0.5, 0.5,     0.0, 0.0 }, /* Undefined (default to Box)  */
+    { Box,       0.0, 0.5,     0.0, 0.0 }, /* Point (special handling)    */
+    { Box,       0.5, 0.5,     0.0, 0.0 }, /* Box                         */
+    { Triangle,  1.0, 1.0,     0.0, 0.0 }, /* Triangle                    */
+    { CubicBC,   1.0, 1.0,     0.0, 0.0 }, /* Hermite (cubic  B=C=0)      */
+    { Hanning,   1.0, 1.0,     0.0, 0.0 }, /* Hanning, cosine window      */
+    { Hamming,   1.0, 1.0,     0.0, 0.0 }, /* Hamming, '' variation       */
+    { Blackman,  1.0, 1.0,     0.0, 0.0 }, /* Blackman, 2*cosine window   */
+    { Gaussian,  1.5, 1.5,     0.0, 0.0 }, /* Gaussian                    */
+    { Quadratic, 1.5, 1.5,     0.0, 0.0 }, /* Quadratic gaussian          */
+    { CubicBC,   2.0, 2.0,     1.0, 0.0 }, /* Cubic B-Spline (B=1,C=0)    */
+    { CubicBC,   2.0, 1.0,     0.0, 0.5 }, /* Catmull-Rom    (B=0,C=1/2)  */
+    { CubicBC,   2.0, 1.0, 1./3., 1./3. }, /* Mitchell       (B=C=1/3)    */
+    { SincFast,  3.0, 1.0,     0.0, 0.0 }, /* Lanczos, 3-lobed Sinc-Sinc  */
+    { Jinc,      3.0, 1.21967, 0.0, 0.0 }, /* Raw 3-lobed Jinc            */
+    { Sinc,      4.0, 1.0,     0.0, 0.0 }, /* Raw 4-lobed Sinc            */
+    { Kaiser,    1.0, 1.0,     0.0, 0.0 }, /* Kaiser (square root window) */
+    { Welsh,     1.0, 1.0,     0.0, 0.0 }, /* Welsh (parabolic window)    */
+    { CubicBC,   2.0, 2.0,     1.0, 0.0 }, /* Parzen (B-Spline window)    */
+    { Lagrange,  2.0, 1.0,     0.0, 0.0 }, /* Lagrange sinc approximation */
+    { Bohman,    1.0, 1.0,     0.0, 0.0 }, /* Bohman, 2*Cosine window     */
+    { Triangle,  1.0, 1.0,     0.0, 0.0 }, /* Bartlett (triangle window)  */
+    { SincFast,  4.0, 1.0,     0.0, 0.0 }, /* Raw fast sinc ("Pade"-type) */
+    { Jinc,      2.0, 1.0,     0.0, 0.0 }, /* Lanczos2D, Jinc-Jinc        */
+    { Jinc,      2.0, 1.0,     0.0, 0.0 }, /* Robidoux, blured Jinc-Jinc  */
   };
   /*
-    The known zero crossings of the Jinc() or more accuritally the Jinc(x*PI)
-    function being used as a filter. It is used by the "filter:lobes" for of
-    support selection, so users do not have to deal with the highly irrational
-    sizes of the 'lobes' of the Jinc filter.
+    The known zero crossings of the Jinc() or more accurately the
+    Jinc(x*PI) function being used as a filter. It is used by the
+    "filter:lobes" for support selection, so users do not have to deal
+    with the highly irrational sizes of the 'lobes' of the Jinc
+    filter.
 
-    Values were sourced from
+    Values taken from
       http://cose.math.bas.bg/webMathematica/webComputing/BesselZeros.jsp
-    Using Jv-function with v=1, then divided by PI.
+    using Jv-function with v=1, then dividing by PI.
   */
   static MagickRealType
     jinc_zeros[16] =
@@ -759,7 +772,7 @@ MagickExport ResizeFilter *AcquireResizeFilter(const Image *image,
   assert(UndefinedFilter < filter && filter < SentinelFilter);
   assert(exception != (ExceptionInfo *) NULL);
   assert(exception->signature == MagickSignature);
-  resize_filter=(ResizeFilter *) AcquireQuantumMemory(1,sizeof(*resize_filter));
+  resize_filter=(ResizeFilter *) AcquireMagickMemory(sizeof(*resize_filter));
   if (resize_filter == (ResizeFilter *) NULL)
     ThrowFatalException(ResourceLimitFatalError,"MemoryAllocationFailed");
   /*
@@ -781,33 +794,38 @@ MagickExport ResizeFilter *AcquireResizeFilter(const Image *image,
         if ( filter != SincFastFilter )
           filter_type=JincFilter;
         break;
+
       case LanczosFilter:
-        /* Promote Lanczos from a Sinc-Sinc to a Jinc-Jinc */
+        /* Promote Lanczos from a Sinc-Sinc to a Jinc-Jinc. */
         filter_type=JincFilter;
         window_type=JincFilter;
         break;
       default:
-        /*
-          What about other filters to make them 'cylindrical friendly'?
-          For example Mitchell is already actually quite close to a
-          cylindrical Lanczos (Jinc-Jinc) with support 2.  Are there
-          other well known 'cylindrical' specific filters?
-        */
         break;
     }
+  else
+    switch (filter_type)
+    {
+      case Lanczos2DFilter:
+      case RobidouxFilter:
+        /* Demote to a 2-lobe Sinc-Sinc for orthogonal use. */
+        window_type=SincFastFilter;
+        break;
+      default:
+        break;
+    }
+
   artifact=GetImageArtifact(image,"filter:filter");
   if (artifact != (const char *) NULL)
     {
       option=ParseMagickOption(MagickFilterOptions,MagickFalse,artifact);
       if ((UndefinedFilter < option) && (option < SentinelFilter))
-        {
-          /* Raw filter request - no window function. */
+        { /* Raw filter request - no window function. */
           filter_type=(FilterTypes) option;
           window_type=BoxFilter;
         }
       if (option == LanczosFilter)
-        {
-          /* Lanczos is not a real filter but a self windowing Sinc/Jinc. */
+        { /* Lanczos is not a real filter but a self windowing Sinc/Jinc. */
           filter_type=cylindrical != MagickFalse ? JincFilter : LanczosFilter;
           window_type=cylindrical != MagickFalse ? JincFilter : SincFastFilter;
         }
@@ -836,18 +854,19 @@ MagickExport ResizeFilter *AcquireResizeFilter(const Image *image,
             artifact);
           if ((UndefinedFilter < option) && (option < SentinelFilter))
             {
-              filter_type=cylindrical != MagickFalse ? JincFilter :
-                SincFastFilter;
+              filter_type=cylindrical != MagickFalse ?
+                         JincFilter : SincFastFilter;
               window_type=(FilterTypes) option;
             }
         }
     }
   /* Assign the real functions to use for the filters selected. */
   resize_filter->filter=filters[filter_type].function;
-  resize_filter->support=filters[filter_type].support;
+  resize_filter->support=filters[filter_type].lobes;
   resize_filter->window=filters[window_type].function;
   resize_filter->scale=filters[window_type].scale;
   resize_filter->signature=MagickSignature;
+
   /* Filter blur -- scaling both filter and support window.  */
   resize_filter->blur=blur;
   artifact=GetImageArtifact(image,"filter:blur");
@@ -872,9 +891,77 @@ MagickExport ResizeFilter *AcquireResizeFilter(const Image *image,
         resize_filter->blur *= MagickSQ2;
         resize_filter->support = (MagickRealType) MagickSQ2; /* which times blur => 2.0 */
         break;
+      case RobidouxFilter:
+        /* Special 2-lobed cylindrical Jinc-Jinc filter created by Nicolas
+         * Robidoux, Professor of Mathematics, Laurentian University.
+         *
+         * It is a "blur" (negative blur actually) adjusted 2-lobed
+         * Jinc-windowed-Jinc Cylindrical (radial) filter, designed to
+         * preserve straight vertical and horizontal features.
+         *
+         * Given the "Lanczos2D" filter defined by Andreas Gustafsson in his
+         * "Interactive Image Warping" (page 24)
+         *        http://www.gson.org/thesis/warping-thesis.pdf
+         *
+         *   Lanczos2D(x) = Jinc(x)*Jinc(x*r1/r2) with support r2
+         *
+         * (where r1 is the first root of the Jinc function, and r2 is the
+         * second), rescale the filter by a value 's'.
+         *
+         *    Robidoux(x) = Lanczos2D(s*x) with support r2/s
+         *
+         * the value 's' is chossen so that images which are constant in the
+         * vertical direction, and images which are constant in the horizontal
+         * direction, are almost unchanged (the change being generically as
+         * small as possible) when the geometrical transformation applied to
+         * the image is the identity (a.k.a. "no-op" or no scaling ).
+         *
+         * As such this formula needs to hold true
+         *
+         *   Lanczos2D(s)=-2*Lanczos2D(s*sqrt(2))-Lanczos2D(s*2).
+         *
+         * This value of s ensures that the value of a one-pixel-wide vertical
+         * line (equal to 1, say, on a black=0 background) is exactly
+         * preserved when no-op is applied to the image.  It also ensures
+         * that, in the no-op case, the nearest two columns on either side are
+         * minimally changed (the farther columns are unchanged no matter
+         * what).  Specifically, the nearest columns on the left and the right
+         * have values raised from zero to c, and the second closest columns
+         * on the left and right are lowered from 0 to minus c.  That is, the
+         * very closest columns are made slightly positive, and the second
+         * closest are made slightly negative, in equal amounts.  The size c
+         * of this blur/halo is .002042317.  Consequently, image values
+         * between 0 and M which are constant on columns (or rows) are
+         * preserved by no-op to within 2Mc (less than one half of one percent
+         * of the dynamic range).
+         *
+         * Note that "high frequency modes" which are not aligned with image
+         * rows or columns are damped considerably. For example, the amplitude
+         * of the very highest energy mode, the so-called "checkerboard" mode,
+         * is reduced by almost 62% (still less than with "standard" Lanczos2D
+         * or with a comparable Gaussian kernel).
+         *
+         * This "optimal" scaling was discovered by Nicolas Robidoux of
+         * Laurentian University.
+         *
+         * Below, resize_filter->blur is 1/s.
+         */
+        resize_filter->blur *= (MagickRealType) 0.958033808;
       default:
         break;
     }
+  else
+    switch (filter_type)
+    {
+      case Lanczos2DFilter:
+      case RobidouxFilter:
+        /* Demote to a 2-lobe Lanczos (Sinc-Sinc) for orthogonal use. */
+        resize_filter->filter=SincFast;
+        break;
+      default:
+        break;
+    }
+
   /* Filter support overrides. */
   artifact=GetImageArtifact(image,"filter:lobes");
   if (artifact != (const char *) NULL)
@@ -886,13 +973,16 @@ MagickExport ResizeFilter *AcquireResizeFilter(const Image *image,
       if (lobes < 1)
         lobes=1;
       resize_filter->support=(MagickRealType) lobes;
-      if (filter_type == JincFilter)
-        {
-          if (lobes > 16)
-            lobes=16;
-          resize_filter->support = jinc_zeros[lobes-1];
-        }
     }
+  /* convert Jinc lobes to a real support value */
+  if (resize_filter->filter == Jinc)
+    {
+      if (resize_filter->support > 16)
+        resize_filter->support=jinc_zeros[15];  /* largest entry in table */
+      else
+        resize_filter->support = jinc_zeros[((long)resize_filter->support)-1];
+    }
+  /* expert override of the support setting */
   artifact=GetImageArtifact(image,"filter:support");
   if (artifact != (const char *) NULL)
     resize_filter->support=fabs(StringToDouble(artifact));
@@ -959,7 +1049,8 @@ MagickExport ResizeFilter *AcquireResizeFilter(const Image *image,
     Expert Option Request for verbose details of the resulting filter.
   */
 #if defined(MAGICKCORE_OPENMP_SUPPORT)
-  /* if( GetOpenMPThreadId() == 0 ) { */
+  #pragma omp single
+  {
 #endif
     artifact=GetImageArtifact(image,"filter:verbose");
     if (artifact != (const char *) NULL)
@@ -978,12 +1069,13 @@ MagickExport ResizeFilter *AcquireResizeFilter(const Image *image,
         if (resize_filter->filter == Box)       filter_type=BoxFilter;
         if (resize_filter->filter == Sinc)      filter_type=SincFilter;
         if (resize_filter->filter == SincFast)  filter_type=SincFastFilter;
+        if (resize_filter->filter == Jinc)      filter_type=JincFilter;
         if (resize_filter->filter == CubicBC)   filter_type=CubicFilter;
         /*
           Report Filter Details.
         */
         support=GetResizeFilterSupport(resize_filter); /* support range */
-        (void) fprintf(stdout,"#\n# Resize Filter (for graphing)\n#\n");
+        (void) fprintf(stdout,"# Resize Filter (for graphing)\n#\n");
         (void) fprintf(stdout,"# filter = %s\n",MagickOptionToMnemonic(
            MagickFilterOptions,filter_type));
         (void) fprintf(stdout,"# window = %s\n",MagickOptionToMnemonic(
@@ -998,7 +1090,7 @@ MagickExport ResizeFilter *AcquireResizeFilter(const Image *image,
            (double) support);
         (void) fprintf(stdout,"# B,C = %.*g,%.*g\n",GetMagickPrecision(),
            (double) B,GetMagickPrecision(),(double) C);
-        (void) fprintf(stdout,"#\n");
+        (void) fprintf(stdout,"\n");
         /*
           Output values of resulting filter graph -- for graphing
           filter result.
@@ -1010,8 +1102,10 @@ MagickExport ResizeFilter *AcquireResizeFilter(const Image *image,
         (void) fprintf(stdout,"%5.2lf\t%.*g\n",support,GetMagickPrecision(),
           0.0);
       }
+      /* output the above once only for each image, and each setting */
+      (void) DeleteImageArtifact((Image *) image,"filter:verbose");
 #if defined(MAGICKCORE_OPENMP_SUPPORT)
-    /* } */
+    }
 #endif
   return(resize_filter);
 }

@@ -67,6 +67,7 @@
 #include "magick/property.h"
 #include "magick/quantize.h"
 #include "magick/quantum.h"
+#include "magick/resample.h"
 #include "magick/resource_.h"
 #include "magick/splay-tree.h"
 #include "magick/statistic.h"
@@ -934,7 +935,6 @@ static const OptionInfo
   {
     { "Undefined", (ssize_t) UndefinedFilter, MagickTrue },
     { "Bartlett", (ssize_t) BartlettFilter, MagickFalse },
-    { "Bessel", (ssize_t) JincFilter, MagickTrue }, /* backward compat name */
     { "Blackman", (ssize_t) BlackmanFilter, MagickFalse },
     { "Bohman", (ssize_t) BohmanFilter, MagickFalse },
     { "Box", (ssize_t) BoxFilter, MagickFalse },
@@ -948,14 +948,19 @@ static const OptionInfo
     { "Kaiser", (ssize_t) KaiserFilter, MagickFalse },
     { "Lagrange", (ssize_t) LagrangeFilter, MagickFalse },
     { "Lanczos", (ssize_t) LanczosFilter, MagickFalse },
+    { "Lanczos2D", (ssize_t) Lanczos2DFilter, MagickTrue },
     { "Mitchell", (ssize_t) MitchellFilter, MagickFalse },
     { "Parzen", (ssize_t) ParzenFilter, MagickFalse },
     { "Point", (ssize_t) PointFilter, MagickFalse },
     { "Quadratic", (ssize_t) QuadraticFilter, MagickFalse },
+    { "Robidoux", (ssize_t) RobidouxFilter, MagickTrue },
     { "Sinc", (ssize_t) SincFilter, MagickFalse },
     { "SincFast", (ssize_t) SincFastFilter, MagickFalse },
     { "Triangle", (ssize_t) TriangleFilter, MagickFalse },
+    { "Tent", (ssize_t) TriangleFilter, MagickFalse },
     { "Welsh", (ssize_t) WelshFilter, MagickFalse },
+    /* For backward compatibility - set after "Jinc" */
+    { "Bessel", (ssize_t) JincFilter, MagickTrue },
     { (char *) NULL, (ssize_t) UndefinedFilter, MagickFalse }
   },
   FunctionOptions[] =
@@ -2011,11 +2016,11 @@ MagickExport MagickBooleanType ListMagickOptions(FILE *file,
 */
 MagickExport ssize_t ParseChannelOption(const char *channels)
 {
-  ssize_t
-    channel;
-
   register ssize_t
     i;
+
+  ssize_t
+    channel;
 
   channel=ParseMagickOption(MagickChannelOptions,MagickTrue,channels);
   if (channel >= 0)
@@ -2087,17 +2092,16 @@ MagickExport ssize_t ParseChannelOption(const char *channels)
       }
       case ',':
       {
-        /*
-          More channel flags follow shorthand.  For example "RGB,sync"
-          Gather the additional channel flags and merge with shorthand
-        */
         ssize_t
-          more_channel;
-        more_channel=ParseMagickOption(MagickChannelOptions,MagickTrue,
-                             channels+i+1);
-        if (more_channel < 0)
-          return(more_channel);
-        channel |= more_channel;
+          type;
+
+        /*
+          Gather the additional channel flags and merge with shorthand.
+        */
+        type=ParseMagickOption(MagickChannelOptions,MagickTrue,channels+i+1);
+        if (type < 0)
+          return(type);
+        channel|=type;
         return(channel);
       }
       default:
@@ -2147,9 +2151,6 @@ MagickExport ssize_t ParseMagickOption(const MagickOption option,
   int
     sentinel;
 
-  ssize_t
-    option_types;
-
   MagickBooleanType
     negate;
 
@@ -2161,6 +2162,9 @@ MagickExport ssize_t ParseMagickOption(const MagickOption option,
 
   register ssize_t
     i;
+
+  ssize_t
+    option_types;
 
   option_info=GetOptionInfo(option);
   if (option_info == (const OptionInfo *) NULL)

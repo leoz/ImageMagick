@@ -214,8 +214,10 @@ MagickExport ResampleFilter *AcquireResampleFilter(const Image *image,
   /* initialise the resampling filter settings */
   SetResampleFilter(resample_filter, resample_filter->image->filter,
     resample_filter->image->blur);
-  resample_filter->interpolate = resample_filter->image->interpolate;
-  resample_filter->virtual_pixel=GetImageVirtualPixelMethod(image);
+  SetResampleFilterInterpolateMethod(resample_filter,
+    resample_filter->image->interpolate);
+  SetResampleFilterVirtualPixelMethod(resample_filter,
+    GetImageVirtualPixelMethod(image));
 
   return(resample_filter);
 }
@@ -1055,14 +1057,14 @@ MagickExport MagickBooleanType ResamplePixelColor(
                       weight*resample_filter->image->background_color.green;
               resample_filter->average_pixel.blue +=
                       weight*resample_filter->image->background_color.blue;
-              resample_filter->average_pixel.matte +=
+              resample_filter->average_pixel.opacity +=
                       resample_filter->image->background_color.opacity;
               divisor_c += weight;
 
               resample_filter->average_pixel.red /= divisor_c;
               resample_filter->average_pixel.green /= divisor_c;
               resample_filter->average_pixel.blue /= divisor_c;
-              resample_filter->average_pixel.matte /= 2;
+              resample_filter->average_pixel.opacity /= 2;
 
             }
         }
@@ -1582,8 +1584,8 @@ MagickExport void ScaleResampleFilter(ResampleFilter *resample_filter,
 
   ClampUpAxes(dux,dvx,duy,dvy, &major_mag, &minor_mag,
                 &major_x, &major_y, &minor_x, &minor_y);
-  major_x *= major_mag;  major_y *= major_mag; 
-  minor_x *= minor_mag;  minor_y *= minor_mag; 
+  major_x *= major_mag;  major_y *= major_mag;
+  minor_x *= minor_mag;  minor_y *= minor_mag;
 #if DEBUG_ELLIPSE
   fprintf(stderr, "major_x=%lf; major_y=%lf;  minor_x=%lf; minor_y=%lf;\n",
         major_x, major_y, minor_x, minor_y);
@@ -1613,7 +1615,7 @@ MagickExport void ScaleResampleFilter(ResampleFilter *resample_filter,
     being used.
 
     NOTE: This method produces a very blury result at near unity scale while
-    producing perfect results for string minitification and magnifications.
+    producing perfect results for strong minitification and magnifications.
 
     However filter support is fixed to 2.0 (no good for Windowed Sinc filters)
   */
@@ -1766,12 +1768,13 @@ MagickExport void SetResampleFilter(ResampleFilter *resample_filter,
       return;  /* EWA turned off - nothing more to do */
     }
 
+  /* Set a default cylindrical filter of a 'low blur' Jinc windowed Jinc */
   if ( filter == UndefinedFilter )
-    resample_filter->filter = MitchellFilter;  /* a far less blurry filter */
+    resample_filter->filter = RobidouxFilter;
 
   resize_filter = AcquireResizeFilter(resample_filter->image,
        resample_filter->filter,blur,MagickTrue,resample_filter->exception);
-  if (resize_filter == (ResizeFilter *) NULL) 
+  if (resize_filter == (ResizeFilter *) NULL)
     {
       (void) ThrowMagickException(resample_filter->exception,GetMagickModule(),
            ModuleError, "UnableToSetFilteringValue",
@@ -1829,7 +1832,8 @@ MagickExport void SetResampleFilter(ResampleFilter *resample_filter,
 #endif
 
 #if defined(MAGICKCORE_OPENMP_SUPPORT)
-  /* if( GetOpenMPThreadId() == 0 ) */
+  #pragma omp single
+  {
 #endif
     if (GetImageArtifact(resample_filter->image,"resample:verbose")
           != (const char *) NULL)
@@ -1844,12 +1848,17 @@ MagickExport void SetResampleFilter(ResampleFilter *resample_filter,
         printf("#\n");
         printf("# Note: values in table are using a squared radius lookup.\n");
         printf("# And the whole table represents the filters support.\n");
-        printf("#\n");
+        printf("\n"); /* generates a 'break' in gnuplot if multiple outputs */
         for(Q=0; Q<WLUT_WIDTH; Q++)
           printf("%8.*g %.*g\n",
                GetMagickPrecision(),sqrt((double)Q)*r_scale,
                GetMagickPrecision(),resample_filter->filter_lut[Q] );
       }
+    /* output the above once only for each image, and each setting */
+    (void) DeleteImageArtifact(resample_filter->image,"resample:verbose");
+#if defined(MAGICKCORE_OPENMP_SUPPORT)
+  }
+#endif
   return;
 }
 

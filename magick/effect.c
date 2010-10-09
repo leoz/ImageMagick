@@ -1861,7 +1861,7 @@ MagickExport Image *DespeckleImage(const Image *image,ExceptionInfo *exception)
   image_view=AcquireCacheView(image);
   despeckle_view=AcquireCacheView(despeckle_image);
 #if defined(MAGICKCORE_OPENMP_SUPPORT)
-  #pragma omp parallel for schedule(dynamic,4) shared(status)
+  #pragma omp parallel for schedule(dynamic,1) shared(status)
 #endif
   for (channel=0; channel <= 3; channel++)
   {
@@ -2658,7 +2658,7 @@ static MedianPixelList *AcquireMedianPixelList(const size_t width)
   register ssize_t
     i;
 
-  pixel_list=(MedianPixelList *) AcquireQuantumMemory(1,sizeof(*pixel_list));
+  pixel_list=(MedianPixelList *) AcquireMagickMemory(sizeof(*pixel_list));
   if (pixel_list == (MedianPixelList *) NULL)
     return(pixel_list);
   (void) ResetMagickMemory((void *) pixel_list,0,sizeof(*pixel_list));

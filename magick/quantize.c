@@ -366,7 +366,7 @@ MagickExport QuantizeInfo *AcquireQuantizeInfo(const ImageInfo *image_info)
   QuantizeInfo
     *quantize_info;
 
-  quantize_info=(QuantizeInfo *) AcquireQuantumMemory(1,sizeof(*quantize_info));
+  quantize_info=(QuantizeInfo *) AcquireMagickMemory(sizeof(*quantize_info));
   if (quantize_info == (QuantizeInfo *) NULL)
     ThrowFatalException(ResourceLimitFatalError,"MemoryAllocationFailed");
   GetQuantizeInfo(quantize_info);
@@ -790,7 +790,7 @@ static MagickBooleanType ClassifyImageColors(CubeInfo *cube_info,
       /*
         Start at the root and descend the color cube tree.
       */
-      for (count=1; (x+count) < (ssize_t) image->columns; count++)
+      for (count=1; (x+(ssize_t) count) < (ssize_t) image->columns; count++)
         if (IsSameColor(image,p,p+count) == MagickFalse)
           break;
       AssociateAlphaPixel(cube_info,p,&pixel);
@@ -879,7 +879,7 @@ static MagickBooleanType ClassifyImageColors(CubeInfo *cube_info,
       /*
         Start at the root and descend the color cube tree.
       */
-      for (count=1; (x+count) < (ssize_t) image->columns; count++)
+      for (count=1; (x+(ssize_t) count) < (ssize_t) image->columns; count++)
         if (IsSameColor(image,p,p+count) == MagickFalse)
           break;
       AssociateAlphaPixel(cube_info,p,&pixel);
@@ -977,7 +977,7 @@ MagickExport QuantizeInfo *CloneQuantizeInfo(const QuantizeInfo *quantize_info)
   QuantizeInfo
     *clone_info;
 
-  clone_info=(QuantizeInfo *) AcquireQuantumMemory(1,sizeof(*clone_info));
+  clone_info=(QuantizeInfo *) AcquireMagickMemory(sizeof(*clone_info));
   if (clone_info == (QuantizeInfo *) NULL)
     ThrowFatalException(ResourceLimitFatalError,"MemoryAllocationFailed");
   GetQuantizeInfo(clone_info);
@@ -1861,7 +1861,7 @@ static CubeInfo *GetCubeInfo(const QuantizeInfo *quantize_info,
   /*
     Initialize tree to describe color cube_info.
   */
-  cube_info=(CubeInfo *) AcquireQuantumMemory(1,sizeof(*cube_info));
+  cube_info=(CubeInfo *) AcquireMagickMemory(sizeof(*cube_info));
   if (cube_info == (CubeInfo *) NULL)
     return((CubeInfo *) NULL);
   (void) ResetMagickMemory(cube_info,0,sizeof(*cube_info));
@@ -1961,7 +1961,7 @@ static NodeInfo *GetNodeInfo(CubeInfo *cube_info,const size_t id,
       /*
         Allocate a new queue of nodes.
       */
-      nodes=(Nodes *) AcquireQuantumMemory(1,sizeof(*nodes));
+      nodes=(Nodes *) AcquireMagickMemory(sizeof(*nodes));
       if (nodes == (Nodes *) NULL)
         return((NodeInfo *) NULL);
       nodes->nodes=(NodeInfo *) AcquireQuantumMemory(NodesInAList,

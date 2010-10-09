@@ -578,6 +578,27 @@ static const unsigned char
   };
 
 /*
+  Horizontal-2 pattern.
+*/
+static const unsigned char
+  Horizontal2Image[] =
+  {
+    0x50, 0x34, 0x0A, 0x38, 0x20, 0x38, 0x0A, 0xFF, 0x00, 0xFF, 0x00, 0xFF, 
+    0x00, 0xFF, 0x00
+  };
+
+/*
+  Horizontal-3 pattern.
+*/
+static const unsigned char
+  Horizontal3Image[] =
+  {
+    0x50, 0x34, 0x0A, 0x39, 0x20, 0x39, 0x0A, 0x00, 0x00, 0x00, 0x00, 0xFF, 
+    0x80, 0x00, 0x00, 0x00, 0x00, 0xFF, 0x80, 0x00, 0x00, 0x00, 0x00, 0xFF, 
+    0x80, 
+  };
+
+/*
   HorizontalSaw pattern.
 */
 static const unsigned char
@@ -748,6 +769,27 @@ static const unsigned char
   };
 
 /*
+  Vertical-2 pattern.
+*/
+static const unsigned char
+  Vertical2Image[] =
+  {
+    0x50, 0x34, 0x0A, 0x38, 0x20, 0x38, 0x0A, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 
+    0xAA, 0xAA, 0xAA
+  };
+
+/*
+  Vertical-2 pattern.
+*/
+static const unsigned char
+  Vertical3Image[] =
+  {
+    0x50, 0x34, 0x0A, 0x39, 0x20, 0x39, 0x0A, 0x24, 0x80, 0x24, 0x80, 0x24, 
+    0x80, 0x24, 0x80, 0x24, 0x80, 0x24, 0x80, 0x24, 0x80, 0x24, 0x80, 0x24, 
+    0x80
+  };
+
+/*
   VerticalBricks pattern.
 */
 static const unsigned char
@@ -845,6 +887,8 @@ static const PatternInfo
     { "GRAY100", "PBM", Gray100Image, sizeof(Gray100Image) },
     { "HEXAGONS", "PBM", HexagonsImage, sizeof(HexagonsImage) },
     { "HORIZONTAL", "PBM", HorizontalImage, sizeof(HorizontalImage) },
+    { "HORIZONTAL2", "PBM", Horizontal2Image, sizeof(Horizontal2Image) },
+    { "HORIZONTAL3", "PBM", Horizontal3Image, sizeof(Horizontal3Image) },
     { "HORIZONTALSAW", "PBM", HorizontalSawImage, sizeof(HorizontalSawImage) },
     { "HS_BDIAGONAL", "PBM", HS_BDIAGONALImage, sizeof(HS_BDIAGONALImage) },
     { "HS_CROSS", "PBM", HS_CROSSImage, sizeof(HS_CROSSImage) },
@@ -862,6 +906,8 @@ static const PatternInfo
     { "SMALLFISHSCALES", "PBM", SmallFishScalesImage,
       sizeof(SmallFishScalesImage) },
     { "VERTICAL", "PBM", VerticalImage, sizeof(VerticalImage) },
+    { "VERTICAL2", "PBM", Vertical2Image, sizeof(Vertical2Image) },
+    { "VERTICAL3", "PBM", Vertical3Image, sizeof(Vertical3Image) },
     { "VERTICALBRICKS", "PBM", VerticalBricksImage,
       sizeof(VerticalBricksImage) },
     { "VERTICALLEFTSHINGLE", "PBM", VerticalLeftShingleImage,
