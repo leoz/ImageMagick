@@ -33,7 +33,6 @@ Magick::Pixels::Pixels( Magick::Image &image_ )
 
   if (!_view)
     _image.throwImageException();
-  (void) DestroyExceptionInfo( &_exception );
 }
 
 // Destroy pixel view
@@ -42,6 +41,7 @@ Magick::Pixels::~Pixels( void )
   if ( _view )
     _view = DestroyCacheView( _view );
   
+  (void) DestroyExceptionInfo( &_exception );
 }
 
 // Transfer pixels from the image to the pixel view as defined by
@@ -60,7 +60,7 @@ Magick::PixelPacket* Magick::Pixels::get ( const ssize_t x_,
   PixelPacket* pixels = GetCacheViewAuthenticPixels( _view, x_, y_, columns_, rows_,  &_exception);
 
   if ( !pixels )
-    throwException( *GetCacheViewException(_view) );
+    throwException( _exception );
   
   return pixels;
 }

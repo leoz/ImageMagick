@@ -229,8 +229,9 @@ MagickExport ResampleFilter *AcquireResampleFilter(const Image *image,
 
   /* initialise the resampling filter settings */
   SetResampleFilter(resample_filter, image->filter, image->blur);
-  SetResampleFilterInterpolateMethod(resample_filter, image->interpolate);
-  SetResampleFilterVirtualPixelMethod(resample_filter,
+  (void) SetResampleFilterInterpolateMethod(resample_filter,
+    image->interpolate);
+  (void) SetResampleFilterVirtualPixelMethod(resample_filter,
     GetImageVirtualPixelMethod(image));
 
   return(resample_filter);
@@ -1027,13 +1028,13 @@ MagickExport MagickBooleanType ResamplePixelColor(
           CacheView
             *average_view;
 
-          GetMagickPixelPacket(resample_filter->image,
-                (MagickPixelPacket *)&(resample_filter->average_pixel));
-          resample_filter->average_defined = MagickTrue;
+          GetMagickPixelPacket(resample_filter->image,(MagickPixelPacket *)
+            &resample_filter->average_pixel);
+          resample_filter->average_defined=MagickTrue;
 
           /* Try to get an averaged pixel color of whole image */
           average_image=ResizeImage(resample_filter->image,1,1,BoxFilter,1.0,
-           resample_filter->exception);
+            resample_filter->exception);
           if (average_image == (Image *) NULL)
             {
               *pixel=resample_filter->average_pixel; /* FAILED */

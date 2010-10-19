@@ -127,7 +127,7 @@
 
 <div class="sponsbox">
 <div  class="sponsor">
-   <a title="Sponsor: Atlas Multimedia" href="http://www.atlas-multimedia.de/">Atlas Multimedia</a><!-- 20101201000025 tanju.temurbas-->
+   <a title="Sponsor: Free Catalogs" href="http://www.who-sells-it.com/">Free Catalogs</a><!-- 20120801000600 -->
 </div>
 <div  class="sponsor">
   <a title="Sponsor: Druckerei" href="http://print24.com/de/">Druckerei</a><!-- 201110010720 -->
@@ -257,7 +257,7 @@
 
 <p>When the pixel cache is initialized, pixels are scaled from whatever bit depth they originated from to that required by the pixel cache.  For example, a 1-channel 1-bit monochrome PBM image is scaled to a 4 channel 8-bit RGBA image, if you are using the Q8 version of ImageMagick, and 16-bit RGBA for the Q16 version.  You can determine which version you have with the <a href="../www/command-line-options.html#version">&#x2011;version</a> option: </p>
 
-<p class='crt'><span class="crtprompt"> $magick&gt; </span><span class='crtin'>identify -version</span><span class='crtout'>Version: ImageMagick 6.6.4-10 2010-09-21 Q16 http://www.imagemagick.org</span></p>
+<p class='crt'><span class="crtprompt"> $magick&gt; </span><span class='crtin'>identify -version</span><span class='crtout'>Version: ImageMagick 6.6.5-0 2010-09-21 Q16 http://www.imagemagick.org</span></p>
 <p>As you can see, the convenience of the pixel cache sometimes comes with a trade-off in storage (e.g. storing a 1-bit monochrome image as 16-bit RGBA is wasteful) and speed (i.e. storing the entire image in memory is generally slower than accessing one scanline of pixels at a time).  In most cases, the benefits of the pixel cache typically outweigh any disadvantages.</p>
 </div>
 
@@ -430,6 +430,7 @@
 <div class="doc-section">
 
 <p>Recall that each image format is decoded by ImageMagick and the pixels are deposited in the pixel cache.  If you write an image, the pixels are read from the pixel cache and encoded as required by the format you are writing (e.g. GIF, PNG, etc.).  The Magick Persistent Cache (MPC) format is designed to eliminate the overhead of decoding and encoding pixels to and from an image format.  MPC writes two files.  One, with the extension <kbd>.mpc</kbd>, retains all the properties associated with the image or image sequence (e.g. width, height, colorspace, etc.) and the second, with the extension <kbd>.cache</kbd>, is the pixel cache in the native raw format.  When reading an MPC image file, ImageMagick reads the image properties and memory maps the pixel cache on disk eliminating the need for decoding the image pixels.  The tradeoff is in disk space.  MPC is generally larger in file size than most other image formats.</p>
+<p>The most efficient use of MPC image files is a write-once, read-many-times pattern.  For example, your workflow requires extracting random blocks of pixels from the source image.  Rather than re-reading and possibly decompressing the source image each time, we use MPC and map the image directly to memory.</p>
 </div>
 
 <h3>Best Practices</h3>
