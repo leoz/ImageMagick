@@ -144,6 +144,7 @@ struct _FxInfo
 %  The format of the AcquireFxInfo method is:
 %
 %      FxInfo *AcquireFxInfo(Image *image,const char *expression)
+%
 %  A description of each parameter follows:
 %
 %    o image: the image.
@@ -214,6 +215,10 @@ MagickExport FxInfo *AcquireFxInfo(const Image *image,const char *expression)
       (void) SubstituteString(&fx_info->expression,"8e-","8**10^-");
       (void) SubstituteString(&fx_info->expression,"9e-","9**10^-");
     }
+  /*
+    Force right-to-left associativity for unary negation.
+  */
+  (void) SubstituteString(&fx_info->expression,"-","-1.0*");
   /*
     Convert complex to simple operators.
   */
