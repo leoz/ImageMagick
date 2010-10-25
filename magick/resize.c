@@ -85,7 +85,7 @@ struct _ResizeFilter
     window_support, /* window support, usally equal to support (expert only) */
     scale,          /* dimension scaling to fit window support (usally 1.0) */
     blur,           /* x-scale (blur-sharpen) */
-    coeff[8];       /* cubic coefficents for smooth Cubic filters */
+    coeff[7];       /* cubic coefficents for BC-cubic spline filters */
 
   size_t
     signature;
@@ -195,10 +195,10 @@ static MagickRealType CubicBC(const MagickRealType x,
 {
   /*
     Cubic Filters using B,C determined values:
-       Mitchell-Netravali  B=1/3 C=1/3   Qualitively ideal Cubic Filter
-       Catmull-Rom         B= 0  C=1/2   Cublic Interpolation Function
-       Cubic B-Spline      B= 1  C= 0    Spline Approximation of Gaussian
-       Hermite             B= 0  C= 0    Quadratic Spline (support = 1)
+       Mitchell-Netravali  B= 1/3 C= 1/3  "Balanced" cubic spline filter
+       Catmull-Rom         B= 0   C= 1/2  Interpolatory and exact on linears
+       Cubic B-Spline      B= 1   C= 0    Spline approximation of Gaussian
+       Hermite             B= 0   C= 0    Spline with small support (= 1)
 
     See paper by Mitchell and Netravali, Reconstruction Filters in Computer
     Graphics Computer Graphics, Volume 22, Number 4, August 1988
@@ -206,28 +206,29 @@ static MagickRealType CubicBC(const MagickRealType x,
     Mitchell.pdf.
 
     Coefficents are determined from B,C values:
-       P0 = (  6 - 2*B       )/6
+       P0 = (  6 - 2*B       )/6 = coeff[0]
        P1 =         0
-       P2 = (-18 +12*B + 6*C )/6
-       P3 = ( 12 - 9*B - 6*C )/6
-       Q0 = (      8*B +24*C )/6
-       Q1 = (    -12*B -48*C )/6
-       Q2 = (      6*B +30*C )/6
-       Q3 = (    - 1*B - 6*C )/6
+       P2 = (-18 +12*B + 6*C )/6 = coeff[1]
+       P3 = ( 12 - 9*B - 6*C )/6 = coeff[2]
+       Q0 = (      8*B +24*C )/6 = coeff[3]
+       Q1 = (    -12*B -48*C )/6 = coeff[4]
+       Q2 = (      6*B +30*C )/6 = coeff[5]
+       Q3 = (    - 1*B - 6*C )/6 = coeff[6]
 
     which are used to define the filter:
 
        P0 + P1*x + P2*x^2 + P3*x^3      0 <= x < 1
-       Q0 + Q1*x + Q2*x^2 + Q3*x^3      1 <= x <= 2
+       Q0 + Q1*x + Q2*x^2 + Q3*x^3      1 <= x < 2
 
-    which ensures function is continuous in value and derivative (slope).
+    which ensures function is continuous in value and derivative
+    (slope).
   */
   if (x < 1.0)
-    return(resize_filter->coeff[0]+x*(resize_filter->coeff[1]+x*
-      (resize_filter->coeff[2]+x*resize_filter->coeff[3])));
+    return(resize_filter->coeff[0]+x*(x*
+      (resize_filter->coeff[1]+x*resize_filter->coeff[2])));
   if (x < 2.0)
-    return(resize_filter->coeff[4]+x*(resize_filter->coeff[5]+x*
-      (resize_filter->coeff[6]+x*resize_filter->coeff[7])));
+    return(resize_filter->coeff[3]+x*(resize_filter->coeff[4]+x*
+      (resize_filter->coeff[5]+x*resize_filter->coeff[6])));
   return(0.0);
 }
 
@@ -241,13 +242,14 @@ static MagickRealType Gaussian(const MagickRealType x,
         exp( -(x^2)/((2.0*sigma^2) ) / sqrt(2*PI*sigma^2)))
     The constants are pre-calculated...
         exp( -coeff[0]*(x^2)) ) * coeff[1]
-    However the multiplier coefficent is not needed and not used.
+    However the multiplier coefficent (1) is not needed and not used.
 
     This separates the gaussian 'sigma' value from the 'blur/support' settings
-    allows for its use in special 'small sigma' gaussians, without the filter
-    'missing' pixels when blur and thus support becomes too small.
+    allowing for its use in special 'small sigma' gaussians, without the filter
+    'missing' pixels when blurring because the support is too small.
   */
-  return(exp((double)(-resize_filter->coeff[0]*x*x))); }
+  return(exp((double)(-resize_filter->coeff[0]*x*x)));
+}
 
 static MagickRealType Hanning(const MagickRealType x,
   const ResizeFilter *magick_unused(resize_filter))
@@ -455,7 +457,8 @@ static MagickRealType Triangle(const MagickRealType x,
 {
   /*
     1st order (linear) B-Spline, bilinear interpolation, Tent 1D
-    filter, or a Bartlett 2D Cone filter.
+    filter, or a Bartlett 2D Cone filter.  Also used as a
+    Bartlett Windowing function for Sinc().
   */
   if (x < 1.0)
     return(1.0-x);
@@ -500,7 +503,7 @@ static MagickRealType Welsh(const MagickRealType x,
 %      Kaiser       Lanczos
 %
 %  Special purpose Filters
-%      SincFast  Lanczos2D  Robidoux
+%      SincFast  LanczosSharp  Lanczos2D Lanczos2DSharp  Robidoux
 %
 %  The users "-filter" selection is used to lookup the default 'expert'
 %  settings for that filter from a internal table.  However any provided
@@ -526,6 +529,18 @@ static MagickRealType Welsh(const MagickRealType x,
 %  the cylindrical case) but defaulting to 3-lobe support, rather that
 %  the default 4 lobe support of the other windowed sinc/jinc filters.
 %
+%  LanczosSharp is a slightly sharpened (blur=0.9830391168464) form of
+%  the Lanczos filter.  It was designed specifically for cylindrical
+%  (radial) EWA (Elliptical Weighted Average) distortion (using a Jinc
+%  windowed Jinc); it can also be used as a slightly sharper
+%  orthogonal Lanczos (Sinc-Sinc) filter. With the chosen blur value,
+%  the corresponding EWA filter comes as close as possible to
+%  satisfying the following condition:
+%
+%    'No-Op' Vertical and Horizontal Line Preservation Condition:
+%    Images with only vertical or horizontal features are preserved
+%    when performing 'no-op" with EWA distortion.
+%
 %  Two forms of the 'Sinc' function are available: Sinc and SincFast.
 %  Sinc is computed using the traditional sin(pi*x)/(pi*x); it is
 %  selected if the user specifically specifies the use of a Sinc
@@ -533,30 +548,31 @@ static MagickRealType Welsh(const MagickRealType x,
 %  and rational (high Q) approximations, and will be used by default in
 %  most cases.
 %
-%  The Lanczos2D and Robidoux filters are tuned for cylindrical
-%  (radial) EWA (Elliptical Weighted Average) distortion.  Lanczos2D
-%  is a 2 lobe Lanczos-like filter using Jinc (for EWA) or Sinc.
-%  Robidoux used to be a sharpened version of Lanczos2D (with
-%  blur=0.958033808). Now, Robidoux is the unique Keys cubic spline
-%  filter satisfying the following condition:
+%  The Lanczos2D and Lanczos2DSharp filters are for EWA distorts.
+%  They are both 2-lobe Lanczos-like filters but always use a
+%  Jinc-Jinc filter function regardless of whether or not they are
+%  used as orthogonal filters.  The 'sharp' version uses
+%  blur=0.958033808, chosen because the resulting EWA filter comes as
+%  close as possible to satisfing the "'No-Op' Vertical and Horizontal
+%  Line Preservation Condition".
 %
-%    Robidoux exactly preserves images with only vertical or
-%    horizontal features when performing 'no-op" with EWA distortion.
-%
-%  That is, Robidoux is the BC-Spline with B=(228 - 108 sqrt(2))/199
-%  and C=(108 sqrt(2) - 29)/398.  Robidoux turns out to be close to
-%  both plain Mitchell and "sharpened" Lanczos2D. For example, it's
-%  first crossing is (36 sqrt(2) + 123)/(72 sqrt(2) + 47) which is
-%  almost identical to the first crossing of the other two.
+%  Robidoux is another filter tuned for EWA. It is the Keys cubic
+%  spline defined by B=(228 - 108 sqrt(2))/199. Robidoux satisfies the
+%  "'No-Op' Vertical and Horizontal Line Preservation Condition"
+%  exactly.  It turns out to be close to both plain Mitchell and
+%  "sharpened" Lanczos2D; for example, its first crossing is (36
+%  sqrt(2) + 123)/(72 sqrt(2) + 47) which is almost identical to the
+%  first crossing of the other two.
 %
 %  'EXPERT' OPTIONS:
 %
-%  (Not recommended without expert knowledge of resampling and
-%  filtering.)
+%  These settings are not recommended for production use without expert
+%  knowledge of resampling, filtering, and the effects they have on the
+%  resulting resampled (resize ro distorted) image.
 %
-%  You can override any and all filter settings.  Use "filter:verbose"
-%  to make sure that the overall effect of your selections is as
-%  expected.
+%  You can override any and all filter settings, and it is recommended
+%  you make good use of "filter:verbose" to make sure that the overall
+%  effect of your selection (before and after) is as expected.
 %
 %    "filter:verbose" Output the exact results of the filter
 %         selections made, as well as plotting data for graphing the
@@ -614,7 +630,7 @@ static MagickRealType Welsh(const MagickRealType x,
 %         'Keys' type of filter such that B+2C=1, where Keys 'alpha'
 %         value = C
 %
-%  Examples: 
+%  Examples:
 %
 %  Set a true un-windowed Sinc filter with 10 lobes (very slow):
 %     -define filter:filter=Sinc
@@ -623,6 +639,7 @@ static MagickRealType Welsh(const MagickRealType x,
 %  Set an 8 lobe Lanczos (Sinc or Jinc) filter:
 %     -filter Lanczos
 %     -define filter:lobes=8
+%
 %
 %  The format of the AcquireResizeFilter method is:
 %
@@ -690,32 +707,33 @@ MagickExport ResizeFilter *AcquireResizeFilter(const Image *image,
       window;
   } const mapping[SentinelFilter] =
   {
-    { UndefinedFilter, BoxFilter },      /* Undefined (default to Box)       */
-    { PointFilter,     BoxFilter },      /* SPECIAL: Nearest neighbour       */
-    { BoxFilter,       BoxFilter },      /* Box averaging filter             */
-    { TriangleFilter,  BoxFilter },      /* Linear interpolation filter      */
-    { HermiteFilter,   BoxFilter },      /* Hermite interpolation filter     */
-    { SincFastFilter,  HanningFilter },  /* Hanning -- cosine-sinc           */
-    { SincFastFilter,  HammingFilter },  /* Hamming --      ''    variation  */
-    { SincFastFilter,  BlackmanFilter }, /* Blackman -- 2*cosine-sinc        */
-    { GaussianFilter,  BoxFilter },      /* Gaussian blur filter             */
-    { QuadraticFilter, BoxFilter },      /* Quadratic Gaussian approximation */
-    { CubicFilter,     BoxFilter },      /* Cubic B-Spline                   */
-    { CatromFilter,    BoxFilter },      /* Cubic interpolator               */
-    { MitchellFilter,  BoxFilter },      /* 'Ideal' cubic filter             */
-    { LanczosFilter,   SincFastFilter }, /* SPECIAL: 3-lobed sinc-sinc       */
-    { JincFilter,      BoxFilter },      /* Raw 3-lobed Jinc function        */
-    { SincFilter,      BoxFilter },      /* Raw 4-lobed Sinc function        */
-    { SincFastFilter,  KaiserFilter },   /* Kaiser -- square root-sinc       */
-    { SincFastFilter,  WelshFilter },    /* Welsh -- parabolic-sinc          */
-    { SincFastFilter,  CubicFilter },    /* Parzen -- cubic-sinc             */
-    { LagrangeFilter,  BoxFilter },      /* Lagrange self-windowing filter   */
-    { SincFastFilter,  BohmanFilter },   /* Bohman -- 2*cosine-sinc          */
-    { SincFastFilter,  TriangleFilter }, /* Bartlett -- triangle-sinc        */
-    { SincFastFilter,  BoxFilter },      /* Raw fast sinc ("Pade"-type)      */
-    { Lanczos2DFilter, JincFilter },     /* SPECIAL: 2-lobed jinc-jinc       */
-    { Lanczos2DSharpFilter, JincFilter },/* SPECIAL: ditto sharpened         */
-    { RobidouxFilter,  BoxFilter },      /* SPECIAL: Keys cubic tuned for EWA */
+    { UndefinedFilter,    BoxFilter      }, /* Undefined (default to Box)   */
+    { PointFilter,        BoxFilter      }, /* SPECIAL: Nearest neighbour   */
+    { BoxFilter,          BoxFilter      }, /* Box averaging filter         */
+    { TriangleFilter,     BoxFilter      }, /* Linear interpolation filter  */
+    { HermiteFilter,      BoxFilter      }, /* Hermite interpolation filter */
+    { SincFastFilter,     HanningFilter  }, /* Hanning -- cosine-sinc       */
+    { SincFastFilter,     HammingFilter  }, /* Hamming --      '' variation */
+    { SincFastFilter,     BlackmanFilter }, /* Blackman -- 2*cosine-sinc    */
+    { GaussianFilter,     BoxFilter      }, /* Gaussian blur filter         */
+    { QuadraticFilter,    BoxFilter      }, /* Quadratic Gaussian approx    */
+    { CubicFilter,        BoxFilter      }, /* Cubic B-Spline               */
+    { CatromFilter,       BoxFilter      }, /* Cubic-Keys interpolator      */
+    { MitchellFilter,     BoxFilter      }, /* 'Ideal' Cubic-Keys filter    */
+    { LanczosFilter,      SincFastFilter }, /* SPECIAL: 3-lobed sinc-sinc   */
+    { JincFilter,         BoxFilter      }, /* Raw 3-lobed Jinc function    */
+    { SincFilter,         BoxFilter      }, /* Raw 4-lobed Sinc function    */
+    { SincFastFilter,     KaiserFilter   }, /* Kaiser -- square root-sinc   */
+    { SincFastFilter,     WelshFilter    }, /* Welsh -- parabolic-sinc      */
+    { SincFastFilter,     CubicFilter    }, /* Parzen -- cubic-sinc         */
+    { LagrangeFilter,     BoxFilter      }, /* Lagrange self-windowing      */
+    { SincFastFilter,     BohmanFilter   }, /* Bohman -- 2*cosine-sinc      */
+    { SincFastFilter,     TriangleFilter }, /* Bartlett -- triangle-sinc    */
+    { SincFastFilter,     BoxFilter      }, /* Raw fast sinc ("Pade"-type)  */
+    { LanczosSharpFilter, SincFastFilter }, /* SPECIAL: Sharpened Lanczos   */
+    { Lanczos2DFilter,    JincFilter     }, /* SPECIAL: 2-lobed jinc-jinc   */
+    { Lanczos2DSharpFilter, JincFilter   }, /* SPECIAL: ditto sharpened     */
+    { RobidouxFilter,     BoxFilter      }, /* SPECIAL: Keys tuned for EWA  */
   };
   /*
     Table mapping the filter/window from the above table to an actual
@@ -756,15 +774,16 @@ MagickExport ResizeFilter *AcquireResizeFilter(const Image *image,
     { SincFast,  3.0, 1.0,     0.0, 0.0 }, /* Lanczos, 3-lobed Sinc-Sinc  */
     { Jinc,      3.0, 1.2196698912665045, 0.0, 0.0 }, /* Raw 3-lobed Jinc */
     { Sinc,      4.0, 1.0,     0.0, 0.0 }, /* Raw 4-lobed Sinc            */
+    { SincFast,  4.0, 1.0,     0.0, 0.0 }, /* Raw fast sinc ("Pade"-type) */
     { Kaiser,    1.0, 1.0,     0.0, 0.0 }, /* Kaiser (square root window) */
     { Welsh,     1.0, 1.0,     0.0, 0.0 }, /* Welsh (parabolic window)    */
     { CubicBC,   2.0, 2.0,     1.0, 0.0 }, /* Parzen (B-Spline window)    */
     { Lagrange,  2.0, 1.0,     0.0, 0.0 }, /* Lagrange sinc approximation */
     { Bohman,    1.0, 1.0,     0.0, 0.0 }, /* Bohman, 2*Cosine window     */
     { Triangle,  1.0, 1.0,     0.0, 0.0 }, /* Bartlett (triangle window)  */
-    { SincFast,  4.0, 1.0,     0.0, 0.0 }, /* Raw fast sinc ("Pade"-type) */
+    { SincFast,  3.0, 1.0,     0.0, 0.0 }, /* Sharpened 3-lobe Lanczos    */
     { Jinc,      2.0, 1.2196698912665045, 0.0, 0.0 },
-                                                 /* Lanczos2D (Jinc-Jinc) */
+                                /* 2-lobe Cylindrical Lanczos (Jinc-Jinc) */
     { Jinc,      2.0, 1.1684849904329952, 0.0, 0.0 },
                              /* Lanczos2D sharpened with blur=0.958033808 */
     { CubicBC,   2.0, 1.1685777620836932,
@@ -837,19 +856,28 @@ MagickExport ResizeFilter *AcquireResizeFilter(const Image *image,
         if ( filter != SincFastFilter )
           filter_type=JincFilter;
         break;
+      case LanczosSharpFilter:
+        /* Sharpen Lanczos so as to optimize for minimal blurring of
+         * orthogonal lines in EWA cylindrical usage.  Value
+         * determined by Nicolas Robidoux.
+         */
+        resize_filter->blur *= 0.9830391168464;
+        /* fall-thru to promote it to Jinc-Jinc */
       case LanczosFilter:
         /* Promote Lanczos from a Sinc-Sinc to a Jinc-Jinc. */
         filter_type=JincFilter;
         window_type=JincFilter;
         break;
       case Lanczos2DSharpFilter:
-        /* Sharpened by Nicolas Robidoux so as to optimize for minimal
-         * blurring of orthogonal lines
+        /* Sharpen Lanczos2d so as to optimize for minimal blurring of
+         * orthogonal lines in EWA cylindrical usage.  Value determined by
+         * Nicolas Robidoux.  This filter is always a Jinc-Jinc.
          */
         resize_filter->blur *= 0.958033808;
         break;
       case GaussianFilter:
-        sigma = (MagickRealType) (MagickSQ2/2.0);  /* Cylindrical Gaussian sigma is sqrt(2)/2 */
+	/* Cylindrical Gaussian sigma is sqrt(2)/2. */
+        sigma = (MagickRealType) (MagickSQ2/2.0);
         break;
       default:
         break;
@@ -857,10 +885,11 @@ MagickExport ResizeFilter *AcquireResizeFilter(const Image *image,
   else
     switch (filter_type)
     {
-      case Lanczos2DFilter:
+      case LanczosSharpFilter:
+        resize_filter->blur *= 0.9830391168464; /* Orthogonal sharpen too. */
+        break;
       case Lanczos2DSharpFilter:
-        /* Demote to a 2-lobe Sinc-Sinc for orthogonal use. */
-        window_type=SincFastFilter;
+        resize_filter->blur *= 0.958033808; /* Orthogonal sharpen too. */
         break;
       default:
         break;
@@ -930,20 +959,9 @@ MagickExport ResizeFilter *AcquireResizeFilter(const Image *image,
       default:
         break;
     }
-  else
-    switch (filter_type)
-    {
-      case Lanczos2DFilter:
-      case Lanczos2DSharpFilter:
-        /* Demote to a 2-lobe Lanczos (Sinc-Sinc) for orthogonal use. */
-        resize_filter->filter=SincFast;
-        break;
-      default:
-        break;
-    }
 
   /*
-  ** More Expert Option Modifications
+  ** Other Expert Option Modifications
   */
 
   /* User Sigma Override - no support change */
@@ -975,7 +993,7 @@ MagickExport ResizeFilter *AcquireResizeFilter(const Image *image,
         lobes=1;
       resize_filter->support=(MagickRealType) lobes;
     }
-  /* convert Jinc lobes to a real support value */
+  /* convert a Jinc function lobes value to a real support value */
   if (resize_filter->filter == Jinc)
     {
       if (resize_filter->support > 16)
@@ -1021,7 +1039,7 @@ MagickExport ResizeFilter *AcquireResizeFilter(const Image *image,
       if (artifact != (const char *) NULL)
         {
           B=StringToDouble(artifact);
-          C=(1.0-B)/2.0; /* Calculate C as if it is a Keys cubic filter. */
+          C=(1.0-B)/2.0; /* Calculate C to get a Keys cubic filter. */
           artifact=GetImageArtifact(image,"filter:c"); /* user C override */
           if (artifact != (const char *) NULL)
             C=StringToDouble(artifact);
@@ -1032,19 +1050,21 @@ MagickExport ResizeFilter *AcquireResizeFilter(const Image *image,
           if (artifact != (const char *) NULL)
             {
               C=StringToDouble(artifact);
-              B=1.0-2.0*C;  /* Calculate B as if it is a Keys cubic filter. */
+              B=1.0-2.0*C; /* Calculate B to get a Keys cubic filter. */
             }
         }
-    /* Convert B,C values into Cubic Coefficents.  See CubicBC().  */
-    resize_filter->coeff[0]=(6.0-2.0*B)/6.0;
-    resize_filter->coeff[1]=0.0;
-    resize_filter->coeff[2]=(-18.0+12.0*B+6.0*C)/6.0;
-    resize_filter->coeff[3]=(12.0-9.0*B-6.0*C)/6.0;
-    resize_filter->coeff[4]=(8.0*B+24.0*C)/6.0;
-    resize_filter->coeff[5]=(-12.0*B-48.0*C)/6.0;
-    resize_filter->coeff[6]=(6.0*B+30.0*C)/6.0;
-    resize_filter->coeff[7]=(-B-6.0*C)/6.0;
-  }
+      /* Convert B,C values into Cubic Coefficents. See CubicBC(). */
+      {
+        const double twoB = B+B;
+        resize_filter->coeff[0]=1.0-(1.0/3.0)*B;
+        resize_filter->coeff[1]=-3.0+twoB+C;
+        resize_filter->coeff[2]=2.0-1.5*B-C;
+        resize_filter->coeff[3]=(4.0/3.0)*B+4.0*C;
+        resize_filter->coeff[4]=-8.0*C-twoB;
+        resize_filter->coeff[5]=B+5.0*C;
+        resize_filter->coeff[6]=(-1.0/6.0)*B-C;
+      }
+    }
 
   /*
     Expert Option Request for verbose details of the resulting filter.
@@ -1057,15 +1077,14 @@ MagickExport ResizeFilter *AcquireResizeFilter(const Image *image,
     if (artifact != (const char *) NULL)
       {
         double
-      support,
+          support,
           x;
 
         /*
           Set the weighting function properly when the weighting
           function may not exactly match the filter of the same name.
-          EG: a Point filter really uses a Box weighting function
+          EG: a Point filter is really uses a Box weighting function
           with a different support than is typically used.
-
         */
         if (resize_filter->filter == Box)       filter_type=BoxFilter;
         if (resize_filter->filter == Sinc)      filter_type=SincFilter;
@@ -1077,24 +1096,24 @@ MagickExport ResizeFilter *AcquireResizeFilter(const Image *image,
         */
         support=GetResizeFilterSupport(resize_filter); /* practical_support */
         (void) fprintf(stdout,"# Resize Filter (for graphing)\n#\n");
-        (void) fprintf(stdout,"# filter = %s\n",MagickOptionToMnemonic(
-           MagickFilterOptions,filter_type));
-        (void) fprintf(stdout,"# window = %s\n",MagickOptionToMnemonic(
-           MagickFilterOptions, window_type));
-        (void) fprintf(stdout,"# support = %.*g\n",GetMagickPrecision(),
-           (double) resize_filter->support);
-        (void) fprintf(stdout,"# win-support = %.*g\n",GetMagickPrecision(),
-           (double) resize_filter->window_support);
-        (void) fprintf(stdout,"# scale_blur = %.*g\n",GetMagickPrecision(),
-           (double) resize_filter->blur);
+        (void) fprintf(stdout,"# filter = %s\n",
+             MagickOptionToMnemonic(MagickFilterOptions,filter_type));
+        (void) fprintf(stdout,"# window = %s\n",
+             MagickOptionToMnemonic(MagickFilterOptions, window_type));
+        (void) fprintf(stdout,"# support = %.*g\n",
+             GetMagickPrecision(),(double) resize_filter->support);
+        (void) fprintf(stdout,"# win-support = %.*g\n",
+             GetMagickPrecision(),(double) resize_filter->window_support);
+        (void) fprintf(stdout,"# scale_blur = %.*g\n",
+             GetMagickPrecision(), (double)resize_filter->blur);
         if ( filter_type == GaussianFilter )
-          (void) fprintf(stdout,"# gaussian_sigma = %.*g\n",GetMagickPrecision(),
-             (double) sigma);
-        (void) fprintf(stdout,"# practical_support = %.*g\n",GetMagickPrecision(),
-           (double) support);
+          (void) fprintf(stdout,"# gaussian_sigma = %.*g\n",
+               GetMagickPrecision(), (double)sigma);
+        (void) fprintf(stdout,"# practical_support = %.*g\n",
+             GetMagickPrecision(), (double)support);
         if ( filter_type == CubicFilter || window_type == CubicFilter )
-          (void) fprintf(stdout,"# B,C = %.*g,%.*g\n",GetMagickPrecision(),
-             (double) B,GetMagickPrecision(),(double) C);
+          (void) fprintf(stdout,"# B,C = %.*g,%.*g\n",
+               GetMagickPrecision(),(double)B, GetMagickPrecision(),(double)C);
         (void) fprintf(stdout,"\n");
         /*
           Output values of resulting filter graph -- for graphing
