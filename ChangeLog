@@ -1,11 +1,25 @@
+2010-10-30  6.6.5-5 Cristy  <quetzlzacatenango@image...>
+  * Do not read configure files in the current directory for the "installed"
+    version of ImageMagick.
+
+2010-10-29  6.6.5-4 Glenn Randers-Pehrson <glennrp@image...>
+  * Revised PNG palette optimization
+  * Added some debug logging in coders/png.c.
+
+2010-10-28  6.6.5-3 Nicolas Robidoux <nicolas.robidoux@gmail...>
+  * More precise blur values for Lanczos2Sharp and LanczosSharp.
+  * Added location of first Mitchell crossing (=8/7) to the filters data
+    structure.
+
+2010-10-28  6.6.5-2 Anthony Thyssen <A.Thyssen@griffith...>
+  * Added Lanczos2D* filters now named Lanczos2*
+  * Reorganization of AcquireFilter() to make it work better
+
 2010-10-25  6.6.5-1 Nicolas Robidoux <nicolas.robidoux@gmail...>
   * Clearer EWA filters (LanczosSharp etc) comments.
 
 2010-10-25  6.6.5-1 Anthony Thyssen <A.Thyssen@griffith...>
   * Added LanczosSharp  (3-lobe Lanczos with sharpening)
-  * Lanczos2D and Lanczos2DSharp are now always a 2-lobe Jinc-Jinc filter
-    regardless of orthoginal (resize) or cylindrical (distort-EWA) usage.
-    This is a rare case where a Jinc filter is also useful for resize.
   * Filter sharpening factors are also always applied regardless of usage.
 
 2010-10-24  6.6.5-1 Nicolas Robidoux <nicolas.robidoux@gmail...>
