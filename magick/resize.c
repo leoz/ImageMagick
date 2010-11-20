@@ -62,6 +62,7 @@
 #include "magick/pixel.h"
 #include "magick/option.h"
 #include "magick/resample.h"
+#include "magick/resample-private.h"
 #include "magick/resize.h"
 #include "magick/resize-private.h"
 #include "magick/string_.h"
@@ -85,7 +86,7 @@ struct _ResizeFilter
     window_support, /* window support, usally equal to support (expert only) */
     scale,          /* dimension scaling to fit window support (usally 1.0) */
     blur,           /* x-scale (blur-sharpen) */
-    coeff[7];       /* cubic coefficents for BC-cubic spline filters */
+    coefficient[7]; /* cubic coefficents for BC-cubic spline filters */
 
   size_t
     signature;
@@ -224,11 +225,11 @@ static MagickRealType CubicBC(const MagickRealType x,
     (slope).
   */
   if (x < 1.0)
-    return(resize_filter->coeff[0]+x*(x*
-      (resize_filter->coeff[1]+x*resize_filter->coeff[2])));
+    return(resize_filter->coefficient[0]+x*(x*
+      (resize_filter->coefficient[1]+x*resize_filter->coefficient[2])));
   if (x < 2.0)
-    return(resize_filter->coeff[3]+x*(resize_filter->coeff[4]+x*
-      (resize_filter->coeff[5]+x*resize_filter->coeff[6])));
+    return(resize_filter->coefficient[3]+x*(resize_filter->coefficient[4]+x*
+      (resize_filter->coefficient[5]+x*resize_filter->coefficient[6])));
   return(0.0);
 }
 
@@ -248,7 +249,7 @@ static MagickRealType Gaussian(const MagickRealType x,
     allowing for its use in special 'small sigma' gaussians, without the filter
     'missing' pixels when blurring because the support is too small.
   */
-  return(exp((double)(-resize_filter->coeff[0]*x*x)));
+  return(exp((double)(-resize_filter->coefficient[0]*x*x)));
 }
 
 static MagickRealType Hanning(const MagickRealType x,
@@ -532,38 +533,37 @@ static MagickRealType Welsh(const MagickRealType x,
 %  and rational (high Q) approximations, and will be used by default in
 %  most cases.
 %
-%  Lanczos filter is a special 3-lobed Sinc windowed Sinc filter,
-%  (or cylindrical promoted Jinc-Jinc filter).  This filter is
-%  probably the most popular windowed filter.
+%  The Lanczos filter is a special 3-lobed Sinc-windowed Sinc filter
+%  (promoted to Jinc-windowed Jinc for cylindrical (Elliptical
+%  Weighted Average) use).  The Sinc version is the most popular
+%  windowed filter.
 %
-%  LanczosSharp is a slightly sharpened (blur=0.98303932214489908)
-%  form of the Lanczos filter.  It was designed specifically for
-%  cylindrical EWA (Elliptical Weighted Average) distortion (as a
-%  Jinc-Jinc filter), but can used as a slightly sharper orthogonal
-%  Lanczos (Sinc-Sinc) filter. The chosen blur value comes as close as
-%  possible to satisfying the following condition without changing the
-%  character of the corresponding EWA filter:
+%  LanczosSharp is a slightly sharpened (blur=0.9812505644269356 < 1)
+%  form of the Lanczos filter, specifically designed for EWA
+%  distortion (as a Jinc-Jinc); it can also be used as a slightly
+%  sharper orthogonal Lanczos (Sinc-Sinc) filter. The chosen blur
+%  value comes as close as possible to satisfying the following
+%  condition without changing the character of the corresponding EWA
+%  filter:
 %
 %    'No-Op' Vertical and Horizontal Line Preservation Condition:
 %    Images with only vertical or horizontal features are preserved
 %    when performing 'no-op" with EWA distortion.
 %
-%  The Lanczos2 and Lanczos2Sharp filters are simply 2-lobe versions
-%  of the Lanczos filters.  The 'sharp' version uses a blur factor of
-%  0.958027803631219, again chosen because the resulting EWA filter
-%  comes as close as possible to preserving vertical and horizontal
-%  lines without changing its character. (There are other optimal
-%  values; we use the least sharpening one).
+%  The Lanczos2 and Lanczos2Sharp filters are 2-lobe versions of the
+%  Lanczos filters.  The 'sharp' version uses a blur factor of
+%  0.9549963639785485, again chosen because the resulting EWA filter
+%  comes as close as possible to satisfying the above
+%  condition.
 %
 %  Robidoux is another filter tuned for EWA. It is the Keys cubic
 %  filter defined by B=(228 - 108 sqrt(2))/199. Robidoux satisfies the
 %  "'No-Op' Vertical and Horizontal Line Preservation Condition"
-%  exactly.  It also seems to provide only minimal bluring of a low
-%  level 'pixel-hash' pattern in the 'No-Op Distort' case.  It turns
-%  out to be close to both plain Mitchell and Lanczos2Sharp filters.
-%  For example, its first crossing is at (36 sqrt(2) + 123)/(72
-%  sqrt(2) + 47) which is almost the same as the first crossing
-%  of the other two.
+%  exactly, and it moderately blurs high frequency 'pixel-hash'
+%  patterns under no-op.  It turns out to be close to both Mitchell
+%  and Lanczos2Sharp.  For example, its first crossing is at (36
+%  sqrt(2) + 123)/(72 sqrt(2) + 47), almost the same as the first
+%  crossing of Mitchell and Lanczos2Sharp.
 %
 %
 %  'EXPERT' OPTIONS:
@@ -921,10 +921,10 @@ MagickExport ResizeFilter *AcquireResizeFilter(const Image *image,
   switch (filter_type)
   {
     case LanczosSharpFilter:
-      resize_filter->blur *= 0.98303932214489908;
+      resize_filter->blur *= 0.9812505644269356;
       break;
     case Lanczos2SharpFilter:
-      resize_filter->blur *= 0.958027803631219;
+      resize_filter->blur *= 0.9549963639785485;
       break;
     default:
       break;
@@ -940,8 +940,9 @@ MagickExport ResizeFilter *AcquireResizeFilter(const Image *image,
     sigma=StringToDouble(artifact);
   /* Define coefficents for Gaussian (assumes no cubic window) */
   if ( GaussianFilter ) {
-    resize_filter->coeff[0] = 1.0/(2.0*sigma*sigma);
-    resize_filter->coeff[1] = (MagickRealType) (1.0/(Magick2PI*sigma*sigma)); /* unused */
+    resize_filter->coefficient[0]=1.0/(2.0*sigma*sigma);
+    resize_filter->coefficient[1]=(MagickRealType) (1.0/(Magick2PI*sigma*
+      sigma)); /* unused */
   }
 
   /* Blur Override */
@@ -1026,13 +1027,13 @@ MagickExport ResizeFilter *AcquireResizeFilter(const Image *image,
       /* Convert B,C values into Cubic Coefficents. See CubicBC(). */
       {
         const double twoB = B+B;
-        resize_filter->coeff[0]=1.0-(1.0/3.0)*B;
-        resize_filter->coeff[1]=-3.0+twoB+C;
-        resize_filter->coeff[2]=2.0-1.5*B-C;
-        resize_filter->coeff[3]=(4.0/3.0)*B+4.0*C;
-        resize_filter->coeff[4]=-8.0*C-twoB;
-        resize_filter->coeff[5]=B+5.0*C;
-        resize_filter->coeff[6]=(-1.0/6.0)*B-C;
+        resize_filter->coefficient[0]=1.0-(1.0/3.0)*B;
+        resize_filter->coefficient[1]=-3.0+twoB+C;
+        resize_filter->coefficient[2]=2.0-1.5*B-C;
+        resize_filter->coefficient[3]=(4.0/3.0)*B+4.0*C;
+        resize_filter->coefficient[4]=-8.0*C-twoB;
+        resize_filter->coefficient[5]=B+5.0*C;
+        resize_filter->coefficient[6]=(-1.0/6.0)*B-C;
       }
     }
 
@@ -1150,16 +1151,13 @@ MagickExport Image *AdaptiveResizeImage(const Image *image,
     *resize_image;
 
   MagickBooleanType
-    proceed;
+    status;
 
-  MagickPixelPacket
-    pixel;
-
-  PointInfo
-    offset;
+  MagickOffsetType
+    progress;
 
   ResampleFilter
-    *resample_filter;
+    **resample_filter;
 
   ssize_t
     y;
@@ -1186,46 +1184,71 @@ MagickExport Image *AdaptiveResizeImage(const Image *image,
       resize_image=DestroyImage(resize_image);
       return((Image *) NULL);
     }
-  GetMagickPixelPacket(image,&pixel);
-  resample_filter=AcquireResampleFilter(image,exception);
-  (void) SetResampleFilter(resample_filter,PointFilter,1.0);
-  (void) SetResampleFilterInterpolateMethod(resample_filter,
-    MeshInterpolatePixel);
+  status=MagickTrue;
+  progress=0;
+  resample_filter=AcquireResampleFilterThreadSet(image,
+    UndefinedVirtualPixelMethod,MagickTrue,exception);
   resize_view=AcquireCacheView(resize_image);
+#if defined(MAGICKCORE_OPENMP_SUPPORT)
+  #pragma omp parallel for schedule(dynamic,4) shared(progress,status) omp_throttle(1)
+#endif
   for (y=0; y < (ssize_t) resize_image->rows; y++)
   {
+    const int
+      id = GetOpenMPThreadId();
+
+    MagickPixelPacket
+      pixel;
+
+    PointInfo
+      offset;
+
     register IndexPacket
       *restrict resize_indexes;
-
-    register ssize_t
-      x;
 
     register PixelPacket
       *restrict q;
 
+    register ssize_t
+      x;
+
+    if (status == MagickFalse)
+      continue;
     q=QueueCacheViewAuthenticPixels(resize_view,0,y,resize_image->columns,1,
       exception);
     if (q == (PixelPacket *) NULL)
-      break;
+      continue;
     resize_indexes=GetCacheViewAuthenticIndexQueue(resize_view);
     offset.y=((MagickRealType) y*image->rows/resize_image->rows);
+    GetMagickPixelPacket(image,&pixel);
     for (x=0; x < (ssize_t) resize_image->columns; x++)
     {
       offset.x=((MagickRealType) x*image->columns/resize_image->columns);
-      (void) ResamplePixelColor(resample_filter,offset.x-0.5,offset.y-0.5,
+      (void) ResamplePixelColor(resample_filter[id],offset.x-0.5,offset.y-0.5,
         &pixel);
       SetPixelPacket(resize_image,&pixel,q,resize_indexes+x);
       q++;
     }
     if (SyncCacheViewAuthenticPixels(resize_view,exception) == MagickFalse)
-      break;
-    proceed=SetImageProgress(image,AdaptiveResizeImageTag,(MagickOffsetType) y,
-      image->rows);
-    if (proceed == MagickFalse)
-      break;
+      continue;
+    if (image->progress_monitor != (MagickProgressMonitor) NULL)
+      {
+        MagickBooleanType
+          proceed;
+
+#if defined(MAGICKCORE_OPENMP_SUPPORT) 
+  #pragma omp critical (MagickCore_AdaptiveResizeImage)
+#endif
+        proceed=SetImageProgress(image,AdaptiveResizeImageTag,progress++,
+          image->rows);
+        if (proceed == MagickFalse)
+          status=MagickFalse;
+      }
   }
-  resample_filter=DestroyResampleFilter(resample_filter);
+  resample_filter=DestroyResampleFilterThreadSet(resample_filter);
   resize_view=DestroyCacheView(resize_view);
+  if (status == MagickFalse)
+    resize_image=DestroyImage(resize_image);
   return(resize_image);
 }
 
