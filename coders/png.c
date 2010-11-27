@@ -112,8 +112,8 @@
 #undef MNG_BASI_SUPPORTED
 #define MNG_COALESCE_LAYERS /* In 5.4.4, this interfered with MMAP'ed files. */
 #define MNG_INSERT_LAYERS   /* Troublesome, but seem to work as of 5.4.4 */
-#define PNG_BUILD_PALETTE   /* This works as of 5.4.3. */
-#define PNG_SORT_PALETTE    /* This works as of 5.4.0 but not in 6.5. */
+#define PNG_BUILD_PALETTE   /* This works as of 5.4.3 for opaque images. */
+#define PNG_SORT_PALETTE    /* This works as of 5.4.0 */
 #if defined(MAGICKCORE_JPEG_DELEGATE)
 #  define JNG_SUPPORTED /* Not finished as of 5.5.2.  See "To do" comments. */
 #endif
@@ -481,16 +481,10 @@ static MagickBooleanType
 
 #if (MAGICKCORE_QUANTUM_DEPTH >= 16)
 static MagickBooleanType
-  LosslessReduceDepth(Image *image)
+  LosslessReduceDepthOK(Image *image)
 {
     MagickBooleanType
       ok_to_reduce=MagickFalse;
-
-   /* PNG does not handle depths greater than 16 so reduce it even
-    * if lossy
-    */
-    if (image->depth > 16)
-      image->depth=16;
 
     /* Reduce bit depth if it can be reduced losslessly from 16 to 8.
      * Note that the method GetImageDepth doesn't check background
@@ -572,17 +566,15 @@ static MagickBooleanType
 
                 p++;
               }
-              if (x != 0)
+              if (x >= 0)
                 break;
             }
           }
 
         if (ok_to_reduce != MagickFalse)
           {
-            image->depth=8;
-
             (void) LogMagickEvent(CoderEvent,GetMagickModule(),
-                "  Reducing PNG bit depth to 8 without loss of info");
+                "  OK to reduce PNG bit depth to 8 without loss of info");
           }
       }
 
@@ -2639,6 +2631,7 @@ static Image *ReadOnePNGImage(MngInfo *mng_info,
 
             break;
           }
+
           case 2:
           {
             for (x=(ssize_t) image->columns-3; x > 0; x-=4)
@@ -2657,6 +2650,7 @@ static Image *ReadOnePNGImage(MngInfo *mng_info,
 
             break;
           }
+
           case 4:
           {
             for (x=(ssize_t) image->columns-1; x > 0; x-=2)
@@ -2670,6 +2664,7 @@ static Image *ReadOnePNGImage(MngInfo *mng_info,
 
             break;
           }
+
           case 8:
           {
             if (ping_color_type == 4)
@@ -2691,6 +2686,7 @@ static Image *ReadOnePNGImage(MngInfo *mng_info,
 
             break;
           }
+
           case 16:
           {
             for (x=(ssize_t) image->columns-1; x >= 0; x--)
@@ -2709,6 +2705,7 @@ static Image *ReadOnePNGImage(MngInfo *mng_info,
               quantum|=(*p++);
               *r=(Quantum) quantum;
               r++;
+
               if (ping_color_type == 4)
                 {
                   quantum=((*p++) << 8);
@@ -2740,9 +2737,11 @@ static Image *ReadOnePNGImage(MngInfo *mng_info,
                   p+=2;
                   q++;
                 }
+
 #else /* MAGICKCORE_QUANTUM_DEPTH == 8 */
               *r++=(*p++);
               p++; /* strip low byte */
+
               if (ping_color_type == 4)
                 {
                   q->opacity=(Quantum) (QuantumRange-(*p++));
@@ -2752,8 +2751,10 @@ static Image *ReadOnePNGImage(MngInfo *mng_info,
 #endif
 #endif
             }
+
             break;
           }
+
           default:
             break;
         }
@@ -2772,6 +2773,7 @@ static Image *ReadOnePNGImage(MngInfo *mng_info,
           {
             status=SetImageProgress(image,LoadImageTag,(MagickOffsetType) y,
                 image->rows);
+
             if (status == MagickFalse)
               break;
           }
@@ -2779,6 +2781,7 @@ static Image *ReadOnePNGImage(MngInfo *mng_info,
       if ((image->previous == (Image *) NULL) && (num_passes != 1))
         {
           status=SetImageProgress(image,LoadImageTag,pass,num_passes);
+
           if (status == MagickFalse)
             break;
         }
@@ -2797,6 +2800,7 @@ static Image *ReadOnePNGImage(MngInfo *mng_info,
       (void) SyncImage(image);
       image->matte=matte;
     }
+
   png_read_end(ping,ping_info);
 
   if (image_info->number_scenes != 0 && mng_info->scenes_found-1 <
@@ -2814,6 +2818,7 @@ static Image *ReadOnePNGImage(MngInfo *mng_info,
           "  exit ReadOnePNGImage() early.");
       return(image);
     }
+
   if (png_get_valid(ping,ping_info,PNG_INFO_tRNS))
     {
       ClassType
@@ -2825,8 +2830,7 @@ static Image *ReadOnePNGImage(MngInfo *mng_info,
       storage_class=image->storage_class;
       image->matte=MagickTrue;
 
-#if 1  /* balfour fix */
-/* From imagemagick discourse server, 5 Feb 2010 */
+/* Balfour fix from imagemagick discourse server, 5 Feb 2010 */
 
       if (storage_class == PseudoClass)
         {
@@ -2838,6 +2842,7 @@ static Image *ReadOnePNGImage(MngInfo *mng_info,
                    ScaleCharToQuantum((unsigned char)(255-ping_trans_alpha[x]));
               }
             }
+
           else if (ping_color_type == PNG_COLOR_TYPE_GRAY)
             {
               for (x=0; x < (int) image->colors; x++)
@@ -2851,6 +2856,7 @@ static Image *ReadOnePNGImage(MngInfo *mng_info,
             }
           (void) SyncImage(image);
         }
+
       else
         {
           for (y=0; y < (ssize_t) image->rows; y++)
@@ -2881,76 +2887,13 @@ static Image *ReadOnePNGImage(MngInfo *mng_info,
           }
         }
 
-#else /* not balfour */
-
-      for (y=0; y < (ssize_t) image->rows; y++)
-      {
-        image->storage_class=storage_class;
-        q=GetAuthenticPixels(image,0,y,image->columns,1,exception);
-
-        if (q == (PixelPacket *) NULL)
-          break;
-
-        indexes=GetAuthenticIndexQueue(image);
-
-        if (storage_class == PseudoClass)
-          {
-            IndexPacket
-              indexpacket;
-
-            if ((int) ping_color_type == PNG_COLOR_TYPE_PALETTE)
-              for (x=0; x < (ssize_t) image->columns; x++)
-              {
-                indexpacket=indexes[x];
-
-                if (indexpacket < ping_num_trans)
-                  q->opacity=ScaleCharToQuantum((unsigned char)
-                    (255-ping_trans_alpha[(ssize_t) indexpacket]));
-
-                else
-                  SetOpacityPixelComponent(q,OpaqueOpacity);
-
-                q++;
-              }
-            else if (ping_color_type == PNG_COLOR_TYPE_GRAY)
-              for (x=0; x < (ssize_t) image->columns; x++)
-              {
-                indexpacket=indexes[x];
-                q->red=image->colormap[(ssize_t) indexpacket].red;
-                q->green=q->red;
-                q->blue=q->red;
-
-                if (ScaleQuantomToShort(q->red) == transparent_color.opacity)
-                  q->opacity=(Quantum) TransparentOpacity;
-
-                else
-                  SetOpacityPixelComponent(q,OpaqueOpacity);
-
-                q++;
-              }
-          }
-        else
-          for (x=(ssize_t) image->columns-1; x >= 0; x--)
-          {
-            if (ScaleQuantumToShort(q->red) == transparent_color.red &&
-                ScaleQuantumToShort(q->green) == transparent_color.green &&
-                ScaleQuantumToShort(q->blue) == transparent_color.blue)
-               q->opacity=(Quantum) TransparentOpacity;
-
-            else
-              SetOpacityPixelComponent(q,OpaqueOpacity);
-
-            q++;
-          }
-        if (SyncAuthenticPixels(image,exception) == MagickFalse)
-          break;
-      }
-#endif /* not balfour */
       image->storage_class=DirectClass;
     }
+
   if ((ping_color_type == PNG_COLOR_TYPE_GRAY) ||
       (ping_color_type == PNG_COLOR_TYPE_GRAY_ALPHA))
     image->colorspace=GRAYColorspace;
+
   if (png_get_text(ping,ping_info,&text,&num_text) != 0)
     for (i=0; i < (ssize_t) num_text; i++)
     {
@@ -2989,6 +2932,7 @@ static Image *ReadOnePNGImage(MngInfo *mng_info,
           value=DestroyString(value);
         }
     }
+
 #ifdef MNG_OBJECT_BUFFERS
   /*
     Store the object if necessary.
@@ -3009,6 +2953,7 @@ static Image *ReadOnePNGImage(MngInfo *mng_info,
               mng_info->ob[object_id]->reference_count=1;
             }
         }
+
       if ((mng_info->ob[object_id] == (MngBuffer *) NULL) ||
           mng_info->ob[object_id]->frozen)
         {
@@ -3066,11 +3011,13 @@ static Image *ReadOnePNGImage(MngInfo *mng_info,
               */
               png_get_PLTE(ping,ping_info,&plte,&number_colors);
               mng_info->ob[object_id]->plte_length=number_colors;
+
               for (i=0; i < number_colors; i++)
               {
                 mng_info->ob[object_id]->plte[i]=plte[i];
               }
             }
+
           else
               mng_info->ob[object_id]->plte_length=0;
         }
@@ -3122,30 +3069,38 @@ static Image *ReadPNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
   */
   assert(image_info != (const ImageInfo *) NULL);
   assert(image_info->signature == MagickSignature);
+
   if (image_info->debug != MagickFalse)
     (void) LogMagickEvent(TraceEvent,GetMagickModule(),"%s",
       image_info->filename);
+
   assert(exception != (ExceptionInfo *) NULL);
   assert(exception->signature == MagickSignature);
   logging=LogMagickEvent(CoderEvent,GetMagickModule(),"enter ReadPNGImage()");
   image=AcquireImage(image_info);
   mng_info=(MngInfo *) NULL;
   status=OpenBlob(image_info,image,ReadBinaryBlobMode,exception);
+
   if (status == MagickFalse)
     ThrowReaderException(FileOpenError,"UnableToOpenFile");
+
   /*
     Verify PNG signature.
   */
   count=ReadBlob(image,8,(unsigned char *) magic_number);
+
   if (memcmp(magic_number,"\211PNG\r\n\032\n",8) != 0)
     ThrowReaderException(CorruptImageError,"ImproperImageHeader");
+
   /*
     Allocate a MngInfo structure.
   */
   have_mng_structure=MagickFalse;
   mng_info=(MngInfo *) AcquireMagickMemory(sizeof(MngInfo));
+
   if (mng_info == (MngInfo *) NULL)
     ThrowReaderException(ResourceLimitError,"MemoryAllocationFailed");
+
   /*
     Initialize members of the MngInfo structure.
   */
@@ -3156,6 +3111,7 @@ static Image *ReadPNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
   previous=image;
   image=ReadOnePNGImage(mng_info,image_info,exception);
   MngInfoFreeStruct(mng_info,&have_mng_structure);
+
   if (image == (Image *) NULL)
     {
       if (previous != (Image *) NULL)
@@ -3173,7 +3129,9 @@ static Image *ReadPNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
 
       return((Image *) NULL);
     }
+
   (void) CloseBlob(image);
+
   if ((image->columns == 0) || (image->rows == 0))
     {
       if (logging != MagickFalse)
@@ -3182,6 +3140,7 @@ static Image *ReadPNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
 
       ThrowReaderException(CorruptImageError,"CorruptImage");
     }
+
   if (LocaleCompare(image_info->magick,"PNG8") == 0)
     {
       (void) SetImageType(image,PaletteType);
@@ -3191,6 +3150,7 @@ static Image *ReadPNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
           /* To do: Reduce to binary transparency */
         }
     }
+
   if (LocaleCompare(image_info->magick,"PNG24") == 0)
     {
       (void) SetImageType(image,TrueColorType);
@@ -3371,6 +3331,7 @@ static Image *ReadOneJNGImage(MngInfo *mng_info,
 
     p=NULL;
     chunk=(unsigned char *) NULL;
+
     if (length)
       {
         chunk=(unsigned char *) AcquireQuantumMemory(length,sizeof(*chunk));
@@ -3383,12 +3344,14 @@ static Image *ReadOneJNGImage(MngInfo *mng_info,
 
         p=chunk;
       }
+
     (void) ReadBlobMSBLong(image);  /* read crc word */
 
     if (skip_to_iend)
       {
         if (length)
           chunk=(unsigned char *) RelinquishMagickMemory(chunk);
+
         continue;
       }
 
@@ -3404,45 +3367,59 @@ static Image *ReadOneJNGImage(MngInfo *mng_info,
             jng_image_sample_depth=p[9];
             jng_image_compression_method=p[10];
             jng_image_interlace_method=p[11];
+
             image->interlace=jng_image_interlace_method != 0 ? PNGInterlace :
               NoInterlace;
+
             jng_alpha_sample_depth=p[12];
             jng_alpha_compression_method=p[13];
             jng_alpha_filter_method=p[14];
             jng_alpha_interlace_method=p[15];
+
             if (logging != MagickFalse)
               {
                 (void) LogMagickEvent(CoderEvent,GetMagickModule(),
                   "    jng_width:      %16lu",(unsigned long) jng_width);
+
                 (void) LogMagickEvent(CoderEvent,GetMagickModule(),
                   "    jng_width:      %16lu",(unsigned long) jng_height);
+
                 (void) LogMagickEvent(CoderEvent,GetMagickModule(),
                   "    jng_color_type: %16d",jng_color_type);
+
                 (void) LogMagickEvent(CoderEvent,GetMagickModule(),
                   "    jng_image_sample_depth:      %3d",
                   jng_image_sample_depth);
+
                 (void) LogMagickEvent(CoderEvent,GetMagickModule(),
                   "    jng_image_compression_method:%3d",
                   jng_image_compression_method);
+
                 (void) LogMagickEvent(CoderEvent,GetMagickModule(),
                   "    jng_image_interlace_method:  %3d",
                   jng_image_interlace_method);
+
                 (void) LogMagickEvent(CoderEvent,GetMagickModule(),
                   "    jng_alpha_sample_depth:      %3d",
                   jng_alpha_sample_depth);
+
                 (void) LogMagickEvent(CoderEvent,GetMagickModule(),
                   "    jng_alpha_compression_method:%3d",
                   jng_alpha_compression_method);
+
                 (void) LogMagickEvent(CoderEvent,GetMagickModule(),
                   "    jng_alpha_filter_method:     %3d",
                   jng_alpha_filter_method);
+
                 (void) LogMagickEvent(CoderEvent,GetMagickModule(),
                   "    jng_alpha_interlace_method:  %3d",
                   jng_alpha_interlace_method);
               }
           }
+
         if (length)
           chunk=(unsigned char *) RelinquishMagickMemory(chunk);
+
         continue;
       }
 
@@ -3459,8 +3436,10 @@ static Image *ReadOneJNGImage(MngInfo *mng_info,
         */
 
         color_image_info=(ImageInfo *)AcquireMagickMemory(sizeof(ImageInfo));
+
         if (color_image_info == (ImageInfo *) NULL)
           ThrowReaderException(ResourceLimitError,"MemoryAllocationFailed");
+
         GetImageInfo(color_image_info);
         color_image=AcquireImage(color_image_info);
 
@@ -3538,17 +3517,17 @@ static Image *ReadOneJNGImage(MngInfo *mng_info,
 
     if (memcmp(type,mng_JDAT,4) == 0)
       {
-        /*
-           Copy chunk to color_image->blob
-        */
+        /* Copy chunk to color_image->blob */
 
         if (logging != MagickFalse)
           (void) LogMagickEvent(CoderEvent,GetMagickModule(),
             "    Copying JDAT chunk data to color_blob.");
 
         (void) WriteBlob(color_image,length,chunk);
+
         if (length)
           chunk=(unsigned char *) RelinquishMagickMemory(chunk);
+
         continue;
       }
 
@@ -3557,9 +3536,7 @@ static Image *ReadOneJNGImage(MngInfo *mng_info,
         png_byte
            data[5];
 
-        /*
-           Copy IDAT header and chunk data to alpha_image->blob
-        */
+        /* Copy IDAT header and chunk data to alpha_image->blob */
 
         if (image_info->ping == MagickFalse)
           {
@@ -3584,9 +3561,7 @@ static Image *ReadOneJNGImage(MngInfo *mng_info,
 
     if ((memcmp(type,mng_JDAA,4) == 0) || (memcmp(type,mng_JdAA,4) == 0))
       {
-        /*
-           Copy chunk data to alpha_image->blob
-        */
+        /* Copy chunk data to alpha_image->blob */
 
         if (image_info->ping == MagickFalse)
           {
@@ -3655,6 +3630,7 @@ static Image *ReadOneJNGImage(MngInfo *mng_info,
             image->chromaticity.blue_primary.x=0.00001*mng_get_long(&p[24]);
             image->chromaticity.blue_primary.y=0.00001*mng_get_long(&p[28]);
           }
+
         chunk=(unsigned char *) RelinquishMagickMemory(chunk);
         continue;
       }
@@ -3675,6 +3651,7 @@ static Image *ReadOneJNGImage(MngInfo *mng_info,
             image->chromaticity.white_point.x=0.3127f;
             image->chromaticity.white_point.y=0.3290f;
           }
+
         chunk=(unsigned char *) RelinquishMagickMemory(chunk);
         continue;
       }
@@ -3692,6 +3669,7 @@ static Image *ReadOneJNGImage(MngInfo *mng_info,
                 image->page.y/=10000;
               }
           }
+
         if (length)
           chunk=(unsigned char *) RelinquishMagickMemory(chunk);
 
@@ -3761,6 +3739,7 @@ static Image *ReadOneJNGImage(MngInfo *mng_info,
   */
 
   (void) CloseBlob(color_image);
+
   if (logging != MagickFalse)
     (void) LogMagickEvent(CoderEvent,GetMagickModule(),
       "    Reading jng_image from color_blob.");
@@ -3794,6 +3773,7 @@ static Image *ReadOneJNGImage(MngInfo *mng_info,
     s=GetVirtualPixels(jng_image,0,y,image->columns,1,&image->exception);
     q=GetAuthenticPixels(image,0,y,image->columns,1,exception);
     (void) CopyMagickMemory(q,s,length);
+
     if (SyncAuthenticPixels(image,exception) == MagickFalse)
       break;
   }
@@ -3832,6 +3812,7 @@ static Image *ReadOneJNGImage(MngInfo *mng_info,
              s=GetVirtualPixels(jng_image,0,y,image->columns,1,
                 &image->exception);
              q=GetAuthenticPixels(image,0,y,image->columns,1,exception);
+
              if (image->matte != MagickFalse)
                for (x=(ssize_t) image->columns; x != 0; x--,q++,s++)
                   q->opacity=(Quantum) QuantumRange-s->red;
@@ -3855,9 +3836,8 @@ static Image *ReadOneJNGImage(MngInfo *mng_info,
        }
     }
 
-  /*
-    Read the JNG image.
-  */
+  /* Read the JNG image.  */
+
   if (mng_info->mng_type == 0)
     {
       mng_info->mng_width=jng_width;
@@ -3964,25 +3944,23 @@ static Image *ReadJNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
   if (LocaleCompare(image_info->magick,"JNG") != 0)
     ThrowReaderException(CorruptImageError,"ImproperImageHeader");
 
-  /*
-    Verify JNG signature.
-  */
+  /* Verify JNG signature.  */
+
   count=(size_t) ReadBlob(image,8,(unsigned char *) magic_number);
+
   if (memcmp(magic_number,"\213JNG\r\n\032\n",8) != 0)
     ThrowReaderException(CorruptImageError,"ImproperImageHeader");
 
-  /*
-    Allocate a MngInfo structure.
-  */
+  /* Allocate a MngInfo structure.  */
+
   have_mng_structure=MagickFalse;
   mng_info=(MngInfo *) AcquireMagickMemory(sizeof(*mng_info));
 
   if (mng_info == (MngInfo *) NULL)
     ThrowReaderException(ResourceLimitError,"MemoryAllocationFailed");
 
-  /*
-    Initialize members of the MngInfo structure.
-  */
+  /* Initialize members of the MngInfo structure.  */
+
   (void) ResetMagickMemory(mng_info,0,sizeof(MngInfo));
   have_mng_structure=MagickTrue;
 
@@ -4006,6 +3984,7 @@ static Image *ReadJNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
       return((Image *) NULL);
     }
   (void) CloseBlob(image);
+
   if (image->columns == 0 || image->rows == 0)
     {
       if (logging != MagickFalse)
@@ -4123,9 +4102,8 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
   default_fb.left=0;
   default_fb.right=0;
 
-  /*
-    Open image file.
-  */
+  /* Open image file.  */
+
   assert(image_info != (const ImageInfo *) NULL);
   assert(image_info->signature == MagickSignature);
   (void) LogMagickEvent(TraceEvent,GetMagickModule(),"%s",image_info->filename);
@@ -4142,17 +4120,16 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
   first_mng_object=MagickFalse;
   skipping_loop=(-1);
   have_mng_structure=MagickFalse;
-  /*
-    Allocate a MngInfo structure.
-  */
+
+  /* Allocate a MngInfo structure.  */
+
   mng_info=(MngInfo *) AcquireMagickMemory(sizeof(MngInfo));
 
   if (mng_info == (MngInfo *) NULL)
     ThrowReaderException(ResourceLimitError,"MemoryAllocationFailed");
 
-  /*
-    Initialize members of the MngInfo structure.
-  */
+  /* Initialize members of the MngInfo structure.  */
+
   (void) ResetMagickMemory(mng_info,0,sizeof(MngInfo));
   mng_info->image=image;
   have_mng_structure=MagickTrue;
@@ -4162,15 +4139,12 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
       char
         magic_number[MaxTextExtent];
 
-      /*
-        Verify MNG signature.
-      */
+      /* Verify MNG signature.  */
       count=(size_t) ReadBlob(image,8,(unsigned char *) magic_number);
       if (memcmp(magic_number,"\212MNG\r\n\032\n",8) != 0)
         ThrowReaderException(CorruptImageError,"ImproperImageHeader");
-      /*
-        Initialize some nonzero members of the MngInfo structure.
-      */
+
+      /* Initialize some nonzero members of the MngInfo structure.  */
       for (i=0; i < MNG_MAX_OBJECTS; i++)
       {
         mng_info->object_clip[i].right=(ssize_t) PNG_UINT_31_MAX;
@@ -4178,6 +4152,7 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
       }
       mng_info->exists[0]=MagickTrue;
     }
+
   first_mng_object=MagickTrue;
   mng_type=0;
 #if defined(MNG_INSERT_LAYERS)
@@ -4235,10 +4210,13 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
         if (length)
           {
             chunk=(unsigned char *) AcquireQuantumMemory(length,sizeof(*chunk));
+
             if (chunk == (unsigned char *) NULL)
               ThrowReaderException(ResourceLimitError,"MemoryAllocationFailed");
+
             for (i=0; i < (ssize_t) length; i++)
               chunk[i]=(unsigned char) ReadBlobByte(image);
+
             p=chunk;
           }
 
@@ -4268,6 +4246,7 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
           }
         if (memcmp(type,mng_MEND,4) == 0)
           break;
+
         if (skip_to_iend)
           {
             if (memcmp(type,mng_IEND,4) == 0)
@@ -4332,9 +4311,7 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
 #endif
             if (GetAuthenticPixelQueue(image) != (PixelPacket *) NULL)
               {
-                /*
-                  Allocate next image structure.
-                */
+                /* Allocate next image structure.  */
                 AcquireNextImage(image_info,image);
 
                 if (GetNextImageInList(image) == (Image *) NULL)
@@ -4527,11 +4504,11 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
             chunk=(unsigned char *) RelinquishMagickMemory(chunk);
             continue;
           }
+
         if (memcmp(type,mng_PLTE,4) == 0)
           {
-            /*
-              Read global PLTE.
-            */
+            /* Read global PLTE.  */
+
             if (length && (length < 769))
               {
                 if (mng_info->global_plte == (png_colorp) NULL)
@@ -4564,6 +4541,7 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
             chunk=(unsigned char *) RelinquishMagickMemory(chunk);
             continue;
           }
+
         if (memcmp(type,mng_tRNS,4) == 0)
           {
             /* read global tRNS */
@@ -4601,9 +4579,8 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
 
         if (memcmp(type,mng_cHRM,4) == 0)
           {
-            /*
-              Read global cHRM
-            */
+            /* Read global cHRM */
+
             if (length == 32)
               {
                 mng_info->global_chrm.white_point.x=0.00001*mng_get_long(p);
@@ -4623,9 +4600,11 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
               }
             else
               mng_info->have_global_chrm=MagickFalse;
+
             chunk=(unsigned char *) RelinquishMagickMemory(chunk);
             continue;
           }
+
         if (memcmp(type,mng_sRGB,4) == 0)
           {
             /*
@@ -4639,9 +4618,11 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
               }
             else
               mng_info->have_global_srgb=MagickFalse;
+
             chunk=(unsigned char *) RelinquishMagickMemory(chunk);
             continue;
           }
+
         if (memcmp(type,mng_iCCP,4) == 0)
           {
             /* To do. */
@@ -4651,8 +4632,10 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
             */
             if (length)
               chunk=(unsigned char *) RelinquishMagickMemory(chunk);
+
             continue;
           }
+
         if (memcmp(type,mng_FRAM,4) == 0)
           {
             if (mng_type == 3)
@@ -4666,6 +4649,7 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
             frame_delay=default_frame_delay;
             frame_timeout=default_frame_timeout;
             fb=default_fb;
+
             if (length)
               if (p[0])
                 mng_info->framing_mode=p[0];
@@ -4676,13 +4660,15 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
 
             if (length > 6)
               {
-                /*
-                  Note the delay and frame clipping boundaries.
-                */
+                /* Note the delay and frame clipping boundaries.  */
+
                 p++; /* framing mode */
+
                 while (*p && ((p-chunk) < (ssize_t) length))
                   p++;  /* frame name */
+
                 p++;  /* frame name terminator */
+
                 if ((p-chunk) < (ssize_t) (length-4))
                   {
                     int
@@ -4694,6 +4680,7 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
                     change_timeout=(*p++);
                     change_clipping=(*p++);
                     p++; /* change_sync */
+
                     if (change_delay)
                       {
                         frame_delay=1UL*image->ticks_per_second*
@@ -4714,6 +4701,7 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
                           (void) LogMagickEvent(CoderEvent,GetMagickModule(),
                             "    Framing_delay=%.20g",(double) frame_delay);
                       }
+
                     if (change_timeout)
                       {
                         frame_timeout=1UL*image->ticks_per_second*
@@ -4734,6 +4722,7 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
                           (void) LogMagickEvent(CoderEvent,GetMagickModule(),
                             "    Framing_timeout=%.20g",(double) frame_timeout);
                       }
+
                     if (change_clipping)
                       {
                         fb=mng_read_box(previous_fb,(char) p[0],&p[1]);
@@ -4745,6 +4734,7 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
                             "    Frame_clip: L=%.20g R=%.20g T=%.20g B=%.20g",
                             (double) fb.left,(double) fb.right,(double) fb.top,
                             (double) fb.bottom);
+
                         if (change_clipping == 2)
                           default_fb=fb;
                       }
@@ -4770,18 +4760,18 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
             if (insert_layers && (mng_info->framing_mode == 4) &&
                 (subframe_width) && (subframe_height))
               {
-                /*
-                  Allocate next image structure.
-                */
+                /* Allocate next image structure.  */
                 if (GetAuthenticPixelQueue(image) != (PixelPacket *) NULL)
                   {
                     AcquireNextImage(image_info,image);
+
                     if (GetNextImageInList(image) == (Image *) NULL)
                       {
                         image=DestroyImageList(image);
                         MngInfoFreeStruct(mng_info,&have_mng_structure);
                         return((Image *) NULL);
                       }
+
                     image=SyncNextImageInList(image);
                   }
 
@@ -4829,6 +4819,7 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
             */
             first_object=(p[0] << 8) | p[1];
             last_object=(p[2] << 8) | p[3];
+
             for (i=(int) first_object; i <= (int) last_object; i++)
             {
               if (mng_info->exists[i] && !mng_info->frozen[i])
@@ -4840,6 +4831,7 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
                   mng_info->object_clip[i]=mng_read_box(box,(char) p[4],&p[5]);
                 }
             }
+
             chunk=(unsigned char *) RelinquishMagickMemory(chunk);
             continue;
           }
@@ -4863,9 +4855,8 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
 
         if ((memcmp(type,mng_DISC,4) == 0) || (memcmp(type,mng_SEEK,4) == 0))
           {
-            /*
-              Read DISC or SEEK.
-            */
+            /* Read DISC or SEEK.  */
+
             if ((length == 0) || !memcmp(type,mng_SEEK,4))
               {
                 for (i=1; i < MNG_MAX_OBJECTS; i++)
@@ -4889,15 +4880,15 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
 
             continue;
           }
+
         if (memcmp(type,mng_MOVE,4) == 0)
           {
             size_t
               first_object,
               last_object;
 
-            /*
-              read MOVE
-            */
+            /* read MOVE */
+
             first_object=(p[0] << 8) | p[1];
             last_object=(p[2] << 8) | p[3];
             for (i=(ssize_t) first_object; i <= (ssize_t) last_object; i++)
@@ -4917,6 +4908,7 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
                   mng_info->y_off[i]=new_pair.b;
                 }
             }
+
             chunk=(unsigned char *) RelinquishMagickMemory(chunk);
             continue;
           }
@@ -4926,9 +4918,8 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
             ssize_t loop_iters=1;
             loop_level=chunk[0];
             mng_info->loop_active[loop_level]=1;  /* mark loop active */
-            /*
-              Record starting point.
-            */
+
+            /* Record starting point.  */
             loop_iters=mng_get_long(&chunk[1]);
 
             if (logging != MagickFalse)
@@ -4949,9 +4940,11 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
             chunk=(unsigned char *) RelinquishMagickMemory(chunk);
             continue;
           }
+
         if (memcmp(type,mng_ENDL,4) == 0)
           {
             loop_level=chunk[0];
+
             if (skipping_loop > 0)
               {
                 if (skipping_loop == loop_level)
@@ -4963,6 +4956,7 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
                     mng_info->loop_active[loop_level]=0;
                   }
               }
+
             else
               {
                 if (mng_info->loop_active[loop_level] == 1)
@@ -4975,6 +4969,7 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
                         "  ENDL: LOOP level %.20g has %.20g remaining iters ",
                         (double) loop_level,(double)
                         mng_info->loop_count[loop_level]);
+
                     if (mng_info->loop_count[loop_level] != 0)
                       {
                         offset=SeekBlob(image,mng_info->loop_jump[loop_level],
@@ -4984,6 +4979,7 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
                           ThrowReaderException(CorruptImageError,
                             "ImproperImageHeader");
                       }
+
                     else
                       {
                         short
@@ -5001,17 +4997,21 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
                       }
                   }
               }
+
             chunk=(unsigned char *) RelinquishMagickMemory(chunk);
             continue;
           }
+
         if (memcmp(type,mng_CLON,4) == 0)
           {
             if (mng_info->clon_warning == 0)
               (void) ThrowMagickException(&image->exception,GetMagickModule(),
                 CoderError,"CLON is not implemented yet","`%s'",
                 image->filename);
+
             mng_info->clon_warning++;
           }
+
         if (memcmp(type,mng_MAGN,4) == 0)
           {
             png_uint_16
@@ -5045,60 +5045,76 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
                      GetMagickModule(),CoderError,
                      "MAGN is not implemented yet for nonzero objects",
                      "`%s'",image->filename);
+
                    mng_info->magn_warning++;
                 }
 #endif
             if (length > 4)
               magn_methx=p[4];
+
             else
               magn_methx=0;
 
             if (length > 6)
               magn_mx=(p[5] << 8) | p[6];
+
             else
               magn_mx=1;
+
             if (magn_mx == 0)
               magn_mx=1;
 
             if (length > 8)
               magn_my=(p[7] << 8) | p[8];
+
             else
               magn_my=magn_mx;
+
             if (magn_my == 0)
               magn_my=1;
 
             if (length > 10)
               magn_ml=(p[9] << 8) | p[10];
+
             else
               magn_ml=magn_mx;
+
             if (magn_ml == 0)
               magn_ml=1;
 
             if (length > 12)
               magn_mr=(p[11] << 8) | p[12];
+
             else
               magn_mr=magn_mx;
+
             if (magn_mr == 0)
               magn_mr=1;
 
             if (length > 14)
               magn_mt=(p[13] << 8) | p[14];
+
             else
               magn_mt=magn_my;
+
             if (magn_mt == 0)
               magn_mt=1;
 
             if (length > 16)
               magn_mb=(p[15] << 8) | p[16];
+
             else
               magn_mb=magn_my;
+
             if (magn_mb == 0)
               magn_mb=1;
 
             if (length > 17)
               magn_methy=p[17];
+
             else
               magn_methy=magn_methx;
+
 
             if (magn_methx > 5 || magn_methy > 5)
               if (mng_info->magn_warning == 0)
@@ -5107,6 +5123,7 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
                      GetMagickModule(),CoderError,
                      "Unknown MAGN method in MNG datastream","`%s'",
                      image->filename);
+
                    mng_info->magn_warning++;
                 }
 #ifdef MNG_OBJECT_BUFFERS
@@ -5125,26 +5142,32 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
                 mng_info->magn_methy=magn_methy;
               }
           }
+
         if (memcmp(type,mng_PAST,4) == 0)
           {
             if (mng_info->past_warning == 0)
               (void) ThrowMagickException(&image->exception,GetMagickModule(),
                 CoderError,"PAST is not implemented yet","`%s'",
                 image->filename);
+
             mng_info->past_warning++;
           }
+
         if (memcmp(type,mng_SHOW,4) == 0)
           {
             if (mng_info->show_warning == 0)
               (void) ThrowMagickException(&image->exception,GetMagickModule(),
                 CoderError,"SHOW is not implemented yet","`%s'",
                 image->filename);
+
             mng_info->show_warning++;
           }
+
         if (memcmp(type,mng_sBIT,4) == 0)
           {
             if (length < 4)
               mng_info->have_global_sbit=MagickFalse;
+
             else
               {
                 mng_info->global_sbit.gray=p[0];
@@ -5166,6 +5189,7 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
                 mng_info->global_phys_unit_type=p[8];
                 mng_info->have_global_phys=MagickTrue;
               }
+
             else
               mng_info->have_global_phys=MagickFalse;
           }
@@ -5174,15 +5198,18 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
             if (mng_info->phyg_warning == 0)
               (void) ThrowMagickException(&image->exception,GetMagickModule(),
                 CoderError,"pHYg is not implemented.","`%s'",image->filename);
+
             mng_info->phyg_warning++;
           }
         if (memcmp(type,mng_BASI,4) == 0)
           {
             skip_to_iend=MagickTrue;
+
             if (mng_info->basi_warning == 0)
               (void) ThrowMagickException(&image->exception,GetMagickModule(),
                 CoderError,"BASI is not implemented yet","`%s'",
                 image->filename);
+
             mng_info->basi_warning++;
 #ifdef MNG_BASI_SUPPORTED
             basi_width=(size_t) ((p[0] << 24) | (p[1] << 16) |
@@ -5195,18 +5222,25 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
             basi_interlace_method=p[11];
             if (length > 11)
               basi_red=(p[12] << 8) & p[13];
+
             else
               basi_red=0;
+
             if (length > 13)
               basi_green=(p[14] << 8) & p[15];
+
             else
               basi_green=0;
+
             if (length > 15)
               basi_blue=(p[16] << 8) & p[17];
+
             else
               basi_blue=0;
+
             if (length > 17)
               basi_alpha=(p[18] << 8) & p[19];
+
             else
               {
                 if (basi_sample_depth == 16)
@@ -5214,14 +5248,18 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
                 else
                   basi_alpha=255;
               }
+
             if (length > 19)
               basi_viewable=p[20];
+
             else
               basi_viewable=0;
+
 #endif
             chunk=(unsigned char *) RelinquishMagickMemory(chunk);
             continue;
           }
+
         if (memcmp(type,mng_IHDR,4)
 #if defined(JNG_SUPPORTED)
             && memcmp(type,mng_JHDR,4)
@@ -5231,19 +5269,23 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
             /* Not an IHDR or JHDR chunk */
             if (length)
               chunk=(unsigned char *) RelinquishMagickMemory(chunk);
+
             continue;
           }
 /* Process IHDR */
         if (logging != MagickFalse)
           (void) LogMagickEvent(CoderEvent,GetMagickModule(),
             "  Processing %c%c%c%c chunk",type[0],type[1],type[2],type[3]);
+
         mng_info->exists[object_id]=MagickTrue;
         mng_info->viewable[object_id]=MagickTrue;
+
         if (mng_info->invisible[object_id])
           {
             if (logging != MagickFalse)
               (void) LogMagickEvent(CoderEvent,GetMagickModule(),
                 "  Skipping invisible object");
+
             skip_to_iend=MagickTrue;
             chunk=(unsigned char *) RelinquishMagickMemory(chunk);
             continue;
@@ -5251,6 +5293,7 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
 #if defined(MNG_INSERT_LAYERS)
         if (length < 8)
           ThrowReaderException(CorruptImageError,"ImproperImageHeader");
+
         image_width=(size_t) mng_get_long(p);
         image_height=(size_t) mng_get_long(&p[4]);
 #endif
@@ -5275,26 +5318,30 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
                       Allocate next image structure.
                     */
                     AcquireNextImage(image_info,image);
+
                     if (GetNextImageInList(image) == (Image *) NULL)
                       {
                         image=DestroyImageList(image);
                         MngInfoFreeStruct(mng_info,&have_mng_structure);
                         return((Image *) NULL);
                       }
+
                     image=SyncNextImageInList(image);
                   }
                 mng_info->image=image;
+
                 if (term_chunk_found)
                   {
                     image->start_loop=MagickTrue;
                     image->iterations=mng_iterations;
                     term_chunk_found=MagickFalse;
                   }
+
                 else
                     image->start_loop=MagickFalse;
-                /*
-                  Make a background rectangle.
-                */
+
+                /* Make a background rectangle.  */
+
                 image->delay=0;
                 image->columns=mng_info->mng_width;
                 image->rows=mng_info->mng_height;
@@ -5324,12 +5371,14 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
                 Allocate next image structure.
               */
               AcquireNextImage(image_info,image);
+
               if (GetNextImageInList(image) == (Image *) NULL)
                 {
                   image=DestroyImageList(image);
                   MngInfoFreeStruct(mng_info,&have_mng_structure);
                   return((Image *) NULL);
                 }
+
               image=SyncNextImageInList(image);
             }
 
@@ -5344,6 +5393,7 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
 
             else
                 image->start_loop=MagickFalse;
+
             image->delay=0;
             image->columns=subframe_width;
             image->rows=subframe_height;
@@ -5363,18 +5413,21 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
           }
 #endif /* MNG_INSERT_LAYERS */
         first_mng_object=MagickFalse;
+
         if (GetAuthenticPixelQueue(image) != (PixelPacket *) NULL)
           {
             /*
               Allocate next image structure.
             */
             AcquireNextImage(image_info,image);
+
             if (GetNextImageInList(image) == (Image *) NULL)
               {
                 image=DestroyImageList(image);
                 MngInfoFreeStruct(mng_info,&have_mng_structure);
                 return((Image *) NULL);
               }
+
             image=SyncNextImageInList(image);
           }
         mng_info->image=image;
@@ -5407,14 +5460,18 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
         image->page.x=mng_info->x_off[object_id];
         image->page.y=mng_info->y_off[object_id];
         image->iterations=mng_iterations;
+
         /*
           Seek back to the beginning of the IHDR or JHDR chunk's length field.
         */
+
         if (logging != MagickFalse)
           (void) LogMagickEvent(CoderEvent,GetMagickModule(),
             "  Seeking back to beginning of %c%c%c%c chunk",type[0],type[1],
             type[2],type[3]);
+
         offset=SeekBlob(image,-((ssize_t) length+12),SEEK_CUR);
+
         if (offset < 0)
           ThrowReaderException(CorruptImageError,"ImproperImageHeader");
       }
@@ -5426,6 +5483,7 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
 
     if (memcmp(type,mng_IHDR,4) == 0)
       image=ReadOnePNGImage(mng_info,image_info,exception);
+
 #if defined(JNG_SUPPORTED)
     else
       image=ReadOneJNGImage(mng_info,image_info,exception);
@@ -5438,6 +5496,7 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
             (void) DestroyImageList(previous);
             (void) CloseBlob(previous);
           }
+
         MngInfoFreeStruct(mng_info,&have_mng_structure);
         return((Image *) NULL);
       }
@@ -5470,39 +5529,57 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
             if (mng_info->magn_methx == 1)
               {
                 magnified_width=mng_info->magn_ml;
+
                 if (image->columns > 1)
                    magnified_width += mng_info->magn_mr;
+
                 if (image->columns > 2)
-                   magnified_width += (png_uint_32) ((image->columns-2)*(mng_info->magn_mx));
+                   magnified_width += (png_uint_32)
+                      ((image->columns-2)*(mng_info->magn_mx));
               }
+
             else
               {
                 magnified_width=(png_uint_32) image->columns;
+
                 if (image->columns > 1)
                    magnified_width += mng_info->magn_ml-1;
+
                 if (image->columns > 2)
                    magnified_width += mng_info->magn_mr-1;
+
                 if (image->columns > 3)
-                   magnified_width += (png_uint_32) ((image->columns-3)*(mng_info->magn_mx-1));
+                   magnified_width += (png_uint_32)
+                      ((image->columns-3)*(mng_info->magn_mx-1));
               }
+
             if (mng_info->magn_methy == 1)
               {
                 magnified_height=mng_info->magn_mt;
+
                 if (image->rows > 1)
                    magnified_height += mng_info->magn_mb;
+
                 if (image->rows > 2)
-                   magnified_height += (png_uint_32) ((image->rows-2)*(mng_info->magn_my));
+                   magnified_height += (png_uint_32)
+                      ((image->rows-2)*(mng_info->magn_my));
               }
+
             else
               {
                 magnified_height=(png_uint_32) image->rows;
+
                 if (image->rows > 1)
                    magnified_height += mng_info->magn_mt-1;
+
                 if (image->rows > 2)
                    magnified_height += mng_info->magn_mb-1;
+
                 if (image->rows > 3)
-                   magnified_height += (png_uint_32) ((image->rows-3)*(mng_info->magn_my-1));
+                   magnified_height += (png_uint_32)
+                      ((image->rows-3)*(mng_info->magn_my-1));
               }
+
             if (magnified_height > image->rows ||
                 magnified_width > image->columns)
               {
@@ -5531,13 +5608,14 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
                   magn_methx,
                   magn_methy;
 
-                /*
-                  Allocate next image structure.
-                */
+                /* Allocate next image structure.  */
+
                 if (logging != MagickFalse)
                   (void) LogMagickEvent(CoderEvent,GetMagickModule(),
                     "    Allocate magnified image");
+
                 AcquireNextImage(image_info,image);
+
                 if (GetNextImageInList(image) == (Image *) NULL)
                   {
                     image=DestroyImageList(image);
@@ -5565,6 +5643,7 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
                      {
                        q=GetAuthenticPixels(image,0,y,image->columns,1,
                           exception);
+
                        for (x=(ssize_t) image->columns-1; x >= 0; x--)
                        {
                           q->red=ScaleQuantumToShort(q->red);
@@ -5573,6 +5652,7 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
                           q->opacity=ScaleQuantumToShort(q->opacity);
                           q++;
                        }
+
                        if (SyncAuthenticPixels(image,exception) == MagickFalse)
                          break;
                      }
@@ -5583,16 +5663,21 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
 
                 if (image->matte != MagickFalse)
                    (void) SetImageBackgroundColor(large_image);
+
                 else
                   {
                     large_image->background_color.opacity=OpaqueOpacity;
                     (void) SetImageBackgroundColor(large_image);
+
                     if (magn_methx == 4)
                       magn_methx=2;
+
                     if (magn_methx == 5)
                       magn_methx=3;
+
                     if (magn_methy == 4)
                       magn_methy=2;
+
                     if (magn_methy == 5)
                       magn_methy=3;
                   }
@@ -5607,6 +5692,7 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
                 length=(size_t) image->columns;
                 next=(PixelPacket *) AcquireQuantumMemory(length,sizeof(*next));
                 prev=(PixelPacket *) AcquireQuantumMemory(length,sizeof(*prev));
+
                 if ((prev == (PixelPacket *) NULL) ||
                     (next == (PixelPacket *) NULL))
                   {
@@ -5615,29 +5701,38 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
                      ThrowReaderException(ResourceLimitError,
                        "MemoryAllocationFailed");
                   }
+
                 n=GetAuthenticPixels(image,0,0,image->columns,1,exception);
                 (void) CopyMagickMemory(next,n,length);
+
                 for (y=0; y < (ssize_t) image->rows; y++)
                 {
                   if (y == 0)
                     m=(ssize_t) mng_info->magn_mt;
+
                   else if (magn_methy > 1 && y == (ssize_t) image->rows-2)
                     m=(ssize_t) mng_info->magn_mb;
+
                   else if (magn_methy <= 1 && y == (ssize_t) image->rows-1)
                     m=(ssize_t) mng_info->magn_mb;
+
                   else if (magn_methy > 1 && y == (ssize_t) image->rows-1)
                     m=1;
+
                   else
                     m=(ssize_t) mng_info->magn_my;
+
                   n=prev;
                   prev=next;
                   next=n;
+
                   if (y < (ssize_t) image->rows-1)
                     {
                       n=GetAuthenticPixels(image,0,y+1,image->columns,1,
                           exception);
                       (void) CopyMagickMemory(next,n,length);
                     }
+
                   for (i=0; i < m; i++, yy++)
                   {
                     register PixelPacket
@@ -5649,6 +5744,7 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
                     q=GetAuthenticPixels(large_image,0,yy,large_image->columns,
                           1,exception);
                     q+=(large_image->columns-image->columns);
+
                     for (x=(ssize_t) image->columns-1; x >= 0; x--)
                     {
                       /* TO DO: get color as function of indexes[x] */
@@ -5662,10 +5758,12 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
                         {
                           *q=(*pixels); /* replicate previous */
                         }
+
                       else if (magn_methy == 2 || magn_methy == 4)
                         {
                           if (i == 0)
                              *q=(*pixels);
+
                           else
                             {
                               /* Interpolate */
@@ -5678,12 +5776,14 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
                               (*q).blue=(QM) (((ssize_t) (2*i*((*n).blue
                                  -(*pixels).blue)+m))/((ssize_t) (m*2))
                                  +(*pixels).blue);
+
                               if (image->matte != MagickFalse)
                                  (*q).opacity=(QM) (((ssize_t)
                                  (2*i*((*n).opacity
                                  -(*pixels).opacity)+m))
                                  /((ssize_t) (m*2))+(*pixels).opacity);
                             }
+
                           if (magn_methy == 4)
                             {
                               /* Replicate nearest */
@@ -5693,13 +5793,16 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
                                  (*q).opacity=(*n).opacity+0;
                             }
                         }
+
                       else /* if (magn_methy == 3 || magn_methy == 5) */
                         {
                           /* Replicate nearest */
                           if (i <= ((m+1) << 1))
                              *q=(*pixels);
+
                           else
                              *q=(*n);
+
                           if (magn_methy == 5)
                             {
                               (*q).opacity=(QM) (((ssize_t) (2*i*((*n).opacity
@@ -5711,10 +5814,13 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
                       q++;
                       pixels++;
                     } /* x */
+
                     if (SyncAuthenticPixels(large_image,exception) == 0)
                       break;
+
                   } /* i */
                 } /* y */
+
                 prev=(PixelPacket *) RelinquishMagickMemory(prev);
                 next=(PixelPacket *) RelinquishMagickMemory(next);
 
@@ -5743,19 +5849,25 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
                   q=GetAuthenticPixels(image,0,y,image->columns,1,exception);
                   pixels=q+(image->columns-length);
                   n=pixels+1;
+
                   for (x=(ssize_t) (image->columns-length);
                     x < (ssize_t) image->columns; x++)
                   {
                     if (x == (ssize_t) (image->columns-length))
                       m=(ssize_t) mng_info->magn_ml;
+
                     else if (magn_methx > 1 && x == (ssize_t) image->columns-2)
                       m=(ssize_t) mng_info->magn_mr;
+
                     else if (magn_methx <= 1 && x == (ssize_t) image->columns-1)
                       m=(ssize_t) mng_info->magn_mr;
+
                     else if (magn_methx > 1 && x == (ssize_t) image->columns-1)
                       m=1;
+
                     else
                       m=(ssize_t) mng_info->magn_mx;
+
                     for (i=0; i < m; i++)
                     {
                       if (magn_methx <= 1)
@@ -5763,10 +5875,12 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
                           /* replicate previous */
                           *q=(*pixels);
                         }
+
                       else if (magn_methx == 2 || magn_methx == 4)
                         {
                           if (i == 0)
                             *q=(*pixels);
+
                           else
                             {
                               /* Interpolate */
@@ -5784,6 +5898,7 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
                                    -(*pixels).opacity)+m)/((ssize_t) (m*2))
                                    +(*pixels).opacity);
                             }
+
                           if (magn_methx == 4)
                             {
                               /* Replicate nearest */
@@ -5793,13 +5908,16 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
                                  (*q).opacity=(*n).opacity+0;
                             }
                         }
+
                       else /* if (magn_methx == 3 || magn_methx == 5) */
                         {
                           /* Replicate nearest */
                           if (i <= ((m+1) << 1))
                              *q=(*pixels);
+
                           else
                              *q=(*n);
+
                           if (magn_methx == 5)
                             {
                               /* Interpolate */
@@ -5813,6 +5931,7 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
                     n++;
                     p++;
                   }
+
                   if (SyncAuthenticPixels(image,exception) == MagickFalse)
                     break;
                 }
@@ -5825,6 +5944,7 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
                    for (y=0; y < (ssize_t) image->rows; y++)
                    {
                      q=GetAuthenticPixels(image,0,y,image->columns,1,exception);
+
                      for (x=(ssize_t) image->columns-1; x >= 0; x--)
                      {
                         q->red=ScaleShortToQuantum(q->red);
@@ -5833,6 +5953,7 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
                         q->opacity=ScaleShortToQuantum(q->opacity);
                         q++;
                      }
+
                      if (SyncAuthenticPixels(image,exception) == MagickFalse)
                        break;
                    }
@@ -5866,6 +5987,7 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
             if (logging != MagickFalse)
               (void) LogMagickEvent(CoderEvent,GetMagickModule(),
                 "  Crop the PNG image");
+
             if ((crop_box.left < crop_box.right) &&
                 (crop_box.top < crop_box.bottom))
               {
@@ -5888,6 +6010,7 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
                 image->page.x=0;
                 image->page.y=0;
                 im=CropImage(image,&crop_info,exception);
+
                 if (im != (Image *) NULL)
                   {
                     image->columns=im->columns;
@@ -5899,6 +6022,7 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
                     image->page.y=crop_box.top;
                   }
               }
+
             else
               {
                 /*
@@ -5921,11 +6045,21 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
 #endif
       }
 
+#if (MAGICKCORE_QUANTUM_DEPTH > 16)
+      /* PNG does not handle depths greater than 16 so reduce it even
+       * if lossy
+       */
+      if (image->depth > 16)
+         image->depth=16;
+#endif
+
 #if (MAGICKCORE_QUANTUM_DEPTH >= 16)
-      (void) LosslessReduceDepth(image);
+      if (LosslessReduceDepthOK(image) != MagickFalse)
+         image->depth = 8;
 #endif
 
       GetImageException(image,exception);
+
       if (image_info->number_scenes != 0)
         {
           if (mng_info->scenes_found >
@@ -5938,10 +6072,13 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
           "  Finished reading image datastream.");
 
   } while (LocaleCompare(image_info->magick,"MNG") == 0);
+
   (void) CloseBlob(image);
+
   if (logging != MagickFalse)
     (void) LogMagickEvent(CoderEvent,GetMagickModule(),
       "  Finished reading all image datastreams.");
+
 #if defined(MNG_INSERT_LAYERS)
   if (insert_layers && !mng_info->image_found && (mng_info->mng_width) &&
        (mng_info->mng_height))
@@ -5963,9 +6100,11 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
             {
               image=DestroyImageList(image);
               MngInfoFreeStruct(mng_info,&have_mng_structure);
+
               if (logging != MagickFalse)
                 (void) LogMagickEvent(CoderEvent,GetMagickModule(),
                   "  Allocation failed, returning NULL.");
+
               return((Image *) NULL);
             }
           image=SyncNextImageInList(image);
@@ -5997,9 +6136,11 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
       {
         if (logging != MagickFalse)
           (void) LogMagickEvent(CoderEvent,GetMagickModule(),"  No beginning");
+
         (void) ThrowMagickException(&image->exception,GetMagickModule(),
           CoderError,"Linked list is corrupted, beginning of list not found",
           "`%s'",image_info->filename);
+
         return((Image *) NULL);
       }
 
@@ -6009,11 +6150,13 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
       {
         if (logging != MagickFalse)
           (void) LogMagickEvent(CoderEvent,GetMagickModule(),"  Corrupt list");
+
         (void) ThrowMagickException(&image->exception,GetMagickModule(),
           CoderError,"Linked list is corrupted; next_image is NULL","`%s'",
           image_info->filename);
       }
   }
+
   if (mng_info->ticks_per_second && mng_info->image_found > 1 &&
              GetNextImageInList(image) ==
      (Image *) NULL)
@@ -6021,19 +6164,24 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
       if (logging != MagickFalse)
         (void) LogMagickEvent(CoderEvent,GetMagickModule(),
             "  First image null");
+
       (void) ThrowMagickException(&image->exception,GetMagickModule(),
         CoderError,"image->next for first image is NULL but shouldn't be.",
         "`%s'",image_info->filename);
     }
+
   if (mng_info->image_found == 0)
     {
       if (logging != MagickFalse)
         (void) LogMagickEvent(CoderEvent,GetMagickModule(),
           "  No visible images found.");
+
       (void) ThrowMagickException(&image->exception,GetMagickModule(),
         CoderError,"No visible images in file","`%s'",image_info->filename);
+
       if (image != (Image *) NULL)
         image=DestroyImageList(image);
+
       MngInfoFreeStruct(mng_info,&have_mng_structure);
       return((Image *) NULL);
     }
@@ -6052,6 +6200,7 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
     {
       if (image->delay)
         final_image_delay=image->delay;
+
       image=GetNextImageInList(image);
     }
 
@@ -6072,10 +6221,13 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
 
       scene=0;
       image=GetFirstImageInList(image);
+
       (void) LogMagickEvent(CoderEvent,GetMagickModule(),
         "  Before coalesce:");
+
       (void) LogMagickEvent(CoderEvent,GetMagickModule(),
         "    scene 0 delay=%.20g",(double) image->delay);
+
       while (GetNextImageInList(image) != (Image *) NULL)
       {
         image=GetNextImageInList(image);
@@ -6097,12 +6249,16 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
 
       if (logging != MagickFalse)
         (void) LogMagickEvent(CoderEvent,GetMagickModule(),"  Coalesce Images");
+
       scene=image->scene;
       next_image=CoalesceImages(image,&image->exception);
+
       if (next_image == (Image *) NULL)
         ThrowReaderException(ResourceLimitError,"MemoryAllocationFailed");
+
       image=DestroyImageList(image);
       image=next_image;
+
       for (next=image; next != (Image *) NULL; next=next_image)
       {
          next->page.width=mng_info->mng_width;
@@ -6111,8 +6267,10 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
          next->page.y=0;
          next->scene=scene++;
          next_image=GetNextImageInList(next);
+
          if (next_image == (Image *) NULL)
            break;
+
          if (next->delay == 0)
            {
              scene--;
@@ -6129,6 +6287,7 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
 
   while (GetNextImageInList(image) != (Image *) NULL)
       image=GetNextImageInList(image);
+
   image->dispose=BackgroundDispose;
 
   if (logging != MagickFalse)
@@ -6138,24 +6297,31 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
 
       scene=0;
       image=GetFirstImageInList(image);
+
       (void) LogMagickEvent(CoderEvent,GetMagickModule(),
         "  After coalesce:");
+
       (void) LogMagickEvent(CoderEvent,GetMagickModule(),
         "    scene 0 delay=%.20g dispose=%.20g",(double) image->delay,
         (double) image->dispose);
+
       while (GetNextImageInList(image) != (Image *) NULL)
       {
         image=GetNextImageInList(image);
+
         (void) LogMagickEvent(CoderEvent,GetMagickModule(),
           "    scene %.20g delay=%.20g dispose=%.20g",(double) scene++,
           (double) image->delay,(double) image->dispose);
       }
    }
+
   image=GetFirstImageInList(image);
   MngInfoFreeStruct(mng_info,&have_mng_structure);
   have_mng_structure=MagickFalse;
+
   if (logging != MagickFalse)
     (void) LogMagickEvent(CoderEvent,GetMagickModule(),"exit ReadMNGImage()");
+
   return(GetFirstImageInList(image));
 }
 #else /* PNG_LIBPNG_VER > 10011 */
@@ -6163,10 +6329,13 @@ static Image *ReadPNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
 {
   printf("Your PNG library is too old: You have libpng-%s\n",
      PNG_LIBPNG_VER_STRING);
+
   (void) ThrowMagickException(exception,GetMagickModule(),CoderError,
     "PNG library is too old","`%s'",image_info->filename);
+
   return(Image *) NULL;
 }
+
 static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
 {
   return(ReadPNGImage(image_info,exception));
@@ -6210,11 +6379,13 @@ ModuleExport size_t RegisterPNGImage(void)
     {
       "See http://www.libpng.org/ for details about the PNG format."
     },
+
     *JNGNote=
     {
       "See http://www.libpng.org/pub/mng/ for details about the JNG\n"
       "format."
     },
+
     *MNGNote=
     {
       "See http://www.libpng.org/pub/mng/ for details about the MNG\n"
@@ -6222,9 +6393,11 @@ ModuleExport size_t RegisterPNGImage(void)
     };
 
   *version='\0';
+
 #if defined(PNG_LIBPNG_VER_STRING)
   (void) ConcatenateMagickString(version,"libpng ",MaxTextExtent);
   (void) ConcatenateMagickString(version,PNG_LIBPNG_VER_STRING,MaxTextExtent);
+
   if (LocaleCompare(PNG_LIBPNG_VER_STRING,png_get_header_ver(NULL)) != 0)
     {
       (void) ConcatenateMagickString(version,",",MaxTextExtent);
@@ -6232,39 +6405,50 @@ ModuleExport size_t RegisterPNGImage(void)
             MaxTextExtent);
     }
 #endif
+
   entry=SetMagickInfo("MNG");
   entry->seekable_stream=MagickTrue;  /* To do: eliminate this. */
+
 #if defined(MAGICKCORE_PNG_DELEGATE)
   entry->decoder=(DecodeImageHandler *) ReadMNGImage;
   entry->encoder=(EncodeImageHandler *) WriteMNGImage;
 #endif
+
   entry->magick=(IsImageFormatHandler *) IsMNG;
   entry->description=ConstantString("Multiple-image Network Graphics");
+
   if (*version != '\0')
     entry->version=ConstantString(version);
+
   entry->module=ConstantString("PNG");
   entry->note=ConstantString(MNGNote);
   (void) RegisterMagickInfo(entry);
 
   entry=SetMagickInfo("PNG");
+
 #if defined(MAGICKCORE_PNG_DELEGATE)
   entry->decoder=(DecodeImageHandler *) ReadPNGImage;
   entry->encoder=(EncodeImageHandler *) WritePNGImage;
 #endif
+
   entry->magick=(IsImageFormatHandler *) IsPNG;
   entry->adjoin=MagickFalse;
   entry->description=ConstantString("Portable Network Graphics");
   entry->module=ConstantString("PNG");
+
   if (*version != '\0')
     entry->version=ConstantString(version);
+
   entry->note=ConstantString(PNGNote);
   (void) RegisterMagickInfo(entry);
 
   entry=SetMagickInfo("PNG8");
+
 #if defined(MAGICKCORE_PNG_DELEGATE)
   entry->decoder=(DecodeImageHandler *) ReadPNGImage;
   entry->encoder=(EncodeImageHandler *) WritePNGImage;
 #endif
+
   entry->magick=(IsImageFormatHandler *) IsPNG;
   entry->adjoin=MagickFalse;
   entry->description=ConstantString(
@@ -6274,21 +6458,26 @@ ModuleExport size_t RegisterPNGImage(void)
 
   entry=SetMagickInfo("PNG24");
   *version='\0';
+
 #if defined(ZLIB_VERSION)
   (void) ConcatenateMagickString(version,"zlib ",MaxTextExtent);
   (void) ConcatenateMagickString(version,ZLIB_VERSION,MaxTextExtent);
+
   if (LocaleCompare(ZLIB_VERSION,zlib_version) != 0)
     {
       (void) ConcatenateMagickString(version,",",MaxTextExtent);
       (void) ConcatenateMagickString(version,zlib_version,MaxTextExtent);
     }
 #endif
+
   if (*version != '\0')
     entry->version=ConstantString(version);
+
 #if defined(MAGICKCORE_PNG_DELEGATE)
   entry->decoder=(DecodeImageHandler *) ReadPNGImage;
   entry->encoder=(EncodeImageHandler *) WritePNGImage;
 #endif
+
   entry->magick=(IsImageFormatHandler *) IsPNG;
   entry->adjoin=MagickFalse;
   entry->description=ConstantString("opaque 24-bit RGB");
@@ -6296,10 +6485,12 @@ ModuleExport size_t RegisterPNGImage(void)
   (void) RegisterMagickInfo(entry);
 
   entry=SetMagickInfo("PNG32");
+
 #if defined(MAGICKCORE_PNG_DELEGATE)
   entry->decoder=(DecodeImageHandler *) ReadPNGImage;
   entry->encoder=(EncodeImageHandler *) WritePNGImage;
 #endif
+
   entry->magick=(IsImageFormatHandler *) IsPNG;
   entry->adjoin=MagickFalse;
   entry->description=ConstantString("opaque or transparent 32-bit RGBA");
@@ -6307,21 +6498,25 @@ ModuleExport size_t RegisterPNGImage(void)
   (void) RegisterMagickInfo(entry);
 
   entry=SetMagickInfo("JNG");
+
 #if defined(JNG_SUPPORTED)
 #if defined(MAGICKCORE_PNG_DELEGATE)
   entry->decoder=(DecodeImageHandler *) ReadJNGImage;
   entry->encoder=(EncodeImageHandler *) WriteJNGImage;
 #endif
 #endif
+
   entry->magick=(IsImageFormatHandler *) IsJNG;
   entry->adjoin=MagickFalse;
   entry->description=ConstantString("JPEG Network Graphics");
   entry->module=ConstantString("PNG");
   entry->note=ConstantString(JNGNote);
   (void) RegisterMagickInfo(entry);
+
 #if defined(PNG_SETJMP_NOT_THREAD_SAFE)
   png_semaphore=AllocateSemaphoreInfo();
 #endif
+
   return(MagickImageCoderSignature);
 }
 
@@ -6352,6 +6547,7 @@ ModuleExport void UnregisterPNGImage(void)
   (void) UnregisterMagickInfo("PNG24");
   (void) UnregisterMagickInfo("PNG32");
   (void) UnregisterMagickInfo("JNG");
+
 #if defined(PNG_SETJMP_NOT_THREAD_SAFE)
   if (png_semaphore != (SemaphoreInfo *) NULL)
     DestroySemaphoreInfo(&png_semaphore);
@@ -6490,6 +6686,7 @@ png_write_raw_profile(const ImageInfo *image_info,png_struct *ping,
    (void) FormatMagickString(dp,allocated_length-
      (png_size_t) (dp-text[0].text),"%8lu ",(unsigned long) length);
    dp+=8;
+
    for (i=0; i < (ssize_t) length; i++)
    {
      if (i%36 == 0)
@@ -6497,14 +6694,17 @@ png_write_raw_profile(const ImageInfo *image_info,png_struct *ping,
      *(dp++)=(char) hex[((*sp >> 4) & 0x0f)];
      *(dp++)=(char) hex[((*sp++ ) & 0x0f)];
    }
+
    *dp++='\n';
    *dp='\0';
    text[0].text_length=(png_size_t) (dp-text[0].text);
    text[0].compression=image_info->compression == NoCompression ||
      (image_info->compression == UndefinedCompression &&
      text[0].text_length < 128) ? -1 : 0;
+
    if (text[0].text_length <= allocated_length)
      png_set_text(ping,ping_info,text,1);
+
    png_free(ping,text[0].text);
    png_free(ping,text[0].key);
    png_free(ping,text);
@@ -6525,33 +6725,39 @@ static MagickBooleanType png_write_chunk_from_profile(Image *image,
   png_uint_32 length;
 
   ResetImageProfileIterator(image);
-  for (name=GetNextImageProfile(image); name != (const char *) NULL; ){
+
+  for (name=GetNextImageProfile(image); name != (const char *) NULL; )
+  {
     profile=GetImageProfile(image,name);
+
     if (profile != (const StringInfo *) NULL)
       {
         StringInfo
           *png_profile;
 
-        if (LocaleNCompare(name,string,11) == 0) {
-          if (logging != MagickFalse)
-             (void) LogMagickEvent(CoderEvent,GetMagickModule(),
-             "  Found %s profile",name);
+        if (LocaleNCompare(name,string,11) == 0)
+          {
+            if (logging != MagickFalse)
+               (void) LogMagickEvent(CoderEvent,GetMagickModule(),
+                   "  Found %s profile",name);
 
-       png_profile=CloneStringInfo(profile);
-       data=GetStringInfoDatum(png_profile),
-       length=(png_uint_32) GetStringInfoLength(png_profile);
-       data[4]=data[3];
-       data[3]=data[2];
-       data[2]=data[1];
-       data[1]=data[0];
-       (void) WriteBlobMSBULong(image,length-5);  /* data length */
-       (void) WriteBlob(image,length-1,data+1);
-       (void) WriteBlobMSBULong(image,crc32(0,data+1,(uInt) length-1));
-       png_profile=DestroyStringInfo(png_profile);
-        }
+            png_profile=CloneStringInfo(profile);
+            data=GetStringInfoDatum(png_profile),
+            length=(png_uint_32) GetStringInfoLength(png_profile);
+            data[4]=data[3];
+            data[3]=data[2];
+            data[2]=data[1];
+            data[1]=data[0];
+            (void) WriteBlobMSBULong(image,length-5);  /* data length */
+            (void) WriteBlob(image,length-1,data+1);
+            (void) WriteBlobMSBULong(image,crc32(0,data+1,(uInt) length-1));
+            png_profile=DestroyStringInfo(png_profile);
+          }
       }
+
       name=GetNextImageProfile(image);
    }
+
    return(MagickTrue);
 }
 
@@ -7083,18 +7289,8 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
   ping_have_pHYs=MagickFalse;
   ping_have_tRNS=MagickFalse;
 
-  quantum_info = (QuantumInfo *) NULL;
-  number_colors=0;
-  image_colors=image->colors;
-  image_depth=image->depth;
-  image_matte=image->matte;
-
   if (image->colorspace != RGBColorspace)
     (void) TransformImageColorspace(image,RGBColorspace);
-
-#if (MAGICKCORE_QUANTUM_DEPTH >= 16)
-    (void) LosslessReduceDepth(image);
-#endif
 
   /*
     Sometimes we get PseudoClass images whose RGB values don't match
@@ -7103,34 +7299,155 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
   if (image->taint && image->storage_class == PseudoClass)
      (void) SyncImage(image);
 
+#if (MAGICKCORE_QUANTUM_DEPTH > 16)
+  /* PNG does not handle depths greater than 16 so reduce it even
+   * if lossy
+   */
+  if (image->depth > 16)
+      image->depth=16;
+#endif
+
+#if (MAGICKCORE_QUANTUM_DEPTH >= 16)
+  if (image_depth == 16 && mng_info->write_png_colortype != 16)
+    if (LosslessReduceDepthOK(image) != MagickFalse)
+      image->depth = 8;
+#endif
+
 #ifdef PNG_BUILD_PALETTE
-  
   if (((mng_info->write_png_colortype-1) == PNG_COLOR_TYPE_PALETTE) ||
       (mng_info->write_png_colortype == 0 && image->depth <= 8))
+
     {
       /*
         Sometimes we get DirectClass images that have 256 colors or fewer.
         This code will convert them to PseudoClass and build a colormap.
+
+        As of version 6.6.5 it fails to account for opacity, but not always.
       */
       if (image->storage_class != PseudoClass)
         {
+          (void) SyncImage(image);
           image->colors=GetNumberColors(image,(FILE *) NULL,&image->exception);
+          image_colors=image->colors;
+
+          (void) LogMagickEvent(CoderEvent,GetMagickModule(),
+              "    Enter BUILD_PALETTE:");
+
+          if (logging != MagickFalse && image->colormap != NULL)
+          {
+            (void) LogMagickEvent(CoderEvent,GetMagickModule(),
+                "      i     (red,green,blue,opacity)");
+
+            for (i=0; i < (ssize_t) image->colors; i++)
+            {
+              (void) LogMagickEvent(CoderEvent,GetMagickModule(),
+                  "      %d  (%d,%d,%d,%d)",
+                   (int) i,
+                   (int) image->colormap[i].red,
+                   (int) image->colormap[i].green,
+                   (int) image->colormap[i].blue,
+                   (int) image->colormap[i].opacity);
+            }
+          }
+
+          (void) LogMagickEvent(CoderEvent,GetMagickModule(),
+              "      image->colors=%d",(int) image->colors);
+
           if (image->colors <= 256)
             {
-              image->colors=0;
-
               if (image->matte != MagickFalse)
-                (void) SetImageType(image,PaletteMatteType);
+                {
+                  /* Sometimes SetImageType(image,PaletteMatteType)
+                   * loses the transparency.  We work around this
+                   * problem by making a trial clone, setting it
+                   * to PaletteMatteType, and counting the colors
+                   * to see if any were lost.  If not, we also
+                   * set the image to PaletteMatteType.  Otherwise
+                   * we return without changing it.  In any case
+                   * we destroy the clone.
+                   */
+
+                  ExceptionInfo
+                    *exception;
+
+                  Image
+                    *clone_image;
+
+                  exception=(&image->exception);
+        
+                  clone_image=CloneImage(image, 0, 0, MagickTrue, exception);
+
+                  image_colors=GetNumberColors(clone_image,(FILE *) NULL,
+                     &clone_image->exception);
+
+                  (void) LogMagickEvent(CoderEvent,GetMagickModule(),
+                         "      Before SetImageType, clone_colors=%d",
+                         (int) image_colors);
+
+                  (void) SetImageType(clone_image,PaletteMatteType);
+
+                  image_colors=GetNumberColors(clone_image,(FILE *) NULL,
+                     &clone_image->exception);
+
+                  (void) DestroyImage(clone_image);
+
+                  (void) LogMagickEvent(CoderEvent,GetMagickModule(),
+                         "      After SetImageType, clone_colors=%d",
+                         (int) image_colors);
+
+                  if (image_colors == image->colors)
+                    {
+                      (void) SetImageType(image,PaletteMatteType);
+
+                      (void) LogMagickEvent(CoderEvent,GetMagickModule(),
+                          "      After SetImageType, image_colors=%d",
+                          (int) image->colors);
+
+                      image_colors = image->colors;
+
+                      (void) SyncImage(image);
+                    }
+                }
 
               else
-                (void) SetImageType(image,PaletteType);
+                {
+                  (void) SetImageType(image,PaletteType);
+                  (void) SyncImage(image);
+                }
             }
+
+          if (logging != MagickFalse && image->colormap != NULL)
+          {
+            (void) LogMagickEvent(CoderEvent,GetMagickModule(),
+                "       i     (red,green,blue,opacity)");
+
+            for (i=0; i < (ssize_t) image->colors; i++)
+            {
+              (void) LogMagickEvent(CoderEvent,GetMagickModule(),
+                  "      %d  (%d,%d,%d,%d)",
+                   (int) i,
+                   (int) image->colormap[i].red,
+                   (int) image->colormap[i].green,
+                   (int) image->colormap[i].blue,
+                   (int) image->colormap[i].opacity);
+            }
+          }
+
+          (void) LogMagickEvent(CoderEvent,GetMagickModule(),
+              "    Exit BUILD_PALETTE:");
         }
     }
-#endif
+#endif /* PNG_BUILD_PALETTE */
+
+  image_depth=image->depth;
+
+  quantum_info = (QuantumInfo *) NULL;
+  number_colors=0;
+  image_colors=image->colors;
+  image_matte=image->matte;
 
   mng_info->IsPalette=image->storage_class == PseudoClass &&
-    image_colors <= 256 && !IsOpaqueImage(image,&image->exception);
+    image_colors <= 256;
 
   /*
     Allocate the PNG structures
@@ -7180,15 +7497,20 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
 #if defined(PNG_MNG_FEATURES_SUPPORTED)
   if (mng_info->write_mng)
      (void) png_permit_mng_features(ping,PNG_ALL_MNG_FEATURES);
+
 #else
 # ifdef PNG_WRITE_EMPTY_PLTE_SUPPORTED
   if (mng_info->write_mng)
      png_permit_empty_plte(ping,MagickTrue);
+
 # endif
 #endif
+
   x=0;
+
   ping_width=(png_uint_32) image->columns;
   ping_height=(png_uint_32) image->rows;
+
   if (mng_info->write_png8 || mng_info->write_png24 || mng_info->write_png32)
      image_depth=8;
 
@@ -7214,10 +7536,11 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
      (void) LogMagickEvent(CoderEvent,GetMagickModule(),
         "    image_matte=%.20g",(double) image->matte);
      (void) LogMagickEvent(CoderEvent,GetMagickModule(),
-        "    image_depth=%.20g",(double) image->depth);
+        "    image->depth=%.20g",(double) image->depth);
      (void) LogMagickEvent(CoderEvent,GetMagickModule(),
-        "    requested PNG image_depth=%.20g",(double) image->depth);
+        "    Tentative ping_bit_depth=%.20g",(double) image_depth);
     }
+
   save_image_depth=image_depth;
   ping_bit_depth=(png_byte) save_image_depth;
 
@@ -7283,8 +7606,13 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
     }
 
   if (logging != MagickFalse)
-     (void) LogMagickEvent(CoderEvent,GetMagickModule(),
-         "    Setting up bKGd chunk");
+    {
+      (void) LogMagickEvent(CoderEvent,GetMagickModule(),
+          "    Setting up bKGD chunk (1)");
+
+      (void) LogMagickEvent(CoderEvent,GetMagickModule(),
+          "    ping_bit_depth=%d",ping_bit_depth);
+    }
 
   ping_have_bKGD = MagickTrue;
 
@@ -7359,6 +7687,7 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
             (long) i,palette[i].red,palette[i].green,palette[i].blue);
 
       }
+
       if (matte)
         {
           number_colors++;
@@ -7366,12 +7695,14 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
           palette[i].green=ScaleQuantumToChar((Quantum) QuantumRange);
           palette[i].blue=ScaleQuantumToChar((Quantum) QuantumRange);
         }
-      ping_have_PLTE=MagickTrue;
+
+        ping_have_PLTE=MagickTrue;
         image_depth=ping_bit_depth;
         ping_num_trans=0;
+
         if (matte)
         {
-      ExceptionInfo
+          ExceptionInfo
             *exception;
 
           int
@@ -7407,6 +7738,7 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
               p++;
             }
           }
+
           for (i=0; i < (ssize_t) number_colors; i++)
             if (trans_alpha[i] != 255)
               ping_num_trans=(unsigned short) (i+1);
@@ -7471,7 +7803,7 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
         {
           if (logging != MagickFalse)
              (void) LogMagickEvent(CoderEvent,GetMagickModule(),
-             "Selecting PNG colortype");
+             "  Selecting PNG colortype:");
 
           ping_color_type=(png_byte) ((matte == MagickTrue)?
           PNG_COLOR_TYPE_RGB_ALPHA:PNG_COLOR_TYPE_RGB);
@@ -7509,7 +7841,7 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
 
       if (logging != MagickFalse)
          (void) LogMagickEvent(CoderEvent,GetMagickModule(),
-         "Selected PNG colortype=%d",ping_color_type);
+         "    Selected PNG colortype=%d",ping_color_type);
 
       if (ping_bit_depth < 8)
         {
@@ -7532,6 +7864,7 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
                 }
             }
         }
+
       if (ping_color_type == PNG_COLOR_TYPE_PALETTE)
         {
            size_t one = 1;
@@ -7545,9 +7878,9 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
                 "image has 0 colors", "`%s'","");
            }
 
-              if (logging != MagickFalse)
-                (void) LogMagickEvent(CoderEvent,GetMagickModule(),
-                  "  SyncImage.2.");
+           if (logging != MagickFalse)
+               (void) LogMagickEvent(CoderEvent,GetMagickModule(),
+               "  SyncImage.2.");
 
            while ((int) (one << ping_bit_depth) < (ssize_t) image_colors)
              ping_bit_depth <<= 1;
@@ -7582,7 +7915,9 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
              }
         }
     }
+
   image_depth=ping_bit_depth;
+
   if (logging != MagickFalse)
     {
       (void) LogMagickEvent(CoderEvent,GetMagickModule(),
@@ -7595,6 +7930,10 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
         "    image_depth: %.20g",(double) image_depth);
 
       (void) LogMagickEvent(CoderEvent,GetMagickModule(),
+
+        "    image->depth: %.20g",(double) image->depth);
+
+      (void) LogMagickEvent(CoderEvent,GetMagickModule(),
         "    ping_bit_depth: %.20g",(double) ping_bit_depth);
     }
 
@@ -7605,6 +7944,7 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
 
       p=GetVirtualPixels(image,0,0,image->columns,1,&image->exception);
       ping_color_type=PNG_COLOR_TYPE_GRAY_ALPHA;
+
       for (y=0; y < (ssize_t) image->rows; y++)
       {
         p=GetVirtualPixels(image,0,y,image->columns,1,&image->exception);
@@ -7621,6 +7961,7 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
           p++;
         }
       }
+
       /*
         Determine if there is any transparent color.
       */
@@ -7634,15 +7975,17 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
         for (x=(ssize_t) image->columns-1; x >= 0; x--)
         {
           if (p->opacity != OpaqueOpacity)
+          {
             break;
+          }
           p++;
         }
 
-        if (x != 0)
+        if (x >= 0)
           break;
       }
 
-      if ((y == (ssize_t) image->rows) && (x == (ssize_t) image->columns))
+      if ((y == (ssize_t) image->rows) && (x < 0))
         {
           /*
             No transparent pixels are present.  Change 4 or 6 to 0 or 2.
@@ -7720,21 +8063,26 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
                     }
                 }
 
-               else
+              else
                 {
                   if (IsPNGColorEqual(ping_trans_color,*p))
                       break; /* Can't use RGB + tRNS when another pixel
                                 having the same RGB samples is
                                 transparent. */
                 }
-            p++;
+
+              p++;
             }
+
             if (x >= 0)
                break;
           }
+
+
           if (x >= 0)
             ping_have_tRNS = MagickFalse;
         }
+
       if (ping_have_tRNS != MagickFalse)
         {
           ping_color_type &= 0x03;  /* changes 4 or 6 to 0 or 2 */
@@ -7748,6 +8096,7 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
             }
         }
     }
+
     matte=image_matte;
 
     if (ping_have_tRNS != MagickFalse)
@@ -7792,6 +8141,7 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
                       ping_bit_depth <<= 1;
                   }
               }
+
             else if (ping_color_type ==
                 PNG_COLOR_TYPE_GRAY && image_colors < 17 &&
                 mng_info->IsPalette)
@@ -7819,6 +8169,7 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
                    else if ((intensity & 0x01) != ((intensity & 0x02) >> 1))
                      depth_1_ok=MagickFalse;
                 }
+
                 if (depth_1_ok && mng_info->write_png_depth <= 1)
                   ping_bit_depth=1;
 
@@ -7829,6 +8180,7 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
                   ping_bit_depth=4;
               }
           }
+
           image_depth=ping_bit_depth;
       }
 
@@ -7849,7 +8201,7 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
               {
                 png_set_PLTE(ping,ping_info,NULL,0);
 
-                if (logging)
+                if (logging != MagickFalse)
                   (void) LogMagickEvent(CoderEvent,GetMagickModule(),
                     "  Setting up empty PLTE chunk");
               }
@@ -7869,7 +8221,7 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
                   palette[i].blue=ScaleQuantumToChar(image->colormap[i].blue);
                 }
 
-                if (logging)
+                if (logging != MagickFalse)
                   (void) LogMagickEvent(CoderEvent,GetMagickModule(),
                     "  Setting up PLTE chunk with %d colors",
                     (int) number_colors);
@@ -7958,6 +8310,7 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
 
                         ping_have_tRNS=MagickTrue;
                       }
+
                     p++;
                   }
 
@@ -7969,9 +8322,10 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
                     mng_info->IsPalette=MagickFalse;
                     (void) SyncImage(image);
 
-                    if (logging)
+                    if (logging != MagickFalse)
                       (void) LogMagickEvent(CoderEvent, GetMagickModule(),
                         "    Cannot write image as indexed PNG, writing RGBA.");
+
                     break;
                   }
                 }
@@ -8037,7 +8391,8 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
 
          if (logging != MagickFalse)
            (void) LogMagickEvent(CoderEvent,GetMagickModule(),
-             "  Setting up bKGD chunk");
+             "  Setting up bKGD chunk (2)");
+
          ping_have_bKGD = MagickTrue;
 
          ping_trans_color.gray=(png_uint_16) (QuantumScale*(maxval*
@@ -8058,7 +8413,16 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
 
         ping_background.index=(png_byte) i;
 
-        if (logging)
+        if (i == (ssize_t) number_colors)
+        {
+          if (i < 255)
+          {
+            number_colors++;
+            image_colors++;
+          }
+        }
+
+        if (logging != MagickFalse)
           {
             (void) LogMagickEvent(CoderEvent,GetMagickModule(),
               "  Setting up bKGD chunk with index=%d",(int) i);
@@ -8067,7 +8431,8 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
         if (i < (ssize_t) number_colors)
           {
             ping_have_bKGD = MagickTrue;
-            if (logging)
+
+            if (logging != MagickFalse)
               {
                 (void) LogMagickEvent(CoderEvent,GetMagickModule(),
                   "     background   =(%d,%d,%d)",
@@ -8078,7 +8443,12 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
           }
 
         else
-          ping_have_bKGD = MagickFalse;
+          {
+            if (logging != MagickFalse)
+              (void) LogMagickEvent(CoderEvent,GetMagickModule(),
+                  "      No room in PLTE to add bKGD color");
+            ping_have_bKGD = MagickFalse;
+          }
       }
 
   if (logging != MagickFalse)
@@ -8133,8 +8503,8 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
   if (logging != MagickFalse)
     (void) LogMagickEvent(CoderEvent,GetMagickModule(),
       "  Setting up filtering");
-#if defined(PNG_MNG_FEATURES_SUPPORTED) && defined(PNG_INTRAPIXEL_DIFFERENCING)
 
+#if defined(PNG_MNG_FEATURES_SUPPORTED) && defined(PNG_INTRAPIXEL_DIFFERENCING)
   /* This became available in libpng-1.0.9.  Output must be a MNG. */
   if (mng_info->write_mng && ((quality % 10) == 7))
     {
@@ -8150,6 +8520,7 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
       (void) LogMagickEvent(CoderEvent,GetMagickModule(),
         "    Filter_type: 0");
 #endif
+
   {
     int
       base_filter;
@@ -8179,6 +8550,7 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
           (void) LogMagickEvent(CoderEvent,GetMagickModule(),
             "    Base filter method: NONE");
       }
+
     png_set_filter(ping,PNG_FILTER_TYPE_BASE,base_filter);
   }
 
@@ -8186,6 +8558,7 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
   for (name=GetNextImageProfile(image); name != (const char *) NULL; )
   {
     profile=GetImageProfile(image,name);
+
     if (profile != (StringInfo *) NULL)
       {
 #ifdef PNG_WRITE_iCCP_SUPPORTED
@@ -8202,6 +8575,7 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
             name,(unsigned char *) name,GetStringInfoDatum(profile),
             (png_uint_32) GetStringInfoLength(profile));
       }
+
     if (logging != MagickFalse)
       (void) LogMagickEvent(CoderEvent,GetMagickModule(),
         "  Setting up text chunk with %s profile",name);
@@ -8239,8 +8613,10 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
           if (logging != MagickFalse)
             (void) LogMagickEvent(CoderEvent,GetMagickModule(),
               "  Setting up gAMA chunk");
+
           png_set_gAMA(ping,ping_info,image->gamma);
         }
+
       if ((mng_info->have_write_global_chrm == 0) &&
           (image->chromaticity.red_primary.x != 0.0))
         {
@@ -8262,6 +8638,7 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
            if (logging != MagickFalse)
              (void) LogMagickEvent(CoderEvent,GetMagickModule(),
                "  Setting up cHRM chunk");
+
            png_set_cHRM(ping,ping_info,wp.x,wp.y,rp.x,rp.y,gp.x,gp.y,
                bp.x,bp.y);
        }
@@ -8280,6 +8657,7 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
        if (ImageIsGray(image) == MagickFalse)
          {
            ping_color_type = PNG_COLOR_TYPE_RGB;
+
            if (ping_bit_depth < 8)
              ping_bit_depth=8;
          }
@@ -8348,7 +8726,7 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
     {
       png_set_PLTE(ping,ping_info,palette,(int) number_colors);
 
-      if (logging)
+      if (logging != MagickFalse)
         {
           for (i=0; i< (ssize_t) number_colors; i++)
           {
@@ -8399,7 +8777,7 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
 
   if (ping_have_tRNS != MagickFalse && ping_color_type < 4)
     {
-      if (logging)
+      if (logging != MagickFalse)
         {
           (void) LogMagickEvent(CoderEvent,GetMagickModule(),
               "  Calling png_set_tRNS with num_trans=%d",ping_num_trans);
@@ -8418,7 +8796,7 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
                   0,
                   &ping_trans_color);
 
-           if (logging)
+           if (logging != MagickFalse)
              {
                (void) LogMagickEvent(CoderEvent,GetMagickModule(),
                  "     background   =(%d,%d,%d)",
@@ -8482,7 +8860,8 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
       default:
         break;
     }
-  if (logging)
+
+  if (logging != MagickFalse)
     {
       (void) LogMagickEvent(CoderEvent,GetMagickModule(),
         "  Writing PNG image data");
@@ -8542,8 +8921,9 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
         for (y=0; y < (ssize_t) image->rows; y++)
         {
 
-          (void) LogMagickEvent(CoderEvent,GetMagickModule(),
-              "    Writing row of pixels (0)");
+          if (logging != MagickFalse)
+             (void) LogMagickEvent(CoderEvent,GetMagickModule(),
+                 "    Writing row of pixels (0)");
 
           p=GetVirtualPixels(image,0,y,image->columns,1,&image->exception);
 
@@ -8576,7 +8956,7 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
                *(png_pixels+i)=(unsigned char) ((*(png_pixels+i) > 127) ?
                       255 : 0);
 
-          if (logging && y == 0)
+          if (logging != MagickFalse && y == 0)
             (void) LogMagickEvent(CoderEvent,GetMagickModule(),
                 "    Writing row of pixels (1)");
 
@@ -8620,21 +9000,22 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
                 (void) ExportQuantumPixels(image,(const CacheView *) NULL,
                   quantum_info,RedQuantum,png_pixels,&image->exception);
 
-              if (logging && y == 0)
+              if (logging != MagickFalse && y == 0)
                 (void) LogMagickEvent(CoderEvent,GetMagickModule(),
                      "    Writing GRAY PNG pixels (2)");
             }
 
           else /* PNG_COLOR_TYPE_GRAY_ALPHA */
             {
-              if (logging && y == 0)
+              if (logging != MagickFalse && y == 0)
                 (void) LogMagickEvent(CoderEvent,GetMagickModule(),
                        "    Writing GRAY_ALPHA PNG pixels (2)");
 
               (void) ExportQuantumPixels(image,(const CacheView *) NULL,
                 quantum_info,GrayAlphaQuantum,png_pixels,&image->exception);
             }
-          if (logging && y == 0)
+
+          if (logging != MagickFalse && y == 0)
             (void) LogMagickEvent(CoderEvent,GetMagickModule(),
                 "    Writing row of pixels (2)");
 
@@ -8677,7 +9058,7 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
                 (void) ExportQuantumPixels(image,(const CacheView *) NULL,
                   quantum_info,GrayAlphaQuantum,png_pixels,&image->exception);
 
-                if (logging && y == 0)
+                if (logging != MagickFalse && y == 0)
                   (void) LogMagickEvent(CoderEvent,GetMagickModule(),
                        "    Writing GRAY_ALPHA PNG pixels (3)");
               }
@@ -8690,7 +9071,7 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
               (void) ExportQuantumPixels(image,(const CacheView *) NULL,
                 quantum_info,RGBQuantum,png_pixels,&image->exception);
 
-            if (logging && y == 0)
+            if (logging != MagickFalse && y == 0)
               (void) LogMagickEvent(CoderEvent,GetMagickModule(),
                   "    Writing row of pixels (3)");
 
@@ -8705,7 +9086,7 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
           if ((ping_color_type != PNG_COLOR_TYPE_GRAY) &&
               (ping_color_type != PNG_COLOR_TYPE_GRAY_ALPHA))
             {
-              if (logging)
+              if (logging != MagickFalse)
                 (void) LogMagickEvent(CoderEvent,GetMagickModule(),
                   "  pass %d, Image Is not GRAY or GRAY_ALPHA",pass);
 
@@ -8714,7 +9095,7 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
             }
           for (y=0; y < (ssize_t) image->rows; y++)
           {
-            if (logging && y == 0)
+            if (logging != MagickFalse && y == 0)
               (void) LogMagickEvent(CoderEvent,GetMagickModule(),
                 "  pass %d, Image Is RGB, 16-bit GRAY, or GRAY_ALPHA",pass);
 
@@ -8729,7 +9110,7 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
 
             else if (ping_color_type == PNG_COLOR_TYPE_GRAY_ALPHA)
               {
-                if (logging && y == 0)
+                if (logging != MagickFalse && y == 0)
                   (void) LogMagickEvent(CoderEvent,GetMagickModule(),
                        "  Writing GRAY_ALPHA PNG pixels (4)");
 
@@ -8741,7 +9122,7 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
               (void) ExportQuantumPixels(image,(const CacheView *) NULL,
                 quantum_info,IndexQuantum,png_pixels,&image->exception);
 
-              if (logging && y <= 2)
+              if (logging != MagickFalse && y <= 2)
               {
                 (void) LogMagickEvent(CoderEvent,GetMagickModule(),
                     "  Writing row of pixels (4)");
@@ -9098,15 +9479,6 @@ static MagickBooleanType WritePNGImage(const ImageInfo *image_info,
       mng_info->write_png_colortype = /* 3 */ 4;
       mng_info->write_png_depth = 8;
       image->depth = 8;
-#if 0 /* this does not work */
-      if (image->matte == MagickTrue)
-        (void) SetImageType(image,PaletteMatteType);
-
-      else
-        (void) SetImageType(image,PaletteType);
-
-      (void) SyncImage(image);
-#endif
     }
 
   if (mng_info->write_png24)

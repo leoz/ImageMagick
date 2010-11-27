@@ -13513,6 +13513,8 @@ static Image *XVisualDirectoryImage(Display *display,
   backdrop=(windows->visual_info->klass == TrueColor) ||
     (windows->visual_info->klass == DirectColor) ? MagickTrue : MagickFalse;
   read_info=CloneImageInfo(resource_info->image_info);
+  (void) SetImageOption(read_info,"jpeg:size","120x120");
+  (void) CloneString(&read_info->size,DefaultTileGeometry);
   (void) SetImageInfoProgressMonitor(read_info,(MagickProgressMonitor) NULL,
     (void *) NULL);
   images=NewImageList();
@@ -13524,13 +13526,13 @@ static Image *XVisualDirectoryImage(Display *display,
     (void) CopyMagickString(read_info->filename,filelist[i],MaxTextExtent);
     filelist[i]=DestroyString(filelist[i]);
     *read_info->magick='\0';
-    (void) CloneString(&read_info->size,DefaultTileGeometry);
     next_image=ReadImage(read_info,exception);
     CatchException(exception);
     if (next_image != (Image *) NULL)
       {
         (void) DeleteImageProperty(next_image,"label");
-        (void) SetImageProperty(next_image,"label",DefaultTileLabel);
+        (void) SetImageProperty(next_image,"label",InterpretImageProperties(
+          read_info,next_image,DefaultTileLabel));
         (void) ParseRegionGeometry(next_image,read_info->size,&geometry,
           exception);
         thumbnail_image=ThumbnailImage(next_image,geometry.width,
@@ -13561,9 +13563,9 @@ static Image *XVisualDirectoryImage(Display *display,
   }
   exception=DestroyExceptionInfo(exception);
   filelist=(char **) RelinquishMagickMemory(filelist);
-  read_info=DestroyImageInfo(read_info);
   if (images == (Image *) NULL)
     {
+      read_info=DestroyImageInfo(read_info);
       XSetCursorState(display,windows,MagickFalse);
       ThrowXWindowFatalException(ImageError,"NoImagesWereLoaded",filenames);
       return((Image *) NULL);
@@ -13571,14 +13573,16 @@ static Image *XVisualDirectoryImage(Display *display,
   /*
     Create the Visual Image Directory.
   */
-  montage_info=CloneMontageInfo(resource_info->image_info,(MontageInfo *) NULL);
+  montage_info=CloneMontageInfo(read_info,(MontageInfo *) NULL);
+  montage_info->pointsize=10;
   if (resource_info->font != (char *) NULL)
     (void) CloneString(&montage_info->font,resource_info->font);
   (void) CopyMagickString(montage_info->filename,filename,MaxTextExtent);
-  montage_image=MontageImageList(resource_info->image_info,montage_info,
-    GetFirstImageInList(images),&images->exception);
-  montage_info=DestroyMontageInfo(montage_info);
+  montage_image=MontageImageList(read_info,montage_info,GetFirstImageInList(
+    images),&images->exception);
   images=DestroyImageList(images);
+  montage_info=DestroyMontageInfo(montage_info);
+  read_info=DestroyImageInfo(read_info);
   XSetCursorState(display,windows,MagickFalse);
   if (montage_image == (Image *) NULL)
     return(montage_image);

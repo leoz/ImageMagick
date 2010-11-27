@@ -110,7 +110,7 @@ static MagickBooleanType CompareUsage(void)
       "-density geometry    horizontal and vertical density of the image",
       "-depth value         image depth",
       "-dissimilarity-threshold value",
-      "                     maximum RMSE for (sub)image match",
+      "                     maximum distortion for (sub)image match",
       "-encipher filename   convert plain pixels to cipher pixels",
       "-extract geometry    extract area from image",
       "-format \"string\"     output formatted image characteristics",
@@ -1011,6 +1011,7 @@ WandExport MagickBooleanType CompareImageCommand(ImageInfo *image_info,
               break;
             }
             case AbsoluteErrorMetric:
+            case NormalizedCrossCorrelationErrorMetric:
             case PeakSignalToNoiseRatioMetric:
             {
               (void) fprintf(stderr,"%g",distortion);
@@ -1116,6 +1117,7 @@ WandExport MagickBooleanType CompareImageCommand(ImageInfo *image_info,
               break;
             }
             case AbsoluteErrorMetric:
+            case NormalizedCrossCorrelationErrorMetric:
             case PeakSignalToNoiseRatioMetric:
             {
               switch (image->colorspace)
