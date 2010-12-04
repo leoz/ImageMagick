@@ -7296,7 +7296,7 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
     Sometimes we get PseudoClass images whose RGB values don't match
     the colors in the colormap.  This code syncs the RGB values.
   */
-  if (image->taint && image->storage_class == PseudoClass)
+  if (image->depth <= 8 && image->taint && image->storage_class == PseudoClass)
      (void) SyncImage(image);
 
 #if (MAGICKCORE_QUANTUM_DEPTH > 16)
@@ -7308,7 +7308,7 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
 #endif
 
 #if (MAGICKCORE_QUANTUM_DEPTH >= 16)
-  if (image_depth == 16 && mng_info->write_png_colortype != 16)
+  if (image->depth == 16 && mng_info->write_png_colortype != 16)
     if (LosslessReduceDepthOK(image) != MagickFalse)
       image->depth = 8;
 #endif
