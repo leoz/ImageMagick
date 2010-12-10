@@ -12,7 +12,7 @@ PACKAGE_NAME='ImageMagick'
 # PACKAGE_NAME (e.g. "1.0.0").
 PACKAGE_VERSION='6.6.6'
 PACKAGE_LIB_VERSION="0x666"
-PACKAGE_RELEASE="3"
+PACKAGE_RELEASE="4"
 PACKAGE_LIB_VERSION_NUMBER="6,6,6,${PACKAGE_RELEASE}"
 PACKAGE_RELEASE_DATE=`date +%F`
 PACKAGE_STRING="$PACKAGE_NAME $PACKAGE_VERSION"
@@ -37,10 +37,10 @@ PACKAGE_VERSION_ADDENDUM="-${PACKAGE_RELEASE}"
 #
 #   If there is any interface change, increment CURRENT (major).  If that
 #   interface change does not break upward compatibility (i.e. it is an
-#   addition), increment AGE( micro), Otherwise AGE is reset to 0. If CURRENT
+#   addition), increment AGE (micro), Otherwise AGE is reset to 0. If CURRENT
 #   has changed, REVISION (minor) is set to 0, otherwise REVISION is
 #   incremented.
 
 MAGICK_LIBRARY_CURRENT=4
-MAGICK_LIBRARY_REVISION=0
+MAGICK_LIBRARY_REVISION=1
 MAGICK_LIBRARY_AGE=0
