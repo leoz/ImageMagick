@@ -1013,8 +1013,6 @@ MagickExport Image *FlipImage(const Image *image,ExceptionInfo *exception)
   flip_view=DestroyCacheView(flip_view);
   image_view=DestroyCacheView(image_view);
   flip_image->type=image->type;
-  if (page.width != 0)
-    page.x=(ssize_t) (page.width-flip_image->columns-page.x);
   if (page.height != 0)
     page.y=(ssize_t) (page.height-flip_image->rows-page.y);
   flip_image->page=page;
@@ -1148,8 +1146,6 @@ MagickExport Image *FlopImage(const Image *image,ExceptionInfo *exception)
   flop_image->type=image->type;
   if (page.width != 0)
     page.x=(ssize_t) (page.width-flop_image->columns-page.x);
-  if (page.height != 0)
-    page.y=(ssize_t) (page.height-flop_image->rows-page.y);
   flop_image->page=page;
   if (status == MagickFalse)
     flop_image=DestroyImage(flop_image);
@@ -1974,7 +1970,8 @@ MagickExport MagickBooleanType TransformImage(Image **image,
 %   T r a n s f o r m I m a g e s                                             %
 %                                                                             %
 %                                                                             %
-%                                                                             % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                                             %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
 %  TransformImages() calls TransformImage() on each image of a sequence.
 %
@@ -2151,8 +2148,6 @@ MagickExport Image *TransposeImage(const Image *image,ExceptionInfo *exception)
   page=transpose_image->page;
   Swap(page.width,page.height);
   Swap(page.x,page.y);
-  if (page.width != 0)
-    page.x=(ssize_t) (page.width-transpose_image->columns-page.x);
   transpose_image->page=page;
   if (status == MagickFalse)
     transpose_image=DestroyImage(transpose_image);
@@ -2289,6 +2284,8 @@ MagickExport Image *TransverseImage(const Image *image,ExceptionInfo *exception)
   page=transverse_image->page;
   Swap(page.width,page.height);
   Swap(page.x,page.y);
+  if (page.width != 0)
+    page.x=(ssize_t) (page.width-transverse_image->columns-page.x);
   if (page.height != 0)
     page.y=(ssize_t) (page.height-transverse_image->rows-page.y);
   transverse_image->page=page;
