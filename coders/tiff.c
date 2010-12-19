@@ -80,11 +80,14 @@
 #if defined(MAGICKCORE_TIFF_DELEGATE)
 # if defined(MAGICKCORE_HAVE_TIFFCONF_H)
 #  include "tiffconf.h"
-#endif
+# endif
 # include "tiff.h"
 # include "tiffio.h"
 # if !defined(COMPRESSION_ADOBE_DEFLATE)
 #  define COMPRESSION_ADOBE_DEFLATE  8
+# endif
+# if !defined(PREDICTOR_HORIZONTAL)
+# define PREDICTOR_HORIZONTAL  2
 # endif
 
 /*
@@ -1031,6 +1034,9 @@ static Image *ReadTIFFImage(const ImageInfo *image_info,
         break;
       }
       case COMPRESSION_OJPEG: image->compression=JPEGCompression; break;
+#if defined(COMPRESSION_LZMA)
+      case COMPRESSION_LZMA: image->compression=LZMACompression; break;
+#endif
       case COMPRESSION_LZW: image->compression=LZWCompression; break;
       case COMPRESSION_DEFLATE: image->compression=ZipCompression; break;
       case COMPRESSION_ADOBE_DEFLATE: image->compression=ZipCompression; break;
@@ -2547,6 +2553,13 @@ static MagickBooleanType WriteTIFFImage(const ImageInfo *image_info,
         compress_tag=COMPRESSION_JPEG;
         break;
       }
+#if defined(COMPRESSION_LZMA)
+      case LZMACompression:
+      {
+        compress_tag=COMPRESSION_LZMA;
+        break;
+      }
+#endif
       case LZWCompression:
       {
         compress_tag=COMPRESSION_LZW;
@@ -2588,6 +2601,9 @@ static MagickBooleanType WriteTIFFImage(const ImageInfo *image_info,
 #endif
 #if defined(YCBCR_SUPPORT) && defined(JPEG_SUPPORT)
         case COMPRESSION_JPEG:
+#endif
+#if defined(LZMA_SUPPORT) && defined(COMPRESSION_LZMA)
+        case COMPRESSION_LZMA:
 #endif
 #if defined(LZW_SUPPORT)
         case COMPRESSION_LZW:
@@ -2863,7 +2879,7 @@ static MagickBooleanType WriteTIFFImage(const ImageInfo *image_info,
         if (((photometric == PHOTOMETRIC_RGB) ||
              (photometric == PHOTOMETRIC_MINISBLACK)) &&
             ((bits_per_sample == 8) || (bits_per_sample == 16)))
-          (void) TIFFSetField(tiff,TIFFTAG_PREDICTOR,2);
+          (void) TIFFSetField(tiff,TIFFTAG_PREDICTOR,PREDICTOR_HORIZONTAL);
         (void) TIFFSetField(tiff,TIFFTAG_ZIPQUALITY,(long) (
           image_info->quality == UndefinedCompressionQuality ? 7 :
           MagickMin((ssize_t) image_info->quality/10,9)));
@@ -2883,6 +2899,19 @@ static MagickBooleanType WriteTIFFImage(const ImageInfo *image_info,
         rows_per_strip=(uint32) image->rows;
         break;
       }
+#if defined(LZMA_SUPPORT) && defined(COMPRESSION_LZMA)
+      case COMPRESSION_LZMA:
+      {
+        if (((photometric == PHOTOMETRIC_RGB) ||
+             (photometric == PHOTOMETRIC_MINISBLACK)) &&
+            ((bits_per_sample == 8) || (bits_per_sample == 16)))
+          (void) TIFFSetField(tiff,TIFFTAG_PREDICTOR,PREDICTOR_HORIZONTAL);
+        (void) TIFFSetField(tiff,TIFFTAG_LZMAPRESET,(long) (
+          image_info->quality == UndefinedCompressionQuality ? 7 :
+          MagickMin((ssize_t) image_info->quality/10,9)));
+        break;
+      }
+#endif
       case COMPRESSION_LZW:
       {
         (void) TIFFGetFieldDefaulted(tiff,TIFFTAG_BITSPERSAMPLE,
@@ -2890,7 +2919,7 @@ static MagickBooleanType WriteTIFFImage(const ImageInfo *image_info,
         if (((photometric == PHOTOMETRIC_RGB) ||
              (photometric == PHOTOMETRIC_MINISBLACK)) &&
             ((bits_per_sample == 8) || (bits_per_sample == 16)))
-          (void) TIFFSetField(tiff,TIFFTAG_PREDICTOR,2);
+          (void) TIFFSetField(tiff,TIFFTAG_PREDICTOR,PREDICTOR_HORIZONTAL);
         break;
       }
       default:
