@@ -71,11 +71,21 @@
 #include "magick/statistic.h"
 #include "magick/string_.h"
 #include "magick/string-private.h"
+#if defined(MAGICKCORE_BZLIB_DELEGATE)
+#include "bzlib.h"
+#endif
+#if defined(MAGICKCORE_LZMA_DELEGATE)
+#include "lzma.h"
+#endif
 #if defined(MAGICKCORE_ZLIB_DELEGATE)
 #include "zlib.h"
 #endif
-#if defined(MAGICKCORE_BZLIB_DELEGATE)
-#include "bzlib.h"
+
+/*
+  Define declarations.
+*/
+#if !defined(LZMA_OK)
+#define LZMA_OK  0
 #endif
 
 /*
@@ -150,6 +160,14 @@ static MagickBooleanType IsMIFF(const unsigned char *magick,const size_t length)
 
 #if defined(MAGICKCORE_BZLIB_DELEGATE)
 static void *AcquireBZIPMemory(void *context,int items,int size)
+{
+  (void) context;
+  return((void *) AcquireQuantumMemory((size_t) items,(size_t) size));
+}
+#endif
+
+#if defined(MAGICKCORE_LZMA_DELEGATE)
+static void *AcquireLZMAMemory(void *context,size_t items,size_t size)
 {
   (void) context;
   return((void *) AcquireQuantumMemory((size_t) items,(size_t) size));
@@ -348,16 +366,24 @@ static void PushRunlengthPacket(Image *image,const unsigned char *pixels,
   *length=(size_t) (*p++)+1;
 }
 
-#if defined(MAGICKCORE_ZLIB_DELEGATE)
-static void RelinquishZIPMemory(voidpf context,voidpf memory)
+#if defined(MAGICKCORE_BZLIB_DELEGATE)
+static void RelinquishBZIPMemory(void *context,void *memory)
 {
   (void) context;
   memory=RelinquishMagickMemory(memory);
 }
 #endif
 
-#if defined(MAGICKCORE_BZLIB_DELEGATE)
-static void RelinquishBZIPMemory(void *context,void *memory)
+#if defined(MAGICKCORE_LZMA_DELEGATE)
+static void RelinquishLZMAMemory(void *context,void *memory)
+{
+  (void) context;
+  memory=RelinquishMagickMemory(memory);
+}
+#endif
+
+#if defined(MAGICKCORE_ZLIB_DELEGATE)
+static void RelinquishZIPMemory(voidpf context,voidpf memory)
 {
   (void) context;
   memory=RelinquishMagickMemory(memory);
@@ -368,6 +394,7 @@ static Image *ReadMIFFImage(const ImageInfo *image_info,
   ExceptionInfo *exception)
 {
 #define BZipMaxExtent(x)  ((x)+((x)/100)+600)
+#define LZMAMaxExtent(x)  ((x)+((x)/3)+128)
 #define ZipMaxExtent(x)  ((x)+(((x)+7) >> 3)+(((x)+63) >> 6)+11)
 
 #if defined(MAGICKCORE_BZLIB_DELEGATE)
@@ -399,11 +426,17 @@ static Image *ReadMIFFImage(const ImageInfo *image_info,
     c,
     code;
 
+#if defined(MAGICKCORE_LZMA_DELEGATE)
+  lzma_stream
+    initialize_lzma = LZMA_STREAM_INIT,
+    lzma_info;
+
+  lzma_allocator
+    allocator;
+#endif
+
   LinkedListInfo
     *profiles;
-
-  ssize_t
-    y;
 
   MagickBooleanType
     status;
@@ -439,6 +472,9 @@ static Image *ReadMIFFImage(const ImageInfo *image_info,
 
   size_t
     colors;
+
+  ssize_t
+    y;
 
 #if defined(MAGICKCORE_ZLIB_DELEGATE)
   z_stream
@@ -1188,8 +1224,9 @@ static Image *ReadMIFFImage(const ImageInfo *image_info,
     if (image->compression == RLECompression)
       packet_size++;
     length=image->columns;
-    length=MagickMax(BZipMaxExtent(packet_size*image->columns),ZipMaxExtent(
-      packet_size*image->columns));
+    length=MagickMax(MagickMax(BZipMaxExtent(packet_size*image->columns),
+      LZMAMaxExtent(packet_size*image->columns)),ZipMaxExtent(packet_size*
+      image->columns));
     compress_pixels=(unsigned char *) AcquireQuantumMemory(length,
       sizeof(*compress_pixels));
     if (compress_pixels == (unsigned char *) NULL)
@@ -1218,6 +1255,61 @@ static Image *ReadMIFFImage(const ImageInfo *image_info,
         if (image->matte != MagickFalse)
           quantum_type=GrayAlphaQuantum;
       }
+    status=MagickTrue;
+    switch (image->compression)
+    {
+#if defined(MAGICKCORE_BZLIB_DELEGATE)
+      case BZipCompression:
+      {
+        (void) ResetMagickMemory(&bzip_info,0,sizeof(bzip_info));
+        bzip_info.bzalloc=AcquireBZIPMemory;
+        bzip_info.bzfree=RelinquishBZIPMemory;
+        bzip_info.opaque=(void *) NULL;
+        code=BZ2_bzDecompressInit(&bzip_info,(int) image_info->verbose,
+          MagickFalse);
+        if (code != BZ_OK)
+          status=MagickFalse;
+        break;
+      }
+#endif
+#if defined(MAGICKCORE_LZMA_DELEGATE)
+      case LZMACompression:
+      {
+        (void) ResetMagickMemory(&allocator,0,sizeof(allocator));
+        allocator.alloc=AcquireLZMAMemory;
+        allocator.free=RelinquishLZMAMemory;
+        lzma_info=initialize_lzma;
+        lzma_info.allocator=(&allocator);
+        code=lzma_auto_decoder(&lzma_info,-1,0);
+        if (code != LZMA_OK)
+          status=MagickFalse;
+        break;
+      }
+#endif
+#if defined(MAGICKCORE_ZLIB_DELEGATE)
+      case LZWCompression:
+      case ZipCompression:
+      {
+        (void) ResetMagickMemory(&zip_info,0,sizeof(zip_info));
+        zip_info.zalloc=AcquireZIPMemory;
+        zip_info.zfree=RelinquishZIPMemory;
+        zip_info.opaque=(voidpf) NULL;
+        code=inflateInit(&zip_info);
+        if (code != Z_OK)
+          status=MagickFalse;
+        break;
+      }
+#endif
+      case RLECompression:
+      {
+        (void) ResetMagickMemory(&pixel,0,sizeof(pixel));
+        pixel.opacity=(Quantum) TransparentOpacity;
+        index=(IndexPacket) 0;
+        break;
+      }
+      default:
+        break;
+    }
     pixels=GetQuantumPixels(quantum_info);
     index=(IndexPacket) 0;
     length=0;
@@ -1232,78 +1324,17 @@ static Image *ReadMIFFImage(const ImageInfo *image_info,
       register PixelPacket
         *restrict q;
 
+      if (status == MagickFalse)
+        break;
       q=QueueAuthenticPixels(image,0,y,image->columns,1,exception);
       if (q == (PixelPacket *) NULL)
         break;
       indexes=GetAuthenticIndexQueue(image);
       switch (image->compression)
       {
-#if defined(MAGICKCORE_ZLIB_DELEGATE)
-        case LZWCompression:
-        case ZipCompression:
-        {
-          if (y == 0)
-            {
-              zip_info.zalloc=AcquireZIPMemory;
-              zip_info.zfree=RelinquishZIPMemory;
-              zip_info.opaque=(voidpf) NULL;
-              code=inflateInit(&zip_info);
-              if (code >= 0)
-                status=MagickTrue;
-              zip_info.avail_in=0;
-            }
-          zip_info.next_out=pixels;
-          zip_info.avail_out=(uInt) (packet_size*image->columns);
-          do
-          {
-            if (zip_info.avail_in == 0)
-              {
-                zip_info.next_in=compress_pixels;
-                length=(size_t) ZipMaxExtent(packet_size*image->columns);
-                if (version != 0)
-                  length=(size_t) ReadBlobMSBLong(image);
-                zip_info.avail_in=(unsigned int) ReadBlob(image,length,
-                  zip_info.next_in);
-              }
-            if (inflate(&zip_info,Z_SYNC_FLUSH) == Z_STREAM_END)
-              break;
-          } while (zip_info.avail_out != 0);
-          if (y == (ssize_t) (image->rows-1))
-            {
-              if (version == 0)
-                {
-                  MagickOffsetType
-                    offset;
-
-                  offset=SeekBlob(image,-((MagickOffsetType) zip_info.avail_in),
-                    SEEK_CUR);
-                  if (offset < 0)
-                    ThrowReaderException(CorruptImageError,
-                      "ImproperImageHeader");
-                }
-              code=inflateEnd(&zip_info);
-              if (code >= 0)
-                status=MagickTrue;
-            }
-          (void) ImportQuantumPixels(image,(CacheView *) NULL,quantum_info,
-            quantum_type,pixels,exception);
-          break;
-        }
-#endif
 #if defined(MAGICKCORE_BZLIB_DELEGATE)
         case BZipCompression:
         {
-          if (y == 0)
-            {
-              bzip_info.bzalloc=AcquireBZIPMemory;
-              bzip_info.bzfree=RelinquishBZIPMemory;
-              bzip_info.opaque=(void *) NULL;
-              code=BZ2_bzDecompressInit(&bzip_info,(int) image_info->verbose,
-                MagickFalse);
-              if (code >= 0)
-                status=MagickTrue;
-              bzip_info.avail_in=0;
-            }
           bzip_info.next_out=(char *) pixels;
           bzip_info.avail_out=(unsigned int) (packet_size*image->columns);
           do
@@ -1320,23 +1351,59 @@ static Image *ReadMIFFImage(const ImageInfo *image_info,
             if (BZ2_bzDecompress(&bzip_info) == BZ_STREAM_END)
               break;
           } while (bzip_info.avail_out != 0);
-          if (y == (ssize_t) (image->rows-1))
-            {
-              if (version == 0)
-                {
-                  MagickOffsetType
-                    offset;
-
-                  offset=SeekBlob(image,-((MagickOffsetType)
-                    bzip_info.avail_in),SEEK_CUR);
-                  if (offset < 0)
-                    ThrowReaderException(CorruptImageError,
-                      "ImproperImageHeader");
-                }
-              code=BZ2_bzDecompressEnd(&bzip_info);
-              if (code >= 0)
-                status=MagickTrue;
-            }
+          (void) ImportQuantumPixels(image,(CacheView *) NULL,quantum_info,
+            quantum_type,pixels,exception);
+          break;
+        }
+#endif
+#if defined(MAGICKCORE_LZMA_DELEGATE)
+        case LZMACompression:
+        {
+          lzma_info.next_out=pixels;
+          lzma_info.avail_out=packet_size*image->columns;
+          do
+          {
+            if (lzma_info.avail_in == 0)
+              {
+                lzma_info.next_in=compress_pixels;
+                length=(size_t) ReadBlobMSBLong(image);
+                lzma_info.avail_in=(unsigned int) ReadBlob(image,length,
+                  (unsigned char *) lzma_info.next_in);
+              }
+            code=lzma_code(&lzma_info,LZMA_RUN);
+            if (code < 0)
+              {
+                status=MagickFalse;
+                break;
+              }
+            if (code == LZMA_STREAM_END)
+              break;
+          } while (lzma_info.avail_out != 0);
+          (void) ImportQuantumPixels(image,(CacheView *) NULL,quantum_info,
+            quantum_type,pixels,exception);
+          break;
+        }
+#endif
+#if defined(MAGICKCORE_ZLIB_DELEGATE)
+        case LZWCompression:
+        case ZipCompression:
+        {
+          zip_info.next_out=pixels;
+          zip_info.avail_out=(uInt) (packet_size*image->columns);
+          do
+          {
+            if (zip_info.avail_in == 0)
+              {
+                zip_info.next_in=compress_pixels;
+                length=(size_t) ZipMaxExtent(packet_size*image->columns);
+                if (version != 0)
+                  length=(size_t) ReadBlobMSBLong(image);
+                zip_info.avail_in=(unsigned int) ReadBlob(image,length,
+                  zip_info.next_in);
+              }
+            if (inflate(&zip_info,Z_SYNC_FLUSH) == Z_STREAM_END)
+              break;
+          } while (zip_info.avail_out != 0);
           (void) ImportQuantumPixels(image,(CacheView *) NULL,quantum_info,
             quantum_type,pixels,exception);
           break;
@@ -1344,12 +1411,6 @@ static Image *ReadMIFFImage(const ImageInfo *image_info,
 #endif
         case RLECompression:
         {
-          if (y == 0)
-            {
-              (void) ResetMagickMemory(&pixel,0,sizeof(pixel));
-              pixel.opacity=(Quantum) TransparentOpacity;
-              index=(IndexPacket) 0;
-            }
           for (x=0; x < (ssize_t) image->columns; x++)
           {
             if (length == 0)
@@ -1377,6 +1438,62 @@ static Image *ReadMIFFImage(const ImageInfo *image_info,
         break;
     }
     SetQuantumImageType(image,quantum_type);
+    switch (image->compression)
+    {
+#if defined(MAGICKCORE_BZLIB_DELEGATE)
+      case BZipCompression:
+      {
+        if (version == 0)
+          {
+            MagickOffsetType
+              offset;
+
+            offset=SeekBlob(image,-((MagickOffsetType)
+              bzip_info.avail_in),SEEK_CUR);
+            if (offset < 0)
+              ThrowReaderException(CorruptImageError,
+                "ImproperImageHeader");
+          }
+        code=BZ2_bzDecompressEnd(&bzip_info);
+        if (code != BZ_OK)
+          status=MagickFalse;
+        break;
+      }
+#endif
+#if defined(MAGICKCORE_LZMA_DELEGATE)
+      case LZMACompression:
+      {
+        status=lzma_code(&lzma_info,LZMA_FINISH);
+        if ((status != LZMA_STREAM_END) && (status != LZMA_OK))
+          status=MagickFalse;
+        lzma_end(&lzma_info);
+        break;
+      }
+#endif
+#if defined(MAGICKCORE_ZLIB_DELEGATE)
+      case LZWCompression:
+      case ZipCompression:
+      {
+        if (version == 0)
+          {
+            MagickOffsetType
+              offset;
+
+            offset=SeekBlob(image,-((MagickOffsetType) zip_info.avail_in),
+              SEEK_CUR);
+            if (offset < 0)
+              ThrowReaderException(CorruptImageError,
+                "ImproperImageHeader");
+          }
+        code=inflateEnd(&zip_info);
+        if (code != LZMA_OK)
+          status=MagickFalse;
+        break;
+      }
+#endif
+      default:
+        break;
+    }
     quantum_info=DestroyQuantumInfo(quantum_info);
     compress_pixels=(unsigned char *) RelinquishMagickMemory(compress_pixels);
     if (((y != (ssize_t) image->rows)) || (status == MagickFalse))
@@ -1698,8 +1815,14 @@ static MagickBooleanType WriteMIFFImage(const ImageInfo *image_info,
   int
     code;
 
-  ssize_t
-    y;
+#if defined(MAGICKCORE_LZMA_DELEGATE)
+  lzma_allocator
+    allocator;
+
+  lzma_stream
+    initialize_lzma = LZMA_STREAM_INIT,
+    lzma_info;
+#endif
 
   MagickBooleanType
     status;
@@ -1722,6 +1845,9 @@ static MagickBooleanType WriteMIFFImage(const ImageInfo *image_info,
   size_t
     length,
     packet_size;
+
+  ssize_t
+    y;
 
   unsigned char
     *compress_pixels,
@@ -1778,6 +1904,9 @@ static MagickBooleanType WriteMIFFImage(const ImageInfo *image_info,
       compression=image_info->compression;
     switch (compression)
     {
+#if !defined(MAGICKCORE_ZLIB_DELEGATE)
+      case LZMACompression: compression=NoCompression; break;
+#endif
 #if !defined(MAGICKCORE_ZLIB_DELEGATE)
       case LZWCompression:
       case ZipCompression: compression=NoCompression; break;
@@ -2129,9 +2258,56 @@ static MagickBooleanType WriteMIFFImage(const ImageInfo *image_info,
     /*
       Write image pixels to file.
     */
+    status=MagickTrue;
+    switch (compression)
+    {
+#if defined(MAGICKCORE_BZLIB_DELEGATE)
+      case BZipCompression:
+      {
+        (void) ResetMagickMemory(&bzip_info,0,sizeof(bzip_info));
+        bzip_info.bzalloc=AcquireBZIPMemory;
+        bzip_info.bzfree=RelinquishBZIPMemory;
+        code=BZ2_bzCompressInit(&bzip_info,(int) (image->quality ==
+          UndefinedCompressionQuality ? 7 : MagickMin(image->quality/10,
+          9)),(int) image_info->verbose,0);
+        if (code != BZ_OK)
+          status=MagickFalse;
+        break;
+      }
+#endif
+#if defined(MAGICKCORE_LZMA_DELEGATE)
+      case LZMACompression:
+      {
+        (void) ResetMagickMemory(&allocator,0,sizeof(allocator));
+        allocator.alloc=AcquireLZMAMemory;
+        allocator.free=RelinquishLZMAMemory;
+        lzma_info=initialize_lzma;
+        lzma_info.allocator=&allocator;
+        code=lzma_easy_encoder(&lzma_info,image->quality/10,LZMA_CHECK_SHA256);
+        if (code != LZMA_OK)
+          status=MagickTrue;
+        break;
+      }
+#endif
+#if defined(MAGICKCORE_ZLIB_DELEGATE)
+      case LZWCompression:
+      case ZipCompression:
+      {
+        (void) ResetMagickMemory(&zip_info,0,sizeof(zip_info));
+        zip_info.zalloc=AcquireZIPMemory;
+        zip_info.zfree=RelinquishZIPMemory;
+        code=deflateInit(&zip_info,(int) (image->quality ==
+          UndefinedCompressionQuality ? 7 : MagickMin(image->quality/10,9)));
+        if (code != Z_OK)
+          status=MagickFalse;
+        break;
+      }
+#endif
+      default:
+        break;
+    }
     quantum_type=GetQuantumType(image,&image->exception);
     pixels=GetQuantumPixels(quantum_info);
-    status=MagickTrue;
     for (y=0; y < (ssize_t) image->rows; y++)
     {
       register const IndexPacket
@@ -2143,6 +2319,8 @@ static MagickBooleanType WriteMIFFImage(const ImageInfo *image_info,
       register ssize_t
         x;
 
+      if (status == MagickFalse)
+        break;
       p=GetVirtualPixels(image,0,y,image->columns,1,&image->exception);
       if (p == (const PixelPacket *) NULL)
         break;
@@ -2150,76 +2328,9 @@ static MagickBooleanType WriteMIFFImage(const ImageInfo *image_info,
       q=pixels;
       switch (compression)
       {
-#if defined(MAGICKCORE_ZLIB_DELEGATE)
-        case LZWCompression:
-        case ZipCompression:
-        {
-          if (y == 0)
-            {
-              zip_info.zalloc=AcquireZIPMemory;
-              zip_info.zfree=RelinquishZIPMemory;
-              zip_info.opaque=(voidpf) NULL;
-              code=deflateInit(&zip_info,(int) (image->quality ==
-                UndefinedCompressionQuality ? 7 : MagickMin(image->quality/10,
-                9)));
-              if (code >= 0)
-                status=MagickTrue;
-            }
-          zip_info.next_in=pixels;
-          zip_info.avail_in=(uInt) (packet_size*image->columns);
-          (void) ExportQuantumPixels(image,(const CacheView *) NULL,
-            quantum_info,quantum_type,pixels,&image->exception);
-          do
-          {
-            zip_info.next_out=compress_pixels;
-            zip_info.avail_out=(uInt) ZipMaxExtent(packet_size*image->columns);
-            code=deflate(&zip_info,Z_SYNC_FLUSH);
-            if (code >= 0)
-              status=MagickTrue;
-            length=(size_t) (zip_info.next_out-compress_pixels);
-            if (length != 0)
-              {
-                (void) WriteBlobMSBLong(image,(unsigned int) length);
-                (void) WriteBlob(image,length,compress_pixels);
-              }
-          } while (zip_info.avail_in != 0);
-          if (y == (ssize_t) (image->rows-1))
-            {
-              for ( ; ; )
-              {
-                zip_info.next_out=compress_pixels;
-                zip_info.avail_out=(uInt) ZipMaxExtent(packet_size*
-                  image->columns);
-                code=deflate(&zip_info,Z_FINISH);
-                length=(size_t) (zip_info.next_out-compress_pixels);
-                if (length > 6)
-                  {
-                    (void) WriteBlobMSBLong(image,(unsigned int) length);
-                    (void) WriteBlob(image,length,compress_pixels);
-                  }
-                if (code == Z_STREAM_END)
-                  break;
-              }
-              status=deflateEnd(&zip_info) == 0 ? MagickTrue : MagickFalse;
-            }
-          break;
-        }
-#endif
 #if defined(MAGICKCORE_BZLIB_DELEGATE)
         case BZipCompression:
         {
-          if (y == 0)
-            {
-              bzip_info.bzalloc=AcquireBZIPMemory;
-              bzip_info.bzfree=RelinquishBZIPMemory;
-              bzip_info.opaque=(void *) NULL;
-              code=BZ2_bzCompressInit(&bzip_info,(int) (image->quality ==
-                UndefinedCompressionQuality ? 7 : MagickMin(image->quality/10,
-                9)),
-                (int) image_info->verbose,0);
-              if (code >= 0)
-                status=MagickTrue;
-            }
           bzip_info.next_in=(char *) pixels;
           bzip_info.avail_in=(unsigned int) (packet_size*image->columns);
           (void) ExportQuantumPixels(image,(const CacheView *) NULL,
@@ -2230,8 +2341,8 @@ static MagickBooleanType WriteMIFFImage(const ImageInfo *image_info,
             bzip_info.avail_out=(unsigned int) BZipMaxExtent(packet_size*
               image->columns);
             code=BZ2_bzCompress(&bzip_info,BZ_FLUSH);
-            if (code >= 0)
-              status=MagickTrue;
+            if (code != BZ_OK)
+              status=MagickFalse;
             length=(size_t) (bzip_info.next_out-(char *) compress_pixels);
             if (length != 0)
               {
@@ -2239,26 +2350,55 @@ static MagickBooleanType WriteMIFFImage(const ImageInfo *image_info,
                 (void) WriteBlob(image,length,compress_pixels);
               }
           } while (bzip_info.avail_in != 0);
-          if (y == (ssize_t) (image->rows-1))
-            {
-              for ( ; ; )
+          break;
+        }
+#endif
+#if defined(MAGICKCORE_LZMA_DELEGATE)
+        case LZMACompression:
+        {
+          lzma_info.next_in=pixels;
+          lzma_info.avail_in=packet_size*image->columns;
+          (void) ExportQuantumPixels(image,(const CacheView *) NULL,
+            quantum_info,quantum_type,pixels,&image->exception);
+          do
+          {
+            lzma_info.next_out=compress_pixels;
+            lzma_info.avail_out=packet_size*image->columns;
+            code=lzma_code(&lzma_info,LZMA_RUN);
+            if (code != LZMA_OK)
+              status=MagickFalse;
+            length=(size_t) (lzma_info.next_out-compress_pixels);
+            if (length != 0)
               {
-                bzip_info.next_out=(char *) compress_pixels;
-                bzip_info.avail_out=(unsigned int) BZipMaxExtent(packet_size*
-                  image->columns);
-                code=BZ2_bzCompress(&bzip_info,BZ_FINISH);
-                length=(size_t) (bzip_info.next_out-(char *) compress_pixels);
-                if (length != 0)
-                  {
-                    (void) WriteBlobMSBLong(image,(unsigned int) length);
-                    (void) WriteBlob(image,length,compress_pixels);
-                  }
-                if (code == BZ_STREAM_END)
-                  break;
+                (void) WriteBlobMSBLong(image,(unsigned int) length);
+                (void) WriteBlob(image,length,compress_pixels);
               }
-              status=BZ2_bzCompressEnd(&bzip_info) == 0 ? MagickTrue :
-                MagickFalse;
-            }
+          } while (lzma_info.avail_in != 0);
+          break;
+        }
+#endif
+#if defined(MAGICKCORE_ZLIB_DELEGATE)
+        case LZWCompression:
+        case ZipCompression:
+        {
+          zip_info.next_in=pixels;
+          zip_info.avail_in=(uInt) (packet_size*image->columns);
+          (void) ExportQuantumPixels(image,(const CacheView *) NULL,
+            quantum_info,quantum_type,pixels,&image->exception);
+          do
+          {
+            zip_info.next_out=compress_pixels;
+            zip_info.avail_out=(uInt) ZipMaxExtent(packet_size*image->columns);
+            code=deflate(&zip_info,Z_SYNC_FLUSH);
+            if (code != Z_OK)
+              status=MagickFalse;
+            length=(size_t) (zip_info.next_out-compress_pixels);
+            if (length != 0)
+              {
+                (void) WriteBlobMSBLong(image,(unsigned int) length);
+                (void) WriteBlob(image,length,compress_pixels);
+              }
+          } while (zip_info.avail_in != 0);
           break;
         }
 #endif
@@ -2307,6 +2447,93 @@ static MagickBooleanType WriteMIFFImage(const ImageInfo *image_info,
           if (status == MagickFalse)
             break;
         }
+    }
+    switch (compression)
+    {
+#if defined(MAGICKCORE_BZLIB_DELEGATE)
+      case BZipCompression:
+      {
+        for ( ; ; )
+        {
+          if (status == MagickFalse)
+            break;
+          bzip_info.next_out=(char *) compress_pixels;
+          bzip_info.avail_out=(unsigned int) BZipMaxExtent(packet_size*
+            image->columns);
+          code=BZ2_bzCompress(&bzip_info,BZ_FINISH);
+          if (code != BZ_OK)
+            status=MagickFalse;
+          length=(size_t) (bzip_info.next_out-(char *) compress_pixels);
+          if (length != 0)
+            {
+              (void) WriteBlobMSBLong(image,(unsigned int) length);
+              (void) WriteBlob(image,length,compress_pixels);
+            }
+          if (code == BZ_STREAM_END)
+            break;
+        }
+        code=BZ2_bzCompressEnd(&bzip_info);
+        if (code != BZ_OK)
+          status=MagickFalse;
+        break;
+      }
+#endif
+#if defined(MAGICKCORE_LZMA_DELEGATE)
+      case LZMACompression:
+      {
+        for ( ; ; )
+        {
+          if (status == MagickFalse)
+            break;
+          lzma_info.next_out=compress_pixels;
+          lzma_info.avail_out=packet_size*image->columns;
+          code=lzma_code(&lzma_info,LZMA_FINISH);
+          if (code != LZMA_OK)
+            status=MagickFalse;
+          length=(size_t) (lzma_info.next_out-compress_pixels);
+          if (length > 6)
+            {
+              (void) WriteBlobMSBLong(image,(unsigned int) length);
+              (void) WriteBlob(image,length,compress_pixels);
+            }
+          if (code == LZMA_STREAM_END)
+            break;
+        }
+        lzma_end(&lzma_info);
+        break;
+      }
+#endif
+#if defined(MAGICKCORE_ZLIB_DELEGATE)
+      case LZWCompression:
+      case ZipCompression:
+      {
+        for ( ; ; )
+        {
+          if (status == MagickFalse)
+            break;
+          zip_info.next_out=compress_pixels;
+          zip_info.avail_out=(uInt) ZipMaxExtent(packet_size*
+            image->columns);
+          code=deflate(&zip_info,Z_FINISH);
+          if (code != Z_OK)
+            status=MagickFalse;
+          length=(size_t) (zip_info.next_out-compress_pixels);
+          if (length > 6)
+            {
+              (void) WriteBlobMSBLong(image,(unsigned int) length);
+              (void) WriteBlob(image,length,compress_pixels);
+            }
+          if (code == Z_STREAM_END)
+            break;
+        }
+        code=deflateEnd(&zip_info);
+        if (code != Z_OK)
+          status=MagickFalse;
+        break;
+      }
+#endif
+      default:
+        break;
     }
     quantum_info=DestroyQuantumInfo(quantum_info);
     compress_pixels=(unsigned char *) RelinquishMagickMemory(compress_pixels);
