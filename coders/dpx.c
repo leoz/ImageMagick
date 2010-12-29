@@ -443,7 +443,7 @@ static inline MagickBooleanType IsFloatDefined(const float value)
     unsigned int
       unsigned_value;
 
-    float
+    double
       float_value;
   } quantum;
 
@@ -992,7 +992,7 @@ static Image *ReadDPXImage(const ImageInfo *image_info,ExceptionInfo *exception)
            profile=DestroyStringInfo(profile);
         }
     }
-  for ( ; offset < (ssize_t) dpx.file.image_offset; offset++)
+  for ( ; offset < (MagickOffsetType) dpx.file.image_offset; offset++)
     (void) ReadBlobByte(image);
   /*
     Read DPX image header.

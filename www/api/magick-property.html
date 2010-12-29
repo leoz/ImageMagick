@@ -4,12 +4,12 @@
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
   <meta name="verify-v1" content="g222frIIxcQTrvDR3NBRUSKP3AnMNoqxOkIniCEkV7U="/>
-  <title>ImageMagick: MagickWand, C API for ImageMagick: Property Methods</title/>
+  <title>ImageMagick: MagickWand, C API for ImageMagick: Property Methods</title>
   <meta http-equiv="Content-Language" content="en-US"/>
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
   <meta http-equiv="Reply-to" content="magick-users@imagemagick.org"/>
   <meta name="Application-name" content="ImageMagick"/>
-  <meta name="Description" content="ImageMagick® is a software suite to create, edit, and compose bitmap images. It can read, convert and write images in a variety of formats (about 100) including GIF, JPEG, JPEG-2000, PNG, PDF, PhotoCD, TIFF, and DPX. Use ImageMagick to translate, flip, mirror, rotate, scale, shear and transform images, adjust image colors, apply various special effects, or draw text, lines, polygons, ellipses and Bézier curves.  ImageMagick is free software delivered as a ready-to-run binary distribution or as source code that you can freely use, copy, modify, and distribute. Its license is compatible with the GPL. It runs on all major operating systems.  The functionality of ImageMagick is typically utilized from the command line or you can use the features from programs written in your favorite programming language. Choose from these interfaces: MagickCore (C), MagickWand (C), ChMagick (Ch), Magick++ (C++), JMagick (Java), L-Magick (Lisp), PascalMagick (Pascal), PerlMagick (Perl), MagickWand for PHP (PHP), PythonMagick (Python), RMagick (Ruby), or TclMagick (Tcl/TK). With a language interface, use ImageMagick to modify or create images automagically and dynamically."/>
+  <meta name="Description" content="ImageMagick is a software suite to create, edit, or compose bitmap images in a variety of formats. Use ImageMagick to scale, rotate, shear, distort and transform images."/>
   <meta name="Application-url" content="http://www.imagemagick.org"/>
   <meta name="Generator" content="PHP"/>
   <meta name="Keywords" content="magickwc, api, for, imagemagick:, property, methods, ImageMagick, ImageMagic, MagickCore, MagickWand, PerlMagick, Magick++, RMagick, PythonMagick, JMagick, TclMagick, Image, Magick, Magic, Wand, ImageMagickObject, Swiss, Army, Knife, Image, Processing"/>
@@ -116,10 +116,10 @@
 </div>
 <div class="sep"></div>
 <div class="menu">
-  <a title="Site Map"href="../../www/sitemap.html">Site Map</a>
+  <a title="Site Map" href="../../www/sitemap.html">Site Map</a>
 </div>
 <div  class="sub">
-    <a title="Site Map: Links"href="../../www/links.html">Links</a>
+  <a title="Site Map: Links" href="../../www/links.html">Links</a>
 </div>
 <div class="sep"></div>
 <div  class="menu">
@@ -127,7 +127,7 @@
 
 <div class="sponsbox">
 <div  class="sponsor">
-   <a title="Sponsor: Webdesign" href="http://www.renehornig.com/">Webdesign</a><!-- 20111001000240 -->
+   <a title="Sponsor: Notebook Reparatur Berlin" href="http://www.notebook-reparaturen-berlin.de">Notebook Reparatur Berlin</a><!-- 2011040100025 gabi.schulze-->
 </div>
 <div  class="sponsor">
   <a title="Sponsor: Druckerei" href="http://print24.com/de/">Druckerei</a><!-- 201110010720 -->
@@ -167,6 +167,8 @@
 
 <div class="main">
 
+<h1>Module magick-property
+ Methods</h1>
 <p class="navigation-index">[<a href="#MagickDeleteImageArtifact">MagickDeleteImageArtifact</a> &bull; <a href="#MagickDeleteImageProperty">MagickDeleteImageProperty</a> &bull; <a href="#MagickDeleteOption">MagickDeleteOption</a> &bull; <a href="#MagickGetAntialias">MagickGetAntialias</a> &bull; <a href="#MagickGetBackgroundColor">MagickGetBackgroundColor</a> &bull; <a href="#MagickGetColorspace">MagickGetColorspace</a> &bull; <a href="#MagickGetCompression">MagickGetCompression</a> &bull; <a href="#MagickGetCompressionQuality">MagickGetCompressionQuality</a> &bull; <a href="#MagickGetCopyright">MagickGetCopyright</a> &bull; <a href="#MagickGetFilename">MagickGetFilename</a> &bull; <a href="#MagickGetFont">MagickGetFont</a> &bull; <a href="#MagickGetFormat">MagickGetFormat</a> &bull; <a href="#MagickGetGravity">MagickGetGravity</a> &bull; <a href="#MagickGetHomeURL">MagickGetHomeURL</a> &bull; <a href="#MagickGetImageArtifact">MagickGetImageArtifact</a> &bull; <a href="#MagickGetImageArtifacts">MagickGetImageArtifacts</a> &bull; <a href="#MagickGetImageProfile">MagickGetImageProfile</a> &bull; <a href="#MagickGetImageProfiles">MagickGetImageProfiles</a> &bull; <a href="#MagickGetImageProperty">MagickGetImageProperty</a> &bull; <a href="#MagickGetImageProperties">MagickGetImageProperties</a> &bull; <a href="#MagickGetInterlaceScheme">MagickGetInterlaceScheme</a> &bull; <a href="#MagickGetInterpolateMethod">MagickGetInterpolateMethod</a> &bull; <a href="#MagickGetOption">MagickGetOption</a> &bull; <a href="#MagickGetOptions">MagickGetOptions</a> &bull; <a href="#MagickGetOrientation">MagickGetOrientation</a> &bull; <a href="#MagickGetPackageName">MagickGetPackageName</a> &bull; <a href="#MagickGetPage">MagickGetPage</a> &bull; <a href="#MagickGetPointsize">MagickGetPointsize</a> &bull; <a href="#MagickGetQuantumDepth">MagickGetQuantumDepth</a> &bull; <a href="#MagickGetQuantumRange">MagickGetQuantumRange</a> &bull; <a href="#MagickGetReleaseDate">MagickGetReleaseDate</a> &bull; <a href="#MagickGetResolution">MagickGetResolution</a> &bull; <a href="#MagickGetResource">MagickGetResource</a> &bull; <a href="#MagickGetResourceLimit">MagickGetResourceLimit</a> &bull; <a href="#MagickGetSamplingFactors">MagickGetSamplingFactors</a> &bull; <a href="#MagickGetSize">MagickGetSize</a> &bull; <a href="#MagickGetSizeOffset">MagickGetSizeOffset</a> &bull; <a href="#MagickGetType">MagickGetType</a> &bull; <a href="#MagickGetVersion">MagickGetVersion</a> &bull; <a href="#MagickProfileImage">MagickProfileImage</a> &bull; <a href="#MagickRemoveImageProfile">MagickRemoveImageProfile</a> &bull; <a href="#MagickSetAntialias">MagickSetAntialias</a> &bull; <a href="#MagickSetBackgroundColor">MagickSetBackgroundColor</a> &bull; <a href="#MagickSetColorspace">MagickSetColorspace</a> &bull; <a href="#MagickSetCompression">MagickSetCompression</a> &bull; <a href="#MagickSetCompressionQuality">MagickSetCompressionQuality</a> &bull; <a href="#MagickSetDepth">MagickSetDepth</a> &bull; <a href="#MagickSetExtract">MagickSetExtract</a> &bull; <a href="#MagickSetFilename">MagickSetFilename</a> &bull; <a href="#MagickSetFont">MagickSetFont</a> &bull; <a href="#MagickSetFormat">MagickSetFormat</a> &bull; <a href="#MagickSetGravity">MagickSetGravity</a> &bull; <a href="#MagickSetImageArtifact">MagickSetImageArtifact</a> &bull; <a href="#MagickSetImageProfile">MagickSetImageProfile</a> &bull; <a href="#MagickSetImageProperty">MagickSetImageProperty</a> &bull; <a href="#MagickSetInterlaceScheme">MagickSetInterlaceScheme</a> &bull; <a href="#MagickSetInterpolateMethod">MagickSetInterpolateMethod</a> &bull; <a href="#MagickSetOption">MagickSetOption</a> &bull; <a href="#MagickSetOrientation">MagickSetOrientation</a> &bull; <a href="#MagickSetPage">MagickSetPage</a> &bull; <a href="#MagickSetPassphrase">MagickSetPassphrase</a> &bull; <a href="#MagickSetPointsize">MagickSetPointsize</a> &bull; <a href="#MagickSetProgressMonitor">MagickSetProgressMonitor</a> &bull; <a href="#MagickSetResourceLimit">MagickSetResourceLimit</a> &bull; <a href="#MagickSetResolution">MagickSetResolution</a> &bull; <a href="#MagickSetSamplingFactors">MagickSetSamplingFactors</a> &bull; <a href="#MagickSetSize">MagickSetSize</a> &bull; <a href="#MagickSetSizeOffset">MagickSetSizeOffset</a> &bull; <a href="#MagickSetType">MagickSetType</a>]</p>
 
 <h2><a href="http://www.imagemagick.org/api/MagickWand/magick-property
