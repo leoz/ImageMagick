@@ -24,6 +24,7 @@
   <link rel="icon" href="../../images/wand.png"/>
   <link rel="shortcut icon" href="../../images/wand.ico"  type="images/x-icon"/>
   <link rel="meta" type="application/rdf+xml" title="ICI" href="http://imagemagick.org/ici.rdf"/>
+  <link rel="stylesheet" href="http://www.google.com/cse/style/look/default.css" type="text/css" />
   <style type="text/css" media="all">
     @import url("../../www/magick.css");
   </style>
@@ -49,7 +50,7 @@
   style="width: 350px; height: 60px; margin: 28px auto; float: left;" /></a>
 <a href="http://www.networkredux.com">
   <img src="../../images/networkredux.png" alt="[sponsor]"
-  style="margin: 45px auto; border: 0px; float: left;" /></a>
+  style="margin-top: 42px; border: 0px; float: left;" /></a>
 <a href="http://www.imagemagick.org/discourse-server/">
   <img src="../../images/logo.jpg" alt=""
   style="width: 114px; height: 118px; border: 0px; float: right;" /></a>
@@ -125,7 +126,7 @@
 </div>
 <div class="sep"></div>
 <div class="menu">
-  <a title="Search" href="../http://www.imagemagick.org/script/search.php">Search</a>
+  <a title="Search" href="../../www/search.html">Search</a>
 </div>
 <div class="sep"></div>
 <div class="menu">
@@ -139,8 +140,8 @@
   <a title="Sponsors" href="../../www/sponsors.html">Sponsors:</a>
 
 <div class="sponsbox">
-<div  class="sponsor">
-   <a title="Sponsor: Fernsehdienst Berlin" href="http://www.atlas-multimedia.de">Fernsehdienst Berlin</a><!-- 2011050100025 atlas.multimedia-->
+<div class="sponsor">
+  <a title="Sponsor: Web Hosting" href="http://www.bodhost.com/hosting.shtml">Web Hosting</a><!-- 201104010090 -->
 </div>
 <div  class="sponsor">
   <a title="Sponsor: Druckerei" href="http://print24.com/de/">Druckerei</a><!-- 201110010720 -->
@@ -150,6 +151,9 @@
 </div>
 <div  class="sponsor">
   <a title="Sponsor: Flyer drucken" href="http://www.online-druck.biz">Flyer drucken</a><!-- 201109010900 Floeter-->
+</div>
+<div  class="sponsor">
+   <a title="Sponsor: alaTest.com" href="http://alatest.com">alaTest.com</a><!-- 20110801000300 -->
 </div>
 </div>
 </div>
@@ -175,11 +179,11 @@
  Methods</h1>
 <p class="navigation-index">[<a href="#SegmentImage">SegmentImage</a>]</p>
 
-<h2><a href="http://www.imagemagick.org/api/MagickCore/segment
-_8c.html" target="source" name="SegmentImage">SegmentImage</a></h2>
+<h2><a href="http://www.wizards-toolkit.org/api/MagickCore/segment
+_8c.html" id="SegmentImage">SegmentImage</a></h2>
 <div class="doc-section">
 
-<p>SegmentImage() segment an image by analyzing the histograms of the color components and identifying units that are homogeneous with the fuzzy C-means technique.</p></ol>
+<p>SegmentImage() segment an image by analyzing the histograms of the color components and identifying units that are homogeneous with the fuzzy C-means technique.</p>
 
 <p>The format of the SegmentImage method is:</p>
 
@@ -189,22 +193,22 @@ _8c.html" target="source" name="SegmentImage">SegmentImage</a></h2>
     const double cluster_threshold,const double smooth_threshold)
 </pre>
 
-<p>A description of each parameter follows.</p></ol>
+<p>A description of each parameter follows.</p>
 
 <h5>image</h5>
-<ol><p>the image.</p></ol>
+<p>the image.</p>
 
 <h5>colorspace</h5>
-<ol><p>Indicate the colorspace.</p></ol>
+<p>Indicate the colorspace.</p>
 
 <h5>verbose</h5>
-<ol><p>Set to MagickTrue to print detailed information about the identified classes.</p></ol>
+<p>Set to MagickTrue to print detailed information about the identified classes.</p>
 
 <h5>cluster_threshold</h5>
-<ol><p>This represents the minimum number of pixels contained in a hexahedra before it can be considered valid (expressed as a percentage).</p></ol>
+<p>This represents the minimum number of pixels contained in a hexahedra before it can be considered valid (expressed as a percentage).</p>
 
 <h5>smooth_threshold</h5>
-<ol><p>the smoothing threshold eliminates noise in the second derivative of the histogram.  As the value is increased, you can expect a smoother second derivative.</p></ol>
+<p>the smoothing threshold eliminates noise in the second derivative of the histogram.  As the value is increased, you can expect a smoother second derivative.</p>
 
  </div>
 

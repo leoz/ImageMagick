@@ -24,6 +24,7 @@
   <link rel="icon" href="../../images/wand.png"/>
   <link rel="shortcut icon" href="../../images/wand.ico"  type="images/x-icon"/>
   <link rel="meta" type="application/rdf+xml" title="ICI" href="http://imagemagick.org/ici.rdf"/>
+  <link rel="stylesheet" href="http://www.google.com/cse/style/look/default.css" type="text/css" />
   <style type="text/css" media="all">
     @import url("../../www/magick.css");
   </style>
@@ -49,7 +50,7 @@
   style="width: 350px; height: 60px; margin: 28px auto; float: left;" /></a>
 <a href="http://www.networkredux.com">
   <img src="../../images/networkredux.png" alt="[sponsor]"
-  style="margin: 45px auto; border: 0px; float: left;" /></a>
+  style="margin-top: 42px; border: 0px; float: left;" /></a>
 <a href="http://www.imagemagick.org/discourse-server/">
   <img src="../../images/logo.jpg" alt=""
   style="width: 114px; height: 118px; border: 0px; float: right;" /></a>
@@ -125,7 +126,7 @@
 </div>
 <div class="sep"></div>
 <div class="menu">
-  <a title="Search" href="../http://www.imagemagick.org/script/search.php">Search</a>
+  <a title="Search" href="../../www/search.html">Search</a>
 </div>
 <div class="sep"></div>
 <div class="menu">
@@ -139,8 +140,8 @@
   <a title="Sponsors" href="../../www/sponsors.html">Sponsors:</a>
 
 <div class="sponsbox">
-<div  class="sponsor">
-   <a title="Sponsor: Webdesign" href="http://www.renehornig.com/">Webdesign</a><!-- 20111001000240 -->
+<div class="sponsor">
+  <a title="Sponsor: Web Hosting" href="http://www.bodhost.com/hosting.shtml">Web Hosting</a><!-- 201104010090 -->
 </div>
 <div  class="sponsor">
   <a title="Sponsor: Druckerei" href="http://print24.com/de/">Druckerei</a><!-- 201110010720 -->
@@ -150,6 +151,9 @@
 </div>
 <div  class="sponsor">
   <a title="Sponsor: Flyer drucken" href="http://www.online-druck.biz">Flyer drucken</a><!-- 201109010900 Floeter-->
+</div>
+<div  class="sponsor">
+   <a title="Sponsor: Webdesign" href="http://www.renehornig.com/">Webdesign</a><!-- 20111001000240 -->
 </div>
 </div>
 </div>
@@ -175,11 +179,11 @@
  Methods</h1>
 <p class="navigation-index">[<a href="#MagickCommandGenesis">MagickCommandGenesis</a>]</p>
 
-<h2><a href="http://www.imagemagick.org/api/MagickWand/mogrify
-_8c.html" target="source" name="MagickCommandGenesis">MagickCommandGenesis</a></h2>
+<h2><a href="http://www.wizards-toolkit.org/api/MagickWand/mogrify
+_8c.html" id="MagickCommandGenesis">MagickCommandGenesis</a></h2>
 <div class="doc-section">
 
-<p>MagickCommandGenesis() applies image processing options to an image as prescribed by command line options.</p></ol>
+<p>MagickCommandGenesis() applies image processing options to an image as prescribed by command line options.</p>
 
 <p>The format of the MagickCommandGenesis method is:</p>
 
@@ -189,25 +193,25 @@ _8c.html" target="source" name="MagickCommandGenesis">MagickCommandGenesis</a></
     ExceptionInfo *exception)
 </pre>
 
-<p>A description of each parameter follows:</p></ol>
+<p>A description of each parameter follows:</p>
 
 <h5>image_info</h5>
-<ol><p>the image info.</p></ol>
+<p>the image info.</p>
 
 <h5>command</h5>
-<ol><p>Choose from ConvertImageCommand, IdentifyImageCommand, MogrifyImageCommand, CompositeImageCommand, CompareImageCommand, ConjureImageCommand, StreamImageCommand, ImportImageCommand, DisplayImageCommand, or AnimateImageCommand.</p></ol>
+<p>Choose from ConvertImageCommand, IdentifyImageCommand, MogrifyImageCommand, CompositeImageCommand, CompareImageCommand, ConjureImageCommand, StreamImageCommand, ImportImageCommand, DisplayImageCommand, or AnimateImageCommand.</p>
 
 <h5>argc</h5>
-<ol><p>Specifies a pointer to an integer describing the number of elements in the argument vector.</p></ol>
+<p>Specifies a pointer to an integer describing the number of elements in the argument vector.</p>
 
 <h5>argv</h5>
-<ol><p>Specifies a pointer to a text array containing the command line arguments.</p></ol>
+<p>Specifies a pointer to a text array containing the command line arguments.</p>
 
 <h5>metadata</h5>
-<ol><p>any metadata is returned here.</p></ol>
+<p>any metadata is returned here.</p>
 
 <h5>exception</h5>
-<ol><p>return any errors or warnings in this structure.</p></ol>
+<p>return any errors or warnings in this structure.</p>
 
  </div>
 

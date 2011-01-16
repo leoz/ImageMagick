@@ -24,6 +24,7 @@
   <link rel="icon" href="../../images/wand.png"/>
   <link rel="shortcut icon" href="../../images/wand.ico"  type="images/x-icon"/>
   <link rel="meta" type="application/rdf+xml" title="ICI" href="http://imagemagick.org/ici.rdf"/>
+  <link rel="stylesheet" href="http://www.google.com/cse/style/look/default.css" type="text/css" />
   <style type="text/css" media="all">
     @import url("../../www/magick.css");
   </style>
@@ -49,7 +50,7 @@
   style="width: 350px; height: 60px; margin: 28px auto; float: left;" /></a>
 <a href="http://www.networkredux.com">
   <img src="../../images/networkredux.png" alt="[sponsor]"
-  style="margin: 45px auto; border: 0px; float: left;" /></a>
+  style="margin-top: 42px; border: 0px; float: left;" /></a>
 <a href="http://www.imagemagick.org/discourse-server/">
   <img src="../../images/logo.jpg" alt=""
   style="width: 114px; height: 118px; border: 0px; float: right;" /></a>
@@ -125,7 +126,7 @@
 </div>
 <div class="sep"></div>
 <div class="menu">
-  <a title="Search" href="../http://www.imagemagick.org/script/search.php">Search</a>
+  <a title="Search" href="../../www/search.html">Search</a>
 </div>
 <div class="sep"></div>
 <div class="menu">
@@ -139,8 +140,8 @@
   <a title="Sponsors" href="../../www/sponsors.html">Sponsors:</a>
 
 <div class="sponsbox">
-<div  class="sponsor">
-   <a title="Sponsor: Fernsehdienst Berlin" href="http://www.atlas-multimedia.de">Fernsehdienst Berlin</a><!-- 2011050100025 atlas.multimedia-->
+<div class="sponsor">
+  <a title="Sponsor: Web Hosting" href="http://www.bodhost.com/hosting.shtml">Web Hosting</a><!-- 201104010090 -->
 </div>
 <div  class="sponsor">
   <a title="Sponsor: Druckerei" href="http://print24.com/de/">Druckerei</a><!-- 201110010720 -->
@@ -150,6 +151,9 @@
 </div>
 <div  class="sponsor">
   <a title="Sponsor: Flyer drucken" href="http://www.online-druck.biz">Flyer drucken</a><!-- 201109010900 Floeter-->
+</div>
+<div  class="sponsor">
+   <a title="Sponsor: Notebook Reparatur Berlin" href="http://www.notebook-reparaturen-berlin.de">Notebook Reparatur Berlin</a><!-- 2011050100025 gabi.schulze-->
 </div>
 </div>
 </div>
@@ -175,11 +179,11 @@
  Methods</h1>
 <p class="navigation-index">[<a href="#GetMagickCopyright">GetMagickCopyright</a> &bull; <a href="#GetMagickFeatures">GetMagickFeatures</a> &bull; <a href="#GetMagickHomeURL">GetMagickHomeURL</a> &bull; <a href="#GetMagickPackageName">GetMagickPackageName</a> &bull; <a href="#GetMagickQuantumDepth">GetMagickQuantumDepth</a> &bull; <a href="#GetMagickQuantumRange">GetMagickQuantumRange</a> &bull; <a href="#GetMagickReleaseDate">GetMagickReleaseDate</a> &bull; <a href="#GetMagickVersion">GetMagickVersion</a>]</p>
 
-<h2><a href="http://www.imagemagick.org/api/MagickCore/version
-_8c.html" target="source" name="GetMagickCopyright">GetMagickCopyright</a></h2>
+<h2><a href="http://www.wizards-toolkit.org/api/MagickCore/version
+_8c.html" id="GetMagickCopyright">GetMagickCopyright</a></h2>
 <div class="doc-section">
 
-<p>GetMagickCopyright() returns the ImageMagick API copyright as a string.</p></ol>
+<p>GetMagickCopyright() returns the ImageMagick API copyright as a string.</p>
 
 <p>The format of the GetMagickCopyright method is:</p>
 
@@ -188,11 +192,11 @@ _8c.html" target="source" name="GetMagickCopyright">GetMagickCopyright</a></h2>
 </pre>
 
  </div>
-<h2><a href="http://www.imagemagick.org/api/MagickCore/version
-_8c.html" target="source" name="GetMagickFeatures">GetMagickFeatures</a></h2>
+<h2><a href="http://www.wizards-toolkit.org/api/MagickCore/version
+_8c.html" id="GetMagickFeatures">GetMagickFeatures</a></h2>
 <div class="doc-section">
 
-<p>GetMagickFeatures() returns the ImageMagick features.</p></ol>
+<p>GetMagickFeatures() returns the ImageMagick features.</p>
 
 <p>The format of the GetMagickFeatures method is:</p>
 
@@ -200,14 +204,14 @@ _8c.html" target="source" name="GetMagickFeatures">GetMagickFeatures</a></h2>
   const char *GetMagickFeatures(void)
 </pre>
 
-<p>No parameters are required.</p></ol>
+<p>No parameters are required.</p>
 
  </div>
-<h2><a href="http://www.imagemagick.org/api/MagickCore/version
-_8c.html" target="source" name="GetMagickHomeURL">GetMagickHomeURL</a></h2>
+<h2><a href="http://www.wizards-toolkit.org/api/MagickCore/version
+_8c.html" id="GetMagickHomeURL">GetMagickHomeURL</a></h2>
 <div class="doc-section">
 
-<p>GetMagickHomeURL() returns the ImageMagick home URL.</p></ol>
+<p>GetMagickHomeURL() returns the ImageMagick home URL.</p>
 
 <p>The format of the GetMagickHomeURL method is:</p>
 
@@ -216,11 +220,11 @@ _8c.html" target="source" name="GetMagickHomeURL">GetMagickHomeURL</a></h2>
 </pre>
 
  </div>
-<h2><a href="http://www.imagemagick.org/api/MagickCore/version
-_8c.html" target="source" name="GetMagickPackageName">GetMagickPackageName</a></h2>
+<h2><a href="http://www.wizards-toolkit.org/api/MagickCore/version
+_8c.html" id="GetMagickPackageName">GetMagickPackageName</a></h2>
 <div class="doc-section">
 
-<p>GetMagickPackageName() returns the ImageMagick package name.</p></ol>
+<p>GetMagickPackageName() returns the ImageMagick package name.</p>
 
 <p>The format of the GetMagickName method is:</p>
 
@@ -228,14 +232,14 @@ _8c.html" target="source" name="GetMagickPackageName">GetMagickPackageName</a></
   const char *GetMagickName(void)
 </pre>
 
-<p>No parameters are required.</p></ol>
+<p>No parameters are required.</p>
 
  </div>
-<h2><a href="http://www.imagemagick.org/api/MagickCore/version
-_8c.html" target="source" name="GetMagickQuantumDepth">GetMagickQuantumDepth</a></h2>
+<h2><a href="http://www.wizards-toolkit.org/api/MagickCore/version
+_8c.html" id="GetMagickQuantumDepth">GetMagickQuantumDepth</a></h2>
 <div class="doc-section">
 
-<p>GetMagickQuantumDepth() returns the ImageMagick quantum depth.</p></ol>
+<p>GetMagickQuantumDepth() returns the ImageMagick quantum depth.</p>
 
 <p>The format of the GetMagickQuantumDepth method is:</p>
 
@@ -243,17 +247,17 @@ _8c.html" target="source" name="GetMagickQuantumDepth">GetMagickQuantumDepth</a>
   const char *GetMagickQuantumDepth(size_t *depth)
 </pre>
 
-<p>A description of each parameter follows:</p></ol>
+<p>A description of each parameter follows:</p>
 
 <h5>depth</h5>
-<ol><p>the quantum depth is returned as a number.</p></ol>
+<p>the quantum depth is returned as a number.</p>
 
  </div>
-<h2><a href="http://www.imagemagick.org/api/MagickCore/version
-_8c.html" target="source" name="GetMagickQuantumRange">GetMagickQuantumRange</a></h2>
+<h2><a href="http://www.wizards-toolkit.org/api/MagickCore/version
+_8c.html" id="GetMagickQuantumRange">GetMagickQuantumRange</a></h2>
 <div class="doc-section">
 
-<p>GetMagickQuantumRange() returns the ImageMagick quantum range.</p></ol>
+<p>GetMagickQuantumRange() returns the ImageMagick quantum range.</p>
 
 <p>The format of the GetMagickQuantumRange method is:</p>
 
@@ -261,17 +265,17 @@ _8c.html" target="source" name="GetMagickQuantumRange">GetMagickQuantumRange</a>
   const char *GetMagickQuantumRange(size_t *range)
 </pre>
 
-<p>A description of each parameter follows:</p></ol>
+<p>A description of each parameter follows:</p>
 
 <h5>range</h5>
-<ol><p>the quantum range is returned as a number.</p></ol>
+<p>the quantum range is returned as a number.</p>
 
  </div>
-<h2><a href="http://www.imagemagick.org/api/MagickCore/version
-_8c.html" target="source" name="GetMagickReleaseDate">GetMagickReleaseDate</a></h2>
+<h2><a href="http://www.wizards-toolkit.org/api/MagickCore/version
+_8c.html" id="GetMagickReleaseDate">GetMagickReleaseDate</a></h2>
 <div class="doc-section">
 
-<p>GetMagickReleaseDate() returns the ImageMagick release date.</p></ol>
+<p>GetMagickReleaseDate() returns the ImageMagick release date.</p>
 
 <p>The format of the GetMagickReleaseDate method is:</p>
 
@@ -279,14 +283,14 @@ _8c.html" target="source" name="GetMagickReleaseDate">GetMagickReleaseDate</a></
   const char *GetMagickReleaseDate(void)
 </pre>
 
-<p>No parameters are required.</p></ol>
+<p>No parameters are required.</p>
 
  </div>
-<h2><a href="http://www.imagemagick.org/api/MagickCore/version
-_8c.html" target="source" name="GetMagickVersion">GetMagickVersion</a></h2>
+<h2><a href="http://www.wizards-toolkit.org/api/MagickCore/version
+_8c.html" id="GetMagickVersion">GetMagickVersion</a></h2>
 <div class="doc-section">
 
-<p>GetMagickVersion() returns the ImageMagick API version as a string and as a number.</p></ol>
+<p>GetMagickVersion() returns the ImageMagick API version as a string and as a number.</p>
 
 <p>The format of the GetMagickVersion method is:</p>
 
@@ -294,10 +298,10 @@ _8c.html" target="source" name="GetMagickVersion">GetMagickVersion</a></h2>
   const char *GetMagickVersion(size_t *version)
 </pre>
 
-<p>A description of each parameter follows:</p></ol>
+<p>A description of each parameter follows:</p>
 
 <h5>version</h5>
-<ol><p>the ImageMagick version is returned as a number.</p></ol>
+<p>the ImageMagick version is returned as a number.</p>
 
  </div>
 
