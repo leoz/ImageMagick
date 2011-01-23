@@ -167,6 +167,16 @@
 #define MAGICKCORE_HAVE_BOOL /**/
 #endif
 
+/* Define to 1 if you have the `cabs' function. */
+#ifndef MAGICKCORE_HAVE_CABS
+#define MAGICKCORE_HAVE_CABS 1
+#endif
+
+/* Define to 1 if you have the `carg' function. */
+#ifndef MAGICKCORE_HAVE_CARG
+#define MAGICKCORE_HAVE_CARG 1
+#endif
+
 /* Define to 1 if you have the `cimag' function. */
 #ifndef MAGICKCORE_HAVE_CIMAG
 #define MAGICKCORE_HAVE_CIMAG 1
@@ -198,6 +208,11 @@
 /* Define to 1 if you have the <complex.h> header file. */
 #ifndef MAGICKCORE_HAVE_COMPLEX_H
 #define MAGICKCORE_HAVE_COMPLEX_H 1
+#endif
+
+/* Define to 1 if you have the `creal' function. */
+#ifndef MAGICKCORE_HAVE_CREAL
+#define MAGICKCORE_HAVE_CREAL 1
 #endif
 
 /* Define to 1 if you have the `ctime_r' function. */
@@ -390,15 +405,15 @@
 #endif
 
 /* Define if you have the <lcms2.h> header file. */
-/* #undef HAVE_LCMS2_H */
+#ifndef MAGICKCORE_HAVE_LCMS2_H
+#define MAGICKCORE_HAVE_LCMS2_H 1
+#endif
 
 /* Define if you have the <lcms2/lcms2.h> header file. */
 /* #undef HAVE_LCMS2_LCMS2_H */
 
 /* Define if you have the <lcms.h> header file. */
-#ifndef MAGICKCORE_HAVE_LCMS_H
-#define MAGICKCORE_HAVE_LCMS_H 1
-#endif
+/* #undef HAVE_LCMS_H */
 
 /* Define if you have the <lcms/lcms.h> header file. */
 /* #undef HAVE_LCMS_LCMS_H */

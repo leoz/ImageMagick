@@ -1395,7 +1395,7 @@ MagickExport KernelInfo *AcquireKernelBuiltIn(const KernelInfoType type,
             kernel->values[1] = kernel->values[3] = +MagickSQ2;
             kernel->values[5] = kernel->values[7] = -MagickSQ2;
             CalcKernelMetaData(kernel);     /* recalculate meta-data */
-            ScaleKernelInfo(kernel, 1.0/2.0*MagickSQ2, NoValue);
+            ScaleKernelInfo(kernel, (double) (1.0/2.0*MagickSQ2), NoValue);
             break;
           case 10:
             kernel=AcquireKernelInfo("FreiChen:11;FreiChen:12;FreiChen:13;FreiChen:14;FreiChen:15;FreiChen:16;FreiChen:17;FreiChen:18;FreiChen:19");
@@ -3886,10 +3886,10 @@ static void RotateKernelInfo(KernelInfo *kernel, double angle)
 %  is then passed to UnityAddKernelInfo() to add a scled unity kernel
 %  into the scaled/normalized kernel.
 %
-%  The format of the ScaleKernelInfo method is:
+%  The format of the ScaleGeometryKernelInfo method is:
 %
-%      void ScaleKernelInfo(KernelInfo *kernel, const double scaling_factor,
-%               const MagickStatusType normalize_flags )
+%      void ScaleGeometryKernelInfo(KernelInfo *kernel,
+%        const double scaling_factor,const MagickStatusType normalize_flags)
 %
 %  A description of each parameter follows:
 %

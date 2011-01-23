@@ -1914,6 +1914,8 @@ MagickExport char **StringToArgv(const char *text,int *argc)
   {
     while (isspace((int) ((unsigned char) *p)) != 0)
       p++;
+    if (*p == '\0') 
+      break;
     (*argc)++;
     if (*p == '"')
       for (p++; (*p != '"') && (*p != '\0'); p++) ;
@@ -1944,8 +1946,8 @@ MagickExport char **StringToArgv(const char *text,int *argc)
     else
       if (*q == '\'')
         {
+          p++;
           for (q++; (*q != '\'') && (*q != '\0'); q++) ;
-          q++;
         }
       else
         while ((isspace((int) ((unsigned char) *q)) == 0) && (*q != '\0'))
