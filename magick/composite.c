@@ -1730,12 +1730,13 @@ MagickExport MagickBooleanType CompositeImageChannel(Image *image,
           destination_image=DestroyImage(destination_image);
           return(MagickFalse);
         }
-      width=geometry_info.rho;
-      height=geometry_info.sigma;
-      blur.x1=geometry_info.rho;
+      /* Set up ellipse, Scales for blur map values */
+      width=geometry_info.rho*QuantumScale;
+      height=geometry_info.sigma*QuantumScale;
+      blur.x1=1.0;
       blur.x2=0.0;
       blur.y1=0.0;
-      blur.y2=geometry_info.sigma;
+      blur.y2=1.0;
       angle_start=0.0;
       angle_range=0.0;
       if ((flags & HeightValue) == 0)
@@ -1746,10 +1747,10 @@ MagickExport MagickBooleanType CompositeImageChannel(Image *image,
             angle;
 
           angle=DegreesToRadians(geometry_info.xi);
-          blur.x1=width*cos(angle);
-          blur.x2=width*sin(angle);
-          blur.y1=(-height*sin(angle));
-          blur.y2=height*cos(angle);
+          blur.x1=cos(angle);
+          blur.x2=sin(angle);
+          blur.y1=-sin(angle);
+          blur.y2=cos(angle);
         }
       if ((flags & YValue) != 0 )
         {
@@ -1762,7 +1763,7 @@ MagickExport MagickBooleanType CompositeImageChannel(Image *image,
       pixel=zero;
       exception=(&image->exception);
       resample_filter=AcquireResampleFilter(image,&image->exception);
-      SetResampleFilter(resample_filter,GaussianFilter,2.0);
+      SetResampleFilter(resample_filter,CubicFilter,2.0);
       destination_view=AcquireCacheView(destination_image);
       composite_view=AcquireCacheView(composite_image);
       for (y=0; y < (ssize_t) composite_image->rows; y++)
@@ -1793,11 +1794,27 @@ MagickExport MagickBooleanType CompositeImageChannel(Image *image,
         destination_indexes=GetCacheViewAuthenticIndexQueue(destination_view);
         for (x=0; x < (ssize_t) composite_image->columns; x++)
         {
+          MagickRealType
+            b,
+            h,
+            w;
+
           if (((x_offset+x) < 0) || ((x_offset+x) >= (ssize_t) image->columns))
             {
               p++;
               continue;
             }
+          /* if w or h blurs are getting too small,
+           * adjust the filter sigma, rather than the ellipse
+           */
+          w=width*GetRedPixelComponent(p);
+          h=height*GetGreenPixelComponent(p);
+          b=MagickMax(w,h) + MagickEpsilon;
+          if ( b < 1.0 )
+            w /= b, h /= b; /* make sure ellipse does not get too small */
+          else
+            b = 1.0;
+          /* rotate the ellipse */
           if (fabs(angle_range) > MagickEpsilon)
             {
               MagickRealType
@@ -1805,14 +1822,15 @@ MagickExport MagickBooleanType CompositeImageChannel(Image *image,
 
               angle=angle_start+angle_range*QuantumScale*
                 GetBluePixelComponent(p);
-              blur.x1=width*cos(angle);
-              blur.x2=width*sin(angle);
-              blur.y1=(-height*sin(angle));
-              blur.y2=height*cos(angle);
+
+              blur.x1=cos(angle);
+              blur.x2=sin(angle);
+              blur.y1=-sin(angle);
+              blur.y2=cos(angle);
             }
-          ScaleResampleFilter(resample_filter,blur.x1*QuantumScale*p->red,
-            blur.y1*QuantumScale*p->green,blur.x2*QuantumScale*p->red,
-            blur.y2*QuantumScale*GetGreenPixelComponent(p));
+          SetResampleFilter(resample_filter,GaussianFilter,2.0*b);
+          ScaleResampleFilter(resample_filter,blur.x1*w,blur.y1*h,
+               blur.x2*w,blur.y2*h);
           (void) ResamplePixelColor(resample_filter,(double) x_offset+x,
             (double) y_offset+y,&pixel);
           SetPixelPacket(destination_image,&pixel,r,destination_indexes+x);
@@ -2753,7 +2771,7 @@ MagickExport MagickBooleanType TextureImage(Image *image,const Image *texture)
       /*
         Tile texture onto the image background.
       */
-#if defined(MAGICKCORE_OPENMP_SUPPORT) 
+#if defined(MAGICKCORE_OPENMP_SUPPORT)
       #pragma omp parallel for schedule(dynamic,4) shared(status) omp_throttle(1)
 #endif
       for (y=0; y < (ssize_t) image->rows; y+=(ssize_t) texture->rows)
@@ -2781,7 +2799,7 @@ MagickExport MagickBooleanType TextureImage(Image *image,const Image *texture)
             MagickBooleanType
               proceed;
 
-#if defined(MAGICKCORE_OPENMP_SUPPORT) 
+#if defined(MAGICKCORE_OPENMP_SUPPORT)
   #pragma omp critical (MagickCore_TextureImage)
 #endif
             proceed=SetImageProgress(image,TextureImageTag,(MagickOffsetType)

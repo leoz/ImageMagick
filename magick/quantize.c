@@ -486,28 +486,26 @@ static MagickBooleanType AssignImageColors(Image *image,CubeInfo *cube_info)
 {
 #define AssignImageTag  "Assign/Image"
 
-  ssize_t
-    y;
-
   MagickBooleanType
     proceed;
 
   RealPixelPacket
     pixel;
 
+  register const NodeInfo
+    *node_info;
+
   register ssize_t
     i,
     x;
 
-  register const NodeInfo
-    *node_info;
-
-  ssize_t
-    count;
-
   size_t
     id,
     index;
+
+  ssize_t
+    count,
+    y;
 
   /*
     Allocate image colormap.
@@ -574,6 +572,7 @@ static MagickBooleanType AssignImageColors(Image *image,CubeInfo *cube_info)
               break;
             node_info=node_info->child[id];
           }
+          node_info=node_info->parent;
           /*
             Find closest color among siblings and their children.
           */
@@ -721,9 +720,6 @@ static MagickBooleanType ClassifyImageColors(CubeInfo *cube_info,
   CacheView
     *image_view;
 
-  ssize_t
-    y;
-
   MagickBooleanType
     proceed;
 
@@ -740,12 +736,13 @@ static MagickBooleanType ClassifyImageColors(CubeInfo *cube_info,
     pixel;
 
   size_t
-    count;
-
-  size_t
+    count,
     id,
     index,
     level;
+
+  ssize_t
+    y;
 
   /*
     Classify the first cube_info->maximum_colors colors to a tree depth of 8.
@@ -1060,26 +1057,26 @@ static void ClosestColor(const Image *image,CubeInfo *cube_info,
       q=(&cube_info->target);
       alpha=1.0;
       beta=1.0;
-      if (cube_info->associate_alpha == MagickFalse)
+      if (cube_info->associate_alpha != MagickFalse)
         {
           alpha=(MagickRealType) (QuantumScale*GetAlphaPixelComponent(p));
           beta=(MagickRealType) (QuantumScale*GetAlphaPixelComponent(q));
         }
       pixel=alpha*p->red-beta*q->red;
       distance=pixel*pixel;
-      if (distance < cube_info->distance)
+      if (distance <= cube_info->distance)
         {
           pixel=alpha*p->green-beta*q->green;
           distance+=pixel*pixel;
-          if (distance < cube_info->distance)
+          if (distance <= cube_info->distance)
             {
               pixel=alpha*p->blue-beta*q->blue;
               distance+=pixel*pixel;
-              if (distance < cube_info->distance)
+              if (distance <= cube_info->distance)
                 {
                   pixel=alpha-beta;
                   distance+=pixel*pixel;
-                  if (distance < cube_info->distance)
+                  if (distance <= cube_info->distance)
                     {
                       cube_info->distance=distance;
                       cube_info->color_number=node_info->color_number;
@@ -1381,11 +1378,6 @@ static MagickBooleanType FloydSteinbergDither(Image *image,CubeInfo *cube_info)
   ExceptionInfo
     *exception;
 
-  ssize_t
-    u,
-    v,
-    y;
-
   MagickBooleanType
     proceed;
 
@@ -1402,6 +1394,11 @@ static MagickBooleanType FloydSteinbergDither(Image *image,CubeInfo *cube_info)
   size_t
     index;
 
+  ssize_t
+    u,
+    v,
+    y;
+
   /*
     Distribute quantization error using Floyd-Steinberg.
   */
@@ -1417,12 +1414,12 @@ static MagickBooleanType FloydSteinbergDither(Image *image,CubeInfo *cube_info)
     register IndexPacket
       *restrict indexes;
 
+    register PixelPacket
+      *restrict q;
+
     register ssize_t
       i,
       x;
-
-    register PixelPacket
-      *restrict q;
 
     q=GetCacheViewAuthenticPixels(image_view,0,y,image->columns,1,exception);
     if (q == (PixelPacket *) NULL)
@@ -1492,6 +1489,7 @@ static MagickBooleanType FloydSteinbergDither(Image *image,CubeInfo *cube_info)
               break;
             node_info=node_info->child[id];
           }
+          node_info=node_info->parent;
           /*
             Find closest color among siblings and their children.
           */
@@ -1657,11 +1655,11 @@ static MagickBooleanType RiemersmaDither(Image *image,CacheView *image_view,
       register IndexPacket
         *restrict indexes;
 
-      register ssize_t
-        i;
-
       register PixelPacket
         *restrict q;
+
+      register ssize_t
+        i;
 
       /*
         Distribute error.
@@ -1705,6 +1703,7 @@ static MagickBooleanType RiemersmaDither(Image *image,CacheView *image_view,
               break;
             node_info=node_info->child[id];
           }
+          node_info=node_info->parent;
           /*
             Find closest color among siblings and their children.
           */
@@ -1852,11 +1851,11 @@ static CubeInfo *GetCubeInfo(const QuantizeInfo *quantize_info,
     sum,
     weight;
 
-  size_t
-    length;
-
   register ssize_t
     i;
+
+  size_t
+    length;
 
   /*
     Initialize tree to describe color cube_info.
@@ -2033,9 +2032,6 @@ MagickExport MagickBooleanType GetImageQuantizeError(Image *image)
   IndexPacket
     *indexes;
 
-  ssize_t
-    y;
-
   MagickRealType
     alpha,
     area,
@@ -2047,6 +2043,9 @@ MagickExport MagickBooleanType GetImageQuantizeError(Image *image)
 
   size_t
     index;
+
+  ssize_t
+    y;
 
   assert(image != (Image *) NULL);
   assert(image->signature == MagickSignature);
@@ -2151,7 +2150,7 @@ MagickExport void GetQuantizeInfo(QuantizeInfo *quantize_info)
 %                                                                             %
 %                                                                             %
 %                                                                             %
-%   P o s t e r i z e I m a g e                                               %
+%     P o s t e r i z e I m a g e C h a n n e l                               %
 %                                                                             %
 %                                                                             %
 %                                                                             %
@@ -2164,6 +2163,9 @@ MagickExport void GetQuantizeInfo(QuantizeInfo *quantize_info)
 %
 %      MagickBooleanType PosterizeImage(Image *image,const size_t levels,
 %        const MagickBooleanType dither)
+%      MagickBooleanType PosterizeImageChannel(Image *image,
+%        const ChannelType channel,const size_t levels,
+%        const MagickBooleanType dither)
 %
 %  A description of each parameter follows:
 %
@@ -2172,33 +2174,49 @@ MagickExport void GetQuantizeInfo(QuantizeInfo *quantize_info)
 %    o levels: Number of color levels allowed in each channel.  Very low values
 %      (2, 3, or 4) have the most visible effect.
 %
-%    o dither: Set this integer value to something other than zero to
-%      dither the mapped image.
+%    o dither: Set this integer value to something other than zero to dither
+%      the mapped image.
 %
 */
-MagickExport MagickBooleanType PosterizeImage(Image *image,
-  const size_t levels,const MagickBooleanType dither)
+
+static inline ssize_t MagickRound(MagickRealType x)
 {
+  /*
+    Round the fraction to nearest integer.
+  */
+  if (x >= 0.0)
+    return((ssize_t) (x+0.5));
+  return((ssize_t) (x-0.5));
+}
+
+MagickExport MagickBooleanType PosterizeImage(Image *image,const size_t levels,
+  const MagickBooleanType dither)
+{
+  MagickBooleanType
+    status;
+
+  status=PosterizeImageChannel(image,DefaultChannels,levels,dither);
+  return(status);
+}
+
+MagickExport MagickBooleanType PosterizeImageChannel(Image *image,
+  const ChannelType channel,const size_t levels,const MagickBooleanType dither)
+{
+#define PosterizeImageTag  "Posterize/Image"
+#define PosterizePixel(pixel) (Quantum) (QuantumRange*(MagickRound( \
+  QuantumScale*pixel*(levels-1)))/(levels-1))
+
   CacheView
-    *posterize_view;
+    *image_view;
 
   ExceptionInfo
     *exception;
 
-  Image
-    *posterize_image;
-
-  IndexPacket
-    *indexes;
-
-  ssize_t
-    j,
-    k,
-    l,
-    n;
-
   MagickBooleanType
     status;
+
+  MagickOffsetType
+    progress;
 
   QuantizeInfo
     *quantize_info;
@@ -2206,76 +2224,100 @@ MagickExport MagickBooleanType PosterizeImage(Image *image,
   register ssize_t
     i;
 
-  register PixelPacket
-    *restrict q;
+  ssize_t
+    y;
 
-  size_t
-    extent;
-
-  /*
-    Posterize image.
-  */
   assert(image != (Image *) NULL);
   assert(image->signature == MagickSignature);
   if (image->debug != MagickFalse)
     (void) LogMagickEvent(TraceEvent,GetMagickModule(),"%s",image->filename);
-  posterize_image=AcquireImage((ImageInfo *) NULL);
-  if (posterize_image == (Image *) NULL)
-    return(MagickFalse);
-  extent=(size_t) MagickMin((ssize_t) levels*levels*levels,MaxColormapSize+1);
-  for (l=1; (l*l*l) < (ssize_t) extent; l++) ;
-  l--;
-  status=SetImageExtent(posterize_image,(size_t) (l*l*l),1);
-  if (status == MagickFalse)
+  if (image->storage_class == PseudoClass)
+#if defined(MAGICKCORE_OPENMP_SUPPORT)
+  #pragma omp parallel for schedule(dynamic,4) shared(progress,status)
+#endif
+    for (i=0; i < (ssize_t) image->colors; i++)
     {
-      posterize_image=DestroyImage(posterize_image);
-      return(MagickFalse);
+      /*
+        Posterize colormap.
+      */
+      if ((channel & RedChannel) != 0)
+        image->colormap[i].red=PosterizePixel(image->colormap[i].red);
+      if ((channel & GreenChannel) != 0)
+        image->colormap[i].green=PosterizePixel(image->colormap[i].green);
+      if ((channel & BlueChannel) != 0)
+        image->colormap[i].blue=PosterizePixel(image->colormap[i].blue);
+      if ((channel & OpacityChannel) != 0)
+        image->colormap[i].opacity=PosterizePixel(image->colormap[i].opacity);
     }
-  status=AcquireImageColormap(posterize_image,(size_t) (l*l*l));
-  if (status == MagickFalse)
-    {
-      posterize_image=DestroyImage(posterize_image);
-      return(MagickFalse);
-    }
-  posterize_view=AcquireCacheView(posterize_image);
+  /*
+    Posterize image.
+  */
+  status=MagickTrue;
+  progress=0;
   exception=(&image->exception);
-  q=QueueCacheViewAuthenticPixels(posterize_view,0,0,posterize_image->columns,1,
-    exception);
-  if (q == (PixelPacket *) NULL)
-    {
-      posterize_view=DestroyCacheView(posterize_view);
-      posterize_image=DestroyImage(posterize_image);
-      return(MagickFalse);
-    }
-  indexes=GetCacheViewAuthenticIndexQueue(posterize_view);
-  n=0;
-  for (i=0; i < l; i++)
-    for (j=0; j < l; j++)
-      for (k=0; k < l; k++)
+  image_view=AcquireCacheView(image);
+#if defined(MAGICKCORE_OPENMP_SUPPORT)
+  #pragma omp parallel for schedule(dynamic,4) shared(progress,status)
+#endif
+  for (y=0; y < (ssize_t) image->rows; y++)
+  {
+    register IndexPacket
+      *restrict indexes;
+
+    register PixelPacket
+      *restrict q;
+
+    register ssize_t
+      x;
+
+    if (status == MagickFalse)
+      continue;
+    q=GetCacheViewAuthenticPixels(image_view,0,y,image->columns,1,exception);
+    if (q == (PixelPacket *) NULL)
       {
-        posterize_image->colormap[n].red=(Quantum) (QuantumRange*i/
-          MagickMax(l-1L,1L));
-        posterize_image->colormap[n].green=(Quantum)
-          (QuantumRange*j/MagickMax(l-1L,1L));
-        posterize_image->colormap[n].blue=(Quantum) (QuantumRange*k/
-          MagickMax(l-1L,1L));
-        posterize_image->colormap[n].opacity=OpaqueOpacity;
-        *q++=posterize_image->colormap[n];
-        indexes[n]=(IndexPacket) n;
-        n++;
+        status=MagickFalse;
+        continue;
       }
-  if (SyncCacheViewAuthenticPixels(posterize_view,exception) == MagickFalse)
+    indexes=GetCacheViewAuthenticIndexQueue(image_view);
+    for (x=0; x < (ssize_t) image->columns; x++)
     {
-      posterize_view=DestroyCacheView(posterize_view);
-      posterize_image=DestroyImage(posterize_image);
-      return(MagickFalse);
+      if ((channel & RedChannel) != 0)
+        q->red=PosterizePixel(q->red);
+      if ((channel & GreenChannel) != 0)
+        q->green=PosterizePixel(q->green);
+      if ((channel & BlueChannel) != 0)
+        q->blue=PosterizePixel(q->blue);
+      if (((channel & OpacityChannel) != 0) &&
+          (image->matte == MagickTrue))
+        q->opacity=PosterizePixel(q->opacity);
+      if (((channel & IndexChannel) != 0) &&
+          (image->colorspace == CMYKColorspace))
+        indexes[x]=PosterizePixel(indexes[x]);
+      q++;
     }
-  posterize_view=DestroyCacheView(posterize_view);
+    if (SyncCacheViewAuthenticPixels(image_view,exception) == MagickFalse)
+      status=MagickFalse;
+    if (image->progress_monitor != (MagickProgressMonitor) NULL)
+      {
+        MagickBooleanType
+          proceed;
+
+#if defined(MAGICKCORE_OPENMP_SUPPORT)
+  #pragma omp critical (MagickCore_PosterizeImageChannel)
+#endif
+        proceed=SetImageProgress(image,PosterizeImageTag,progress++,
+          image->rows);
+        if (proceed == MagickFalse)
+          status=MagickFalse;
+      }
+  }
+  image_view=DestroyCacheView(image_view);
   quantize_info=AcquireQuantizeInfo((ImageInfo *) NULL);
+  quantize_info->number_colors=(size_t) MagickMin((ssize_t) levels*levels*
+    levels,MaxColormapSize+1);
   quantize_info->dither=dither;
-  status=RemapImage(quantize_info,image,posterize_image);
+  status=QuantizeImage(quantize_info,image);
   quantize_info=DestroyQuantizeInfo(quantize_info);
-  posterize_image=DestroyImage(posterize_image);
   return(status);
 }
 
@@ -3042,12 +3084,12 @@ extern "C" {
 
 static int IntensityCompare(const void *x,const void *y)
 {
-  ssize_t
-    intensity;
-
   PixelPacket
     *color_1,
     *color_2;
+
+  ssize_t
+    intensity;
 
   color_1=(PixelPacket *) x;
   color_2=(PixelPacket *) y;
@@ -3068,21 +3110,19 @@ static MagickBooleanType SetGrayscaleImage(Image *image)
   ExceptionInfo
     *exception;
 
-  ssize_t
-    j,
-    y;
+  MagickBooleanType
+    status;
 
   PixelPacket
     *colormap;
 
-  ssize_t
-    *colormap_index;
-
   register ssize_t
     i;
 
-  MagickBooleanType
-    status;
+  ssize_t
+    *colormap_index,
+    j,
+    y;
 
   assert(image != (Image *) NULL);
   assert(image->signature == MagickSignature);
@@ -3115,11 +3155,11 @@ static MagickBooleanType SetGrayscaleImage(Image *image)
         register IndexPacket
           *restrict indexes;
 
-        register ssize_t
-          x;
-
         register const PixelPacket
           *restrict q;
+
+        register ssize_t
+          x;
 
         if (status == MagickFalse)
           continue;
@@ -3191,11 +3231,11 @@ static MagickBooleanType SetGrayscaleImage(Image *image)
     register IndexPacket
       *restrict indexes;
 
-    register ssize_t
-      x;
-
     register const PixelPacket
       *restrict q;
+
+    register ssize_t
+      x;
 
     if (status == MagickFalse)
       continue;
