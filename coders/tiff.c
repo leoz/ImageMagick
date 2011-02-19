@@ -829,7 +829,7 @@ static Image *ReadTIFFImage(const ImageInfo *image_info,
   (void) MagickSetThreadValue(tiff_exception,exception);
   error_handler=TIFFSetErrorHandler(TIFFErrors);
   warning_handler=TIFFSetWarningHandler(TIFFWarnings);
-  tiff=TIFFClientOpen(image->filename,"r",(thandle_t) image,TIFFReadBlob,
+  tiff=TIFFClientOpen(image->filename,"rb",(thandle_t) image,TIFFReadBlob,
     TIFFWriteBlob,TIFFSeekBlob,TIFFCloseBlob,TIFFGetBlobSize,TIFFMapBlob,
     TIFFUnmapBlob);
   if (tiff == (TIFF *) NULL)
@@ -2428,7 +2428,8 @@ static MagickBooleanType WriteTIFFImage(const ImageInfo *image_info,
     i;
 
   size_t
-    length;
+    length,
+    lsb_first;
 
   TIFF
     *tiff;
@@ -2451,9 +2452,6 @@ static MagickBooleanType WriteTIFFImage(const ImageInfo *image_info,
 
   unsigned char
     *pixels;
-
-  size_t
-    lsb_first;
 
   /*
     Open TIFF file.

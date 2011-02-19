@@ -1,7 +1,11 @@
 
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" 
   "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" dir="ltr">
+<html version="-//W3C//DTD XHTML 1.1//EN"
+      xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.w3.org/1999/xhtml
+                          http://www.w3.org/MarkUp/SCHEMA/xhtml11.xsd">
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
   <meta name="verify-v1" content="g222frIIxcQTrvDR3NBRUSKP3AnMNoqxOkIniCEkV7U="/>
@@ -150,7 +154,7 @@
   <a title="Sponsor: Web Hosting Ratings" href="http://webhostingrating.com">Web Hosting Ratings</a><!-- 201110010720 -->
 </div>
 <div  class="sponsor">
-  <a title="Sponsor: Druckerei" href="http://www.allesdruck.de">Druckerei</a><!-- 201106010240 -->
+  <a title="Sponsor: Druckerei" href="http://www.allesdruck.de">Druckerei</a><!-- 201107010240 r.leo -->
 </div>
 <div class="sponsor">
   <a title="Sponsor: Web Hosting" href="http://www.bodhost.com/hosting.shtml">Web Hosting</a><!-- 201104010090 -->
@@ -165,7 +169,7 @@
   <a title="Sponsor: Druckerei" href="http://print24.com/de/">Druckerei</a><!-- 201110010720 -->
 </div>
 <div  class="sponsor">
-   <a title="Sponsor: Fernsehdienst Berlin" href="http://www.atlas-multimedia.de">Fernsehdienst Berlin</a><!-- 2011050100025 atlas.multimedia-->
+   <a title="Sponsor: Notebook Reparatur Berlin" href="http://www.notebook-reparaturen-berlin.de">Notebook Reparatur Berlin</a><!-- 2011050100025 gabi.schulze-->
 </div>
 </div>
 </div>
@@ -504,7 +508,7 @@ the supported image formats.</p>
     <td valign="top">HPGL</td>
     <td valign="top">R</td>
     <td valign="top">HP-GL plotter language</td>
-    <td valign="top">Requires <a href="http://ftp.cdrom.com/pub/ImageMagick/delegates/hp2xx-3.2.0.tar.gz">hp2xx-3.2.0.tar.gz</a></td>
+    <td valign="top">Requires <a href="http://ftp.gnu.org/gnu/hp2xx">hp2xx-3.4.4.tar.gz</a></td>
   </tr>
 
   <tr>
@@ -574,7 +578,7 @@ the supported image formats.</p>
     <td valign="top"><a href="http://www.jpeg.org/">JPEG</a></td>
     <td valign="top">RW</td>
     <td valign="top">Joint Photographic Experts Group JFIF format</td>
-    <td valign="top">Requires <a href="ftp://ftp.uu.net/graphics/jpeg/">jpegsrc.v6b.tar.gz</a>.  You can optionally define the DCT method, for example to specify the float method, use <a href="../www/command-line-options.html#define">-define jpeg:dct-method=float</a>. By default we compute optimal Huffman coding tables.  Specify <a href="../www/command-line-options.html#define">-define jpeg:optimize-coding=false</a> to use the default Huffman tables. Two other options include <a href="../www/command-line-options.html#define">-define jpeg:block-smoothing</a> and <a href="../www/command-line-options.html#define">-define jpeg:fancy-upsampling</a>. Set the sampling factor with <a href="../www/command-line-options.html#define">-define jpeg:sampling-factor</a>. You can size the image with <kbd>jpeg:size</kbd>, for example <a href="../www/command-line-options.html#define">-define jpeg:size=128x128</a>. Finally, to restrict the maximum file size, use <kbd>jpeg:extent</kbd>, for example <a href="../www/command-line-options.html#define">-define jpeg:extent=400kb</a>.</td>
+    <td valign="top">Requires <a href="http://www.ijg.org/files/">jpegsrc.v8c.tar.gz</a>.  You can optionally define the DCT method, for example to specify the float method, use <a href="../www/command-line-options.html#define">-define jpeg:dct-method=float</a>. By default we compute optimal Huffman coding tables.  Specify <a href="../www/command-line-options.html#define">-define jpeg:optimize-coding=false</a> to use the default Huffman tables. Two other options include <a href="../www/command-line-options.html#define">-define jpeg:block-smoothing</a> and <a href="../www/command-line-options.html#define">-define jpeg:fancy-upsampling</a>. Set the sampling factor with <a href="../www/command-line-options.html#define">-define jpeg:sampling-factor</a>. You can size the image with <kbd>jpeg:size</kbd>, for example <a href="../www/command-line-options.html#define">-define jpeg:size=128x128</a>. Finally, to restrict the maximum file size, use <kbd>jpeg:extent</kbd>, for example <a href="../www/command-line-options.html#define">-define jpeg:extent=400kb</a>.</td>
   </tr>
 
   <tr>
@@ -613,17 +617,17 @@ the supported image formats.</p>
   </tr>
 
   <tr>
-    <td valign="top"><a href="http://www.mpeg.org/">M2V</a></td>
+    <td valign="top"><a href="http://www.ffmpeg.org/">M2V</a></td>
     <td valign="top">RW</td>
     <td valign="top">Motion Picture Experts Group file interchange format (version 2)</td>
-    <td valign="top">Requires <a href="ftp://ftp.mpeg.org/pub/mpeg/mssg/">mpeg2vidcodec_v12.tar.gz</a>.</td>
+    <td valign="top">Requires <a href="http://www.ffmpeg.org/download.html">ffmpeg</a>.</td>
   </tr>
 
   <tr>
-    <td valign="top"><a href="http://www.mpeg.org/">MPEG</a></td>
+    <td valign="top"><a href="http://www.ffmpeg.org/">MPEG</a></td>
     <td valign="top">RW</td>
     <td valign="top">Motion Picture Experts Group file interchange format (version 1)</td>
-    <td valign="top">Requires <a href="ftp://ftp.mpeg.org/pub/mpeg/mssg/">mpeg2vidcodec_v12.tar.gz</a>.</td>
+    <td valign="top">Requires <a href="http://www.ffmpeg.org/download.html">ffmpeg</a>.</td>
   </tr>
 
   <tr>
@@ -985,7 +989,7 @@ convert \( -size 15x15 xc:black xc:white -append \) \
     <td valign="top">SID, MrSID</td>
     <td valign="top">R</td>
     <td valign="top">Multiresolution seamless image</td>
-    <td valign="top">Requires the <a href="http://www.lizardtech.com/download/dl_download.html?detail=geo_mrsiddecode&platform=lin">mrsidgeodecode</a> command line utility that decompresses MG2 or MG3 SID image files.</td>
+    <td valign="top">Requires the <a href="http://www.lizardtech.com/downloads/downloads.html?dl=/download/files/lin/geoexpress_commandlineutils_linux.tgz">mrsidgeodecode</a> command line utility that decompresses MG2 or MG3 SID image files.</td>
   </tr>
 
   <tr>
@@ -1010,10 +1014,10 @@ convert \( -size 15x15 xc:black xc:white -append \) \
   </tr>
 
   <tr>
-    <td valign="top"><a href="http://www.remotesensing.org/libtiff/">TIFF</a></td>
+    <td valign="top"><a href="http://www.libtiff.org/">TIFF</a></td>
     <td valign="top">RW</td>
     <td valign="top">Tagged Image File Format</td>
-    <td valign="top">Also known as <kbd>TIF</kbd>. Requires <a href="ftp://ftp.remotesensing.org/pub/libtiff/">tiff-v3.6.1.tar.gz</a> or later.  Use <a href="../www/command-line-options.html#define">-define</a> to specify the rows per strip (e.g. <kbd>-define tiff:rows-per-strip=8</kbd>).  To define the tile geometry, use for example, <kbd>-define tiff:tile-geometry=128x128</kbd>. To specify a <em>signed</em> format, use  <kbd>-define quantum:format=signed</kbd>. To specify a single-precision floating-point format, use <kbd>-define quantum:format=floating-point</kbd>.  Set the depth to 64 for a double-precision floating-point format.  Use <kbd>-define quantum:polarity=min-is-black</kbd> or <kbd>-define quantum:polarity=min-is-white</kbd> toggle the photometric interpretation for a bilevel image.  Specify the extra samples as associated or unassociated alpha with, for example, <kbd>-define tiff:alpha=unassociated</kbd>.  Set the fill order with <kbd>-define tiff:fill-order=msb|lsb</kbd>. Set the TIFF endianess with <kbd>-define tiff:endian=msb|lsb</kbd>. You can choose to read the EXIF profile with this option: <kbd>-define tiff:exif=true</kbd>. You can set a number of TIFF software attributes including host computer, artist, timestamp, make, model, software, and copyright.  For example, <a href="../www/command-line-options.html#set">-set tiff:software "My Company"</a>.</td>
+    <td valign="top">Also known as <kbd>TIF</kbd>. Requires <a href="http://www.libtiff.org/">tiff-v3.6.1.tar.gz</a> or later.  Use <a href="../www/command-line-options.html#define">-define</a> to specify the rows per strip (e.g. <kbd>-define tiff:rows-per-strip=8</kbd>).  To define the tile geometry, use for example, <kbd>-define tiff:tile-geometry=128x128</kbd>. To specify a <em>signed</em> format, use  <kbd>-define quantum:format=signed</kbd>. To specify a single-precision floating-point format, use <kbd>-define quantum:format=floating-point</kbd>.  Set the depth to 64 for a double-precision floating-point format.  Use <kbd>-define quantum:polarity=min-is-black</kbd> or <kbd>-define quantum:polarity=min-is-white</kbd> toggle the photometric interpretation for a bilevel image.  Specify the extra samples as associated or unassociated alpha with, for example, <kbd>-define tiff:alpha=unassociated</kbd>.  Set the fill order with <kbd>-define tiff:fill-order=msb|lsb</kbd>. Set the TIFF endianess with <kbd>-define tiff:endian=msb|lsb</kbd>. You can choose to read the EXIF profile with this option: <kbd>-define tiff:exif=true</kbd>. You can set a number of TIFF software attributes including host computer, artist, timestamp, make, model, software, and copyright.  For example, <a href="../www/command-line-options.html#set">-set tiff:software "My Company"</a>.</td>
   </tr>
 
   <tr>

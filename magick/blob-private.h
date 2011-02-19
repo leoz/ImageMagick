@@ -26,6 +26,10 @@ extern "C" {
 #include "magick/stream.h"
 
 #define MagickMinBlobExtent  32767L
+#if defined(MAGICKCORE_HAVE_FSEEKO)
+# define fseek  fseeko
+# define ftell  ftello
+#endif
 
 typedef enum
 {
@@ -75,7 +79,7 @@ extern MagickExport int
 
 extern MagickExport  MagickBooleanType
   CloseBlob(Image *),
-  DiscardBlobBytes(Image *,const size_t),
+  DiscardBlobBytes(Image *,const MagickSizeType),
   OpenBlob(const ImageInfo *,Image *,const BlobMode,ExceptionInfo *),
   SetBlobExtent(Image *,const MagickSizeType),
   UnmapBlob(void *,const size_t);
