@@ -427,10 +427,10 @@ if test "$enable_largefile" != no; then
         LFS_CPPFLAGS="$LFS_CPPFLAGS -D_FILE_OFFSET_BITS=$ac_cv_sys_file_offset_bits"
     else
         AC_MSG_CHECKING([for native large file support])
-        AC_RUN_IFELSE([#include <unistd.h>
+        AC_RUN_IFELSE([AC_LANG_PROGRAM([#include <unistd.h>
           main () {
           exit(!(sizeof(off_t) == 8));
-        }],
+        }])],
         [ac_cv_sys_file_offset_bits=64; AC_DEFINE(_FILE_OFFSET_BITS,64)
          AC_MSG_RESULT([yes])],
         [AC_MSG_RESULT([no])])
@@ -1016,10 +1016,10 @@ AC_SEARCH_LIBS(clock_gettime, rt,
 [
   AC_DEFINE([HAVE_CLOCK_GETTIME],[1],[Define to 1 if you have clock_gettime.])
   AC_MSG_CHECKING([whether clock_gettime supports CLOCK_REALTIME])
-  AC_COMPILE_IFELSE(
+  AC_COMPILE_IFELSE([
     AC_LANG_PROGRAM(
       [[#include <time.h>]],
-       [[clockid_t clockType = CLOCK_REALTIME;]]),
+       [[clockid_t clockType = CLOCK_REALTIME;]])],
       [
         AC_MSG_RESULT(yes)
       	AC_DEFINE([HAVE_CLOCK_REALTIME],[1],
@@ -1069,14 +1069,12 @@ if test "$with_magick_plus_plus" = 'yes'; then
     AX_CXX_NAMESPACES
     AX_CXX_NAMESPACE_STD
     AC_CXX_HAVE_STD_LIBS
-    AC_CXX_HAVE_LSTRING
     AC_OPENMP([C++])
     AC_LANG_POP
 
     AC_MSG_CHECKING([whether C++ compiler is sufficient for Magick++])
     if \
         test $ax_cv_cxx_bool = 'yes' && \
-        test $ac_cv_cxx_have_lstring = 'yes' && \
         test $ax_cv_cxx_namespaces = 'yes' && \
         test $ac_cv_cxx_have_std_libs = 'yes' && \
         test $ax_cv_cxx_have_std_namespace = 'yes'; then
