@@ -1,5 +1,5 @@
 %global VERSION  6.6.7
-%global Patchlevel  8
+%global Patchlevel  9
 
 Name:           ImageMagick
 Version:        %{VERSION}
@@ -114,7 +114,7 @@ sed -i 's/libltdl.la/libltdl.so/g' configure
 iconv -f ISO-8859-1 -t UTF-8 README.txt > README.txt.tmp
 touch -r README.txt README.txt.tmp
 mv README.txt.tmp README.txt
-# for %doc
+# for %%doc
 mkdir Magick++/examples
 cp -p Magick++/demo/*.cpp Magick++/demo/*.miff Magick++/examples
 
@@ -278,4 +278,4 @@ rm -rf $RPM_BUILD_ROOT
 
 %changelog
 * Sun May 01 2005 Cristy <cristy@mystic.es.dupont.com> 1.0-0
-*  Port of Redhat's RPM script to support ImageMagick.
+-  Port of Redhat's RPM script to support ImageMagick.
