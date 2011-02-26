@@ -547,7 +547,8 @@ MagickExport Image *AppendImages(const Image *images,
         SetOpacityPixelComponent(q,OpaqueOpacity);
         if (image->matte != MagickFalse)
           SetOpacityPixelComponent(q,GetOpacityPixelComponent(p));
-        if (image->colorspace == CMYKColorspace)
+        if ((image->colorspace == CMYKColorspace) &&
+            (append_image->colorspace == CMYKColorspace))
           append_indexes[x]=indexes[x];
         p++;
         q++;
@@ -2797,14 +2798,8 @@ MagickExport MagickBooleanType SetImageBackgroundColor(Image *image)
   status=MagickTrue;
   exception=(&image->exception);
   image_view=AcquireCacheView(image);
-#if defined(MAGICKCORE_OPENMP_SUPPORT)
-  #pragma omp parallel for schedule(dynamic,4) shared(status)
-#endif
   for (y=0; y < (ssize_t) image->rows; y++)
   {
-    register IndexPacket
-      *restrict indexes;
-
     register PixelPacket
       *restrict q;
 
@@ -2823,6 +2818,9 @@ MagickExport MagickBooleanType SetImageBackgroundColor(Image *image)
       *q++=pixel;
     if (image->colorspace == CMYKColorspace)
       {
+        register IndexPacket
+          *restrict indexes;
+
         indexes=GetCacheViewAuthenticIndexQueue(image_view);
         for (x=0; x < (ssize_t) image->columns; x++)
           indexes[x]=index;

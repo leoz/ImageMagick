@@ -1540,6 +1540,7 @@ MagickExport MagickRealType GetResizeFilterWeight(
 {
   MagickRealType
     scale,
+    weight,
     x_blur;
 
   /*
@@ -1556,7 +1557,8 @@ MagickExport MagickRealType GetResizeFilterWeight(
       scale=resize_filter->scale;
       scale=resize_filter->window(x_blur*scale,resize_filter);
     }
-  return(scale*resize_filter->filter(x_blur,resize_filter));
+  weight=scale*resize_filter->filter(x_blur,resize_filter);
+  return(weight);
 }
 
 /*
@@ -2236,7 +2238,7 @@ static MagickBooleanType HorizontalFilter(const ResizeFilter *resize_filter,
                 pixel.index+=alpha*indexes[j];
               }
               resize_indexes[y]=(IndexPacket) ClampToQuantum(gamma*
-               GetIndexPixelComponent(&pixel));
+                GetIndexPixelComponent(&pixel));
             }
         }
       if ((resize_image->storage_class == PseudoClass) &&

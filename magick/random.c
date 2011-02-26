@@ -84,7 +84,7 @@ struct _RandomInfo
   size_t
     i;
 
-  size_t
+  unsigned long
     seed[4];
 
   double
@@ -121,7 +121,7 @@ extern char
 static SemaphoreInfo
   *random_semaphore = (SemaphoreInfo *) NULL;
 
-static size_t
+static unsigned long
   random_seed = ~0UL;
 
 static MagickBooleanType
@@ -596,16 +596,16 @@ static StringInfo *GenerateEntropicChaos(RandomInfo *random_info)
 */
 MagickExport double GetPseudoRandomValue(RandomInfo *random_info)
 {
-  register size_t
+  register unsigned long
     *seed;
 
-  size_t
+  unsigned long
     alpha;
 
   seed=random_info->seed;
   do
   {
-    alpha=(size_t) (seed[1] ^ (seed[1] << 11));
+    alpha=(unsigned long) (seed[1] ^ (seed[1] << 11));
     seed[1]=seed[2];
     seed[2]=seed[3];
     seed[3]=seed[0];
@@ -749,14 +749,14 @@ MagickExport void RandomComponentTerminus(void)
 %
 %  The format of the SeedPseudoRandomGenerator method is:
 %
-%      void SeedPseudoRandomGenerator(const size_t seed)
+%      void SeedPseudoRandomGenerator(const unsigned long seed)
 %
 %  A description of each parameter follows:
 %
 %    o seed: the seed.
 %
 */
-MagickExport void SeedPseudoRandomGenerator(const size_t seed)
+MagickExport void SeedPseudoRandomGenerator(const unsigned long seed)
 {
   random_seed=seed;
 }
