@@ -218,6 +218,7 @@ static MagickBooleanType ConvertUsage(void)
       "-liquid-rescale geometry",
       "                     rescale image with seam-carving",
       "-median radius       apply a median filter to the image",
+      "-mode radius         make each pixel the 'predominate color' of the neighborhood",
       "-modulate value      vary the brightness, saturation, and hue",
       "-monochrome          transform image to black and white",
       "-morphology method kernel",
@@ -1932,6 +1933,17 @@ WandExport MagickBooleanType ConvertImageCommand(ImageInfo *image_info,
           }
         if (LocaleCompare("minimum",option+1) == 0)
           break;
+        if (LocaleCompare("mode",option+1) == 0)
+          {
+            if (*option == '+')
+              break;
+            i++;
+            if (i == (ssize_t) (argc-1))
+              ThrowConvertException(OptionError,"MissingArgument",option);
+            if (IsGeometry(argv[i]) == MagickFalse)
+              ThrowConvertInvalidArgumentException(option,argv[i]);
+            break;
+          }
         if (LocaleCompare("modulate",option+1) == 0)
           {
             if (*option == '+')

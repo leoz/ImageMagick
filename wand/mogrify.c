@@ -1203,6 +1203,16 @@ WandExport MagickBooleanType MogrifyImage(ImageInfo *image_info,const int argc,
             InheritException(exception,&(*image)->exception);
             break;
           }
+        if (LocaleCompare("comment",option+1) == 0)
+          {
+            if (*option == '+')
+              {
+                (void) DeleteImageProperty(*image,option+1);
+                break;
+              }
+            (void) SetImageProperty(*image,option+1,argv[i+1]);
+            break;
+          }
         if (LocaleCompare("contrast",option+1) == 0)
           {
             (void) SyncImageSettings(mogrify_info,*image);
@@ -1968,6 +1978,16 @@ WandExport MagickBooleanType MogrifyImage(ImageInfo *image_info,const int argc,
       }
       case 'l':
       {
+        if (LocaleCompare("label",option+1) == 0)
+          {
+            if (*option == '+')
+              {
+                (void) DeleteImageProperty(*image,option+1);
+                break;
+              }
+            (void) SetImageProperty(*image,option+1,argv[i+1]);
+            break;
+          }
         if (LocaleCompare("lat",option+1) == 0)
           {
             Image
@@ -2195,6 +2215,23 @@ WandExport MagickBooleanType MogrifyImage(ImageInfo *image_info,const int argc,
               break;
             *image=DestroyImage(*image);
             *image=median_image;
+            break;
+          }
+        if (LocaleCompare("mode",option+1) == 0)
+          {
+            Image
+              *mode_image;
+
+            /*
+              Mode image.
+            */
+            (void) SyncImageSettings(mogrify_info,*image);
+            (void) ParseGeometry(argv[i+1],&geometry_info);
+            mode_image=ModeImage(*image,geometry_info.rho,exception);
+            if (mode_image == (Image *) NULL)
+              break;
+            *image=DestroyImage(*image);
+            *image=mode_image;
             break;
           }
         if (LocaleCompare("modulate",option+1) == 0)
@@ -3697,6 +3734,7 @@ static MagickBooleanType MogrifyUsage(void)
       "-liquid-rescale geometry",
       "                     rescale image with seam-carving",
       "-median radius       apply a median filter to the image",
+      "-mode radius         make each pixel the 'predominate color' of the neighborhood",
       "-modulate value      vary the brightness, saturation, and hue",
       "-monochrome          transform image to black and white",
       "-morphology method kernel",
@@ -5384,6 +5422,17 @@ WandExport MagickBooleanType MogrifyImageCommand(ImageInfo *image_info,
               ThrowMogrifyInvalidArgumentException(option,argv[i]);
             break;
           }
+        if (LocaleCompare("mode",option+1) == 0)
+          {
+            if (*option == '+')
+              break;
+            i++;
+            if (i == (ssize_t) argc)
+              ThrowMogrifyException(OptionError,"MissingArgument",option);
+            if (IsGeometry(argv[i]) == MagickFalse)
+              ThrowMogrifyInvalidArgumentException(option,argv[i]);
+            break;
+          }
         if (LocaleCompare("monitor",option+1) == 0)
           break;
         if (LocaleCompare("monochrome",option+1) == 0)
@@ -6837,7 +6886,7 @@ WandExport MagickBooleanType MogrifyImageInfo(ImageInfo *image_info,
               *q;
 
             for (q=strchr(argv[i+1],'%'); q != (char *) NULL; q=strchr(q+1,'%'))
-              if (strchr("gkrz@[#",*(q+1)) != (char *) NULL)
+              if (strchr("Agkrz@[#",*(q+1)) != (char *) NULL)
                 image_info->ping=MagickFalse;
             (void) SetImageOption(image_info,option+1,argv[i+1]);
             break;
