@@ -211,6 +211,8 @@ MagickExport void RegisterStaticModules(void)
   (void) RegisterGIFImage();
   (void) RegisterGRAYImage();
   (void) RegisterGRADIENTImage();
+  (void) RegisterHALDImage();
+  (void) RegisterHDRImage();
   (void) RegisterHISTOGRAMImage();
   (void) RegisterHRZImage();
   (void) RegisterHTMLImage();
@@ -381,6 +383,8 @@ MagickExport void UnregisterStaticModules(void)
   UnregisterGIFImage();
   UnregisterGRAYImage();
   UnregisterGRADIENTImage();
+  UnregisterHALDImage();
+  UnregisterHDRImage();
   UnregisterHISTOGRAMImage();
   UnregisterHRZImage();
   UnregisterHTMLImage();

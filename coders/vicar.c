@@ -169,11 +169,11 @@ static Image *ReadVICARImage(const ImageInfo *image_info,
   register PixelPacket
     *q;
 
-  ssize_t
-    count;
-
   size_t
     length;
+
+  ssize_t
+    count;
 
   unsigned char
     *pixels;
@@ -308,7 +308,7 @@ static Image *ReadVICARImage(const ImageInfo *image_info,
     if (SyncAuthenticPixels(image,exception) == MagickFalse)
       break;
     status=SetImageProgress(image,LoadImageTag,(MagickOffsetType) y,
-                image->rows);
+      image->rows);
     if (status == MagickFalse)
       break;
   }
@@ -401,8 +401,7 @@ ModuleExport void UnregisterVICARImage(void)
 %  stacked together to form image cubes.  This method only writes a single
 %  grayscale plane.
 %
-%  WriteVICARImage was written contributed by
-%  gorelick@esther.la.asu.edu.
+%  WriteVICARImage was written contributed by gorelick@esther.la.asu.edu.
 %
 %  The format of the WriteVICARImage method is:
 %
@@ -486,7 +485,7 @@ static MagickBooleanType WriteVICARImage(const ImageInfo *image_info,
     if (count != (ssize_t) length)
       break;
     status=SetImageProgress(image,SaveImageTag,(MagickOffsetType) y,
-                image->rows);
+      image->rows);
     if (status == MagickFalse)
       break;
   }

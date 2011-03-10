@@ -120,6 +120,8 @@ static const MagicMapInfo
     { "GIF", 0, MagickString("GIF8") },
     { "GPLT", 0, MagickString("#!/usr/local/bin/gnuplot") },
     { "HDF", 1, MagickString("HDF") },
+    { "HDR", 0, MagickString("#?RADIANCE") },
+    { "HDR", 0, MagickString("#?RGBE") },
     { "HPGL", 0, MagickString("IN;") },
     { "HTML", 1, MagickString("HTML") },
     { "HTML", 1, MagickString("html") },
@@ -168,8 +170,6 @@ static const MagicMapInfo
     { "PSD", 0, MagickString("8BPS") },
     { "PWP", 0, MagickString("SFW95") },
     { "RAF", 0, MagickString("FUJIFILMCCD-RAW ") },
-    { "RAD", 0, MagickString("#?RADIANCE") },
-    { "RAD", 0, MagickString("VIEW= ") },
     { "RLE", 0, MagickString("\122\314") },
     { "SCT", 0, MagickString("CT") },
     { "SFW", 0, MagickString("SFW94") },
@@ -573,14 +573,14 @@ MagickExport MagickBooleanType ListMagicInfo(FILE *file,
   const MagicInfo
     **magic_info;
 
-  ssize_t
-    j;
-
   register ssize_t
     i;
 
   size_t
     number_aliases;
+
+  ssize_t
+    j;
 
   if (file == (const FILE *) NULL)
     file=stdout;

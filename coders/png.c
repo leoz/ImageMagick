@@ -2882,7 +2882,11 @@ static Image *ReadOnePNGImage(MngInfo *mng_info,
             }
           *value='\0';
           (void) ConcatenateMagickString(value,text[i].text,length+2);
-          (void) SetImageProperty(image,text[i].key,value);
+
+          /* Don't save "density" property if we have a pHYs chunk */
+          if (LocaleCompare(text[i].key,"density") != 0 ||
+              !png_get_valid(ping,ping_info,PNG_INFO_pHYs))
+             (void) SetImageProperty(image,text[i].key,value);
 
           if (logging != MagickFalse)
           {
@@ -7506,18 +7510,28 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
                "    Quantizing the background color to 3-3-2");
 
         image->background_color.red=
-             ((((((size_t) image->background_color.red) >> PNGK) & 0xe0)     )  |
-              (((((size_t) image->background_color.red) >> PNGK) & 0xe0) >> 3)  |
-              (((((size_t) image->background_color.red) >> PNGK) & 0xc0) >> 6)) * PNGM;
+            ((((((size_t)
+            image->background_color.red) >> PNGK) & 0xe0)     )  |
+            (((((size_t)
+            image->background_color.red) >> PNGK) & 0xe0) >> 3)  |
+            (((((size_t)
+            image->background_color.red) >> PNGK) & 0xc0) >> 6)) * PNGM;
         image->background_color.green=
-             ((((((size_t) image->background_color.green) >> PNGK) & 0xe0)     )  |
-              (((((size_t) image->background_color.green) >> PNGK) & 0xe0) >> 3)  |
-              (((((size_t) image->background_color.green) >> PNGK) & 0xc0) >> 6)) * PNGM;
+            ((((((size_t)
+            image->background_color.green) >> PNGK) & 0xe0)     )  |
+            (((((size_t)
+            image->background_color.green) >> PNGK) & 0xe0) >> 3)  |
+            (((((size_t)
+            image->background_color.green) >> PNGK) & 0xc0) >> 6)) * PNGM;
         image->background_color.blue=
-             ((((((size_t) image->background_color.blue) >> PNGK) & 0xc0)     )  |
-              (((((size_t) image->background_color.blue) >> PNGK) & 0xc0) >> 2)  |
-              (((((size_t) image->background_color.blue) >> PNGK) & 0xc0) >> 4)  |
-              (((((size_t) image->background_color.blue) >> PNGK) & 0xc0) >> 6)) * PNGM;
+            ((((((size_t)
+            image->background_color.blue) >> PNGK) & 0xc0)     )  |
+            (((((size_t)
+            image->background_color.blue) >> PNGK) & 0xc0) >> 2)  |
+            (((((size_t)
+            image->background_color.blue) >> PNGK) & 0xc0) >> 4)  |
+            (((((size_t)
+            image->background_color.blue) >> PNGK) & 0xc0) >> 6)) * PNGM;
 
         if (logging != MagickFalse)
           (void) LogMagickEvent(CoderEvent,GetMagickModule(),
@@ -7536,18 +7550,18 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
             for (x=0; x < (ssize_t) image->columns; x++)
             {
               r->red=
-                   ((((((size_t) r->red) >> PNGK) & 0xe0)     )  |
-                    (((((size_t) r->red) >> PNGK) & 0xe0) >> 3)  |
-                    (((((size_t) r->red) >> PNGK) & 0xc0) >> 6)) * PNGM;
+                   ((((((size_t) r->red) >> PNGK) & 0xe0)    )  |
+                   (((((size_t) r->red) >> PNGK) & 0xe0) >> 3)  |
+                   (((((size_t) r->red) >> PNGK) & 0xc0) >> 6)) * PNGM;
               r->green=
-                   ((((((size_t) r->green) >> PNGK) & 0xe0)     )  |
-                    (((((size_t) r->green) >> PNGK) & 0xe0) >> 3)  |
-                    (((((size_t) r->green) >> PNGK) & 0xc0) >> 6)) * PNGM;
+                   ((((((size_t) r->green) >> PNGK) & 0xe0)    )  |
+                   (((((size_t) r->green) >> PNGK) & 0xe0) >> 3)  |
+                   (((((size_t) r->green) >> PNGK) & 0xc0) >> 6)) * PNGM;
               r->blue=
-                   ((((((size_t) r->blue) >> PNGK) & 0xc0)     )  |
-                    (((((size_t) r->blue) >> PNGK) & 0xc0) >> 2)  |
-                    (((((size_t) r->blue) >> PNGK) & 0xc0) >> 4)  |
-                    (((((size_t) r->blue) >> PNGK) & 0xc0) >> 6)) * PNGM;
+                   ((((((size_t) r->blue) >> PNGK) & 0xc0)    )  |
+                   (((((size_t) r->blue) >> PNGK) & 0xc0) >> 2)  |
+                   (((((size_t) r->blue) >> PNGK) & 0xc0) >> 4)  |
+                   (((((size_t) r->blue) >> PNGK) & 0xc0) >> 6)) * PNGM;
               r++;
             }
     
@@ -7565,18 +7579,28 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
           for (i=0; i<image_colors; i++)
           {
               image->colormap[i].red=
-                   ((((((size_t) image->colormap[i].red) >> PNGK) & 0xe0)     )  |
-                    (((((size_t) image->colormap[i].red) >> PNGK) & 0xe0) >> 3)  |
-                    (((((size_t) image->colormap[i].red) >> PNGK) & 0xc0) >> 6)) * PNGM;
+                  ((((((size_t)
+                  image->colormap[i].red) >> PNGK) & 0xe0)     )  |
+                  (((((size_t)
+                  image->colormap[i].red) >> PNGK) & 0xe0) >> 3)  |
+                  (((((size_t)
+                  image->colormap[i].red) >> PNGK) & 0xc0) >> 6)) * PNGM;
               image->colormap[i].green=
-                   ((((((size_t) image->colormap[i].green) >> PNGK) & 0xe0)     )  |
-                    (((((size_t) image->colormap[i].green) >> PNGK) & 0xe0) >> 3)  |
-                    (((((size_t) image->colormap[i].green) >> PNGK) & 0xc0) >> 6)) * PNGM;
+                  ((((((size_t)
+                  image->colormap[i].green) >> PNGK) & 0xe0)     )  |
+                  (((((size_t)
+                  image->colormap[i].green) >> PNGK) & 0xe0) >> 3)  |
+                  (((((size_t)
+                  image->colormap[i].green) >> PNGK) & 0xc0) >> 6)) * PNGM;
               image->colormap[i].blue=
-                   ((((((size_t) image->colormap[i].blue) >> PNGK) & 0xc0)     )  |
-                    (((((size_t) image->colormap[i].blue) >> PNGK) & 0xc0) >> 2)  |
-                    (((((size_t) image->colormap[i].blue) >> PNGK) & 0xc0) >> 4)  |
-                    (((((size_t) image->colormap[i].blue) >> PNGK) & 0xc0) >> 6)) * PNGM;
+                  ((((((size_t)
+                  image->colormap[i].blue) >> PNGK) & 0xc0)     )  |
+                  (((((size_t)
+                  image->colormap[i].blue) >> PNGK) & 0xc0) >> 2)  |
+                  (((((size_t)
+                  image->colormap[i].blue) >> PNGK) & 0xc0) >> 4)  |
+                  (((((size_t)
+                  image->colormap[i].blue) >> PNGK) & 0xc0) >> 6)) * PNGM;
           }
       }
       continue;
@@ -7700,12 +7724,12 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
   if ((mng_info->write_png_colortype == 4 || mng_info->write_png8) &&
      (image->colors == 0 || image->colormap == NULL))
     {
-      (void) ThrowMagickException(&image->exception,
-          GetMagickModule(),CoderWarning,
-          "Cannot write PNG8 or color-type 3; colormap is NULL",
-          "`%s'",image->filename);
       image_info=DestroyImageInfo(image_info);
       image=DestroyImage(image);
+      (void) ThrowMagickException(&IMimage->exception,
+          GetMagickModule(),CoderError,
+          "Cannot write PNG8 or color-type 3; colormap is NULL",
+          "`%s'",IMimage->filename);
 #if defined(PNG_SETJMP_NOT_THREAD_SAFE)
       UnlockSemaphoreInfo(ping_semaphore);
 #endif
@@ -8279,16 +8303,18 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
                   }
               }
 
-#if 1 /* To do: Enable this when low bit-depth grayscale is working */
             else if (ping_color_type ==
                 PNG_COLOR_TYPE_GRAY && image_colors < 17 &&
                 mng_info->IsPalette)
               {
-
               /* Check if grayscale is reducible */
+
+#define LOW_DEPTH_OK 0 /* To do: eliminate this when low bit-depths work */
                 int
+#if LOW_DEPTH_OK==1
                   depth_4_ok=MagickTrue,
                   depth_2_ok=MagickTrue,
+#endif
                   depth_1_ok=MagickTrue;
 
                 for (i=0; i < (ssize_t) image_colors; i++)
@@ -8298,20 +8324,21 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
 
                    intensity=ScaleQuantumToChar(image->colormap[i].red);
 
+#if LOW_DEPTH_OK==1
                    if ((intensity & 0x0f) != ((intensity & 0xf0) >> 4))
                      depth_4_ok=depth_2_ok=depth_1_ok=MagickFalse;
-
                    else if ((intensity & 0x03) != ((intensity & 0x0c) >> 2))
                      depth_2_ok=depth_1_ok=MagickFalse;
-
-                   else if ((intensity & 0x01) != ((intensity & 0x02) >> 1))
+                   else
+#endif
+                     if ((intensity & 0x01) != ((intensity & 0x02) >> 1))
                      depth_1_ok=MagickFalse;
                 }
 
                 if (depth_1_ok && mng_info->write_png_depth <= 1)
                   ping_bit_depth=1;
 
-#if 0 /* To do: Enable this when bit depths 2 and 4 are working. */
+#if LOW_DEPTH_OK==1
                 else if (depth_2_ok && mng_info->write_png_depth <= 2)
                   ping_bit_depth=2;
 
@@ -8319,7 +8346,6 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
                   ping_bit_depth=4;
 #endif
               }
-#endif /* 1 */
           }
 
           image_depth=ping_bit_depth;
@@ -9257,7 +9283,8 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
                   (void) LogMagickEvent(CoderEvent,GetMagickModule(),
                     "  pass %d, Image Is RGB, 16-bit GRAY, or GRAY_ALPHA",pass);
 
-                p=GetVirtualPixels(image,0,y,image->columns,1,&image->exception);
+                p=GetVirtualPixels(image,0,y,image->columns,1,
+                   &image->exception);
 
                 if (p == (const PixelPacket *) NULL)
                   break;
@@ -9362,38 +9389,42 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
         text;
 
       value=GetImageProperty(image,property);
-      if (value != (const char *) NULL)
+      if (LocaleCompare(property,"density") != 0 &&
+          ping_exclude_pHYs == MagickFalse)
         {
-          text=(png_textp) png_malloc(ping,(png_uint_32) sizeof(png_text));
-          text[0].key=(char *) property;
-          text[0].text=(char *) value;
-          text[0].text_length=strlen(value);
-
-          if (ping_exclude_tEXt != MagickFalse)
-             text[0].compression=PNG_TEXT_COMPRESSION_zTXt;
-
-          else if (ping_exclude_zTXt != MagickFalse)
-             text[0].compression=PNG_TEXT_COMPRESSION_NONE;
-
-          else
+        if (value != (const char *) NULL)
           {
-             text[0].compression=image_info->compression == NoCompression ||
-               (image_info->compression == UndefinedCompression &&
-               text[0].text_length < 128) ? PNG_TEXT_COMPRESSION_NONE :
-               PNG_TEXT_COMPRESSION_zTXt ;
-          }
+            text=(png_textp) png_malloc(ping,(png_uint_32) sizeof(png_text));
+            text[0].key=(char *) property;
+            text[0].text=(char *) value;
+            text[0].text_length=strlen(value);
 
-          if (logging != MagickFalse)
+            if (ping_exclude_tEXt != MagickFalse)
+               text[0].compression=PNG_TEXT_COMPRESSION_zTXt;
+
+            else if (ping_exclude_zTXt != MagickFalse)
+               text[0].compression=PNG_TEXT_COMPRESSION_NONE;
+
+            else
             {
-              (void) LogMagickEvent(CoderEvent,GetMagickModule(),
-                "  Setting up text chunk");
-
-              (void) LogMagickEvent(CoderEvent,GetMagickModule(),
-                "    keyword: %s",text[0].key);
+               text[0].compression=image_info->compression == NoCompression ||
+                 (image_info->compression == UndefinedCompression &&
+                 text[0].text_length < 128) ? PNG_TEXT_COMPRESSION_NONE :
+                 PNG_TEXT_COMPRESSION_zTXt ;
             }
 
-          png_set_text(ping,ping_info,text,1);
-          png_free(ping,text);
+            if (logging != MagickFalse)
+              {
+                (void) LogMagickEvent(CoderEvent,GetMagickModule(),
+                  "  Setting up text chunk");
+
+                (void) LogMagickEvent(CoderEvent,GetMagickModule(),
+                  "    keyword: %s",text[0].key);
+              }
+
+            png_set_text(ping,ping_info,text,1);
+            png_free(ping,text);
+          }
         }
       property=GetNextImageProperty(image);
     }
