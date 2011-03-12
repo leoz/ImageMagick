@@ -218,9 +218,9 @@ MagickExport ResampleFilter *AcquireResampleFilter(const Image *image,
     ThrowFatalException(ResourceLimitFatalError,"MemoryAllocationFailed");
   (void) ResetMagickMemory(resample_filter,0,sizeof(*resample_filter));
 
+  resample_filter->exception=exception;
   resample_filter->image=ReferenceImage((Image *) image);
   resample_filter->view=AcquireCacheView(resample_filter->image);
-  resample_filter->exception=exception;
 
   resample_filter->debug=IsEventLogging();
   resample_filter->signature=MagickSignature;
@@ -437,13 +437,13 @@ static MagickBooleanType InterpolateResampleFilter(
         GetMagickPixelPacket(resample_filter->image,pixels+i);
         SetMagickPixelPacket(resample_filter->image,p,indexes+i,pixels+i);
         alpha[i]=1.0;
-        if (resample_filter->image->matte != MagickFalse)
+        if (pixels[i].matte != MagickFalse)
           {
             alpha[i]=QuantumScale*((MagickRealType) GetAlphaPixelComponent(p));
             pixels[i].red*=alpha[i];
             pixels[i].green*=alpha[i];
             pixels[i].blue*=alpha[i];
-            if (resample_filter->image->colorspace == CMYKColorspace)
+            if (pixels[i].colorspace == CMYKColorspace)
               pixels[i].index*=alpha[i];
           }
         gamma=alpha[i];
@@ -452,7 +452,7 @@ static MagickBooleanType InterpolateResampleFilter(
         pixel->green+=gamma*0.0625*pixels[i].green;
         pixel->blue+=gamma*0.0625*pixels[i].blue;
         pixel->opacity+=0.0625*pixels[i].opacity;
-        if (resample_filter->image->colorspace == CMYKColorspace)
+        if (pixel->colorspace == CMYKColorspace)
           pixel->index+=gamma*0.0625*pixels[i].index;
         p++;
       }
@@ -483,13 +483,13 @@ static MagickBooleanType InterpolateResampleFilter(
         GetMagickPixelPacket(resample_filter->image,pixels+i);
         SetMagickPixelPacket(resample_filter->image,p,indexes+i,pixels+i);
         alpha[i]=1.0;
-        if (resample_filter->image->matte != MagickFalse)
+        if (pixels[i].matte != MagickFalse)
           {
             alpha[i]=QuantumScale*((MagickRealType) GetAlphaPixelComponent(p));
             pixels[i].red*=alpha[i];
             pixels[i].green*=alpha[i];
             pixels[i].blue*=alpha[i];
-            if (resample_filter->image->colorspace == CMYKColorspace)
+            if (pixels[i].colorspace == CMYKColorspace)
               pixels[i].index*=alpha[i];
           }
         p++;
@@ -525,27 +525,26 @@ static MagickBooleanType InterpolateResampleFilter(
       indexes=GetCacheViewVirtualIndexQueue(resample_filter->view);
       for (i=0; i < 4L; i++)
       {
+        GetMagickPixelPacket(resample_filter->image,pixels+i);
         pixels[i].red=(MagickRealType) p[i].red;
         pixels[i].green=(MagickRealType) p[i].green;
         pixels[i].blue=(MagickRealType) p[i].blue;
         pixels[i].opacity=(MagickRealType) p[i].opacity;
         alpha[i]=1.0;
+        if (pixels[i].matte != MagickFalse)
+          {
+            alpha[i]=QuantumScale*((MagickRealType) QuantumRange-p[i].opacity);
+            pixels[i].red*=alpha[i];
+            pixels[i].green*=alpha[i];
+            pixels[i].blue*=alpha[i];
+          }
+        if (indexes != (IndexPacket *) NULL)
+          {
+            pixels[i].index=(MagickRealType) indexes[i];
+            if (pixels[i].colorspace == CMYKColorspace)
+              pixels[i].index*=alpha[i];
+          }
       }
-      if (resample_filter->image->matte != MagickFalse)
-        for (i=0; i < 4L; i++)
-        {
-          alpha[i]=QuantumScale*((MagickRealType) QuantumRange-p[i].opacity);
-          pixels[i].red*=alpha[i];
-          pixels[i].green*=alpha[i];
-          pixels[i].blue*=alpha[i];
-        }
-      if (indexes != (IndexPacket *) NULL)
-        for (i=0; i < 4L; i++)
-        {
-          pixels[i].index=(MagickRealType) indexes[i];
-          if (resample_filter->image->colorspace == CMYKColorspace)
-            pixels[i].index*=alpha[i];
-        }
       delta.x=x-floor(x);
       delta.y=y-floor(y);
       epsilon.x=1.0-delta.x;
@@ -564,7 +563,7 @@ static MagickBooleanType InterpolateResampleFilter(
       pixel->opacity=(epsilon.y*(epsilon.x*pixels[0].opacity+delta.x*
         pixels[1].opacity)+delta.y*(epsilon.x*pixels[2].opacity+delta.x*
         pixels[3].opacity));
-      if (resample_filter->image->colorspace == CMYKColorspace)
+      if (pixel->colorspace == CMYKColorspace)
         pixel->index=gamma*(epsilon.y*(epsilon.x*pixels[0].index+delta.x*
           pixels[1].index)+delta.y*(epsilon.x*pixels[2].index+delta.x*
           pixels[3].index));
@@ -657,13 +656,13 @@ static MagickBooleanType InterpolateResampleFilter(
         GetMagickPixelPacket(resample_filter->image,pixels+i);
         SetMagickPixelPacket(resample_filter->image,p,indexes+i,pixels+i);
         alpha[i]=1.0;
-        if (resample_filter->image->matte != MagickFalse)
+        if (pixels[i].matte != MagickFalse)
           {
             alpha[i]=QuantumScale*((MagickRealType) GetAlphaPixelComponent(p));
             pixels[i].red*=alpha[i];
             pixels[i].green*=alpha[i];
             pixels[i].blue*=alpha[i];
-            if (resample_filter->image->colorspace == CMYKColorspace)
+            if (pixels[i].colorspace == CMYKColorspace)
               pixels[i].index*=alpha[i];
           }
         p++;
@@ -693,7 +692,7 @@ static MagickBooleanType InterpolateResampleFilter(
                 pixels[3].blue,pixels[0].blue);
               pixel->opacity=gamma*MeshInterpolate(&delta,pixels[2].opacity,
                 pixels[3].opacity,pixels[0].opacity);
-              if (resample_filter->image->colorspace == CMYKColorspace)
+              if (pixel->colorspace == CMYKColorspace)
                 pixel->index=gamma*MeshInterpolate(&delta,pixels[2].index,
                   pixels[3].index,pixels[0].index);
             }
@@ -713,7 +712,7 @@ static MagickBooleanType InterpolateResampleFilter(
                 pixels[0].blue,pixels[3].blue);
               pixel->opacity=gamma*MeshInterpolate(&delta,pixels[1].opacity,
                 pixels[0].opacity,pixels[3].opacity);
-              if (resample_filter->image->colorspace == CMYKColorspace)
+              if (pixel->colorspace == CMYKColorspace)
                 pixel->index=gamma*MeshInterpolate(&delta,pixels[1].index,
                   pixels[0].index,pixels[3].index);
             }
@@ -738,7 +737,7 @@ static MagickBooleanType InterpolateResampleFilter(
                 pixels[1].blue,pixels[2].blue);
               pixel->opacity=gamma*MeshInterpolate(&delta,pixels[0].opacity,
                 pixels[1].opacity,pixels[2].opacity);
-              if (resample_filter->image->colorspace == CMYKColorspace)
+              if (pixel->colorspace == CMYKColorspace)
                 pixel->index=gamma*MeshInterpolate(&delta,pixels[0].index,
                   pixels[1].index,pixels[2].index);
             }
@@ -759,7 +758,7 @@ static MagickBooleanType InterpolateResampleFilter(
                 pixels[2].blue,pixels[1].blue);
               pixel->opacity=gamma*MeshInterpolate(&delta,pixels[3].opacity,
                 pixels[2].opacity,pixels[1].opacity);
-              if (resample_filter->image->colorspace == CMYKColorspace)
+              if (pixel->colorspace == CMYKColorspace)
                 pixel->index=gamma*MeshInterpolate(&delta,pixels[3].index,
                   pixels[2].index,pixels[1].index);
             }
@@ -820,14 +819,14 @@ static MagickBooleanType InterpolateResampleFilter(
           GetMagickPixelPacket(resample_filter->image,pixels+n);
           SetMagickPixelPacket(resample_filter->image,p,indexes+n,pixels+n);
           alpha[n]=1.0;
-          if (resample_filter->image->matte != MagickFalse)
+          if (pixels[i].matte != MagickFalse)
             {
               alpha[n]=QuantumScale*((MagickRealType)
                 GetAlphaPixelComponent(p));
               pixels[n].red*=alpha[n];
               pixels[n].green*=alpha[n];
               pixels[n].blue*=alpha[n];
-              if (resample_filter->image->colorspace == CMYKColorspace)
+              if (pixels[i].colorspace == CMYKColorspace)
                 pixels[n].index*=alpha[n];
             }
           dx=CubicWeightingFunction(delta.x-(MagickRealType) j);
@@ -836,9 +835,9 @@ static MagickBooleanType InterpolateResampleFilter(
           pixel->red+=gamma*dx*dy*pixels[n].red;
           pixel->green+=gamma*dx*dy*pixels[n].green;
           pixel->blue+=gamma*dx*dy*pixels[n].blue;
-          if (resample_filter->image->matte != MagickFalse)
+          if (pixel->matte != MagickFalse)
             pixel->opacity+=dx*dy*pixels[n].opacity;
-          if (resample_filter->image->colorspace == CMYKColorspace)
+          if (pixel->colorspace == CMYKColorspace)
             pixel->index+=gamma*dx*dy*pixels[n].index;
           n++;
           p++;
@@ -1100,8 +1099,8 @@ MagickExport MagickBooleanType ResamplePixelColor(
   divisor_c = 0.0;
   divisor_m = 0.0;
   pixel->red = pixel->green = pixel->blue = 0.0;
-  if (resample_filter->image->matte != MagickFalse) pixel->opacity = 0.0;
-  if (resample_filter->image->colorspace == CMYKColorspace) pixel->index = 0.0;
+  if (pixel->matte != MagickFalse) pixel->opacity = 0.0;
+  if (pixel->colorspace == CMYKColorspace) pixel->index = 0.0;
 
   /*
     Determine the parellelogram bounding box fitted to the ellipse
@@ -1166,12 +1165,12 @@ MagickExport MagickBooleanType ResamplePixelColor(
         pixel->opacity  += weight*pixels->opacity;
         divisor_m += weight;
 
-        if (resample_filter->image->matte != MagickFalse)
+        if (pixel->matte != MagickFalse)
           weight *= QuantumScale*((MagickRealType)(QuantumRange-pixels->opacity));
         pixel->red   += weight*pixels->red;
         pixel->green += weight*pixels->green;
         pixel->blue  += weight*pixels->blue;
-        if (resample_filter->image->colorspace == CMYKColorspace)
+        if (pixel->colorspace == CMYKColorspace)
           pixel->index += weight*(*indexes);
         divisor_c += weight;
 
@@ -1226,7 +1225,7 @@ MagickExport MagickBooleanType ResamplePixelColor(
   pixel->red   = (MagickRealType) ClampToQuantum(divisor_c*pixel->red);
   pixel->green = (MagickRealType) ClampToQuantum(divisor_c*pixel->green);
   pixel->blue  = (MagickRealType) ClampToQuantum(divisor_c*pixel->blue);
-  if (resample_filter->image->colorspace == CMYKColorspace)
+  if (pixel->colorspace == CMYKColorspace)
     pixel->index = (MagickRealType) ClampToQuantum(divisor_c*pixel->index);
   return(MagickTrue);
 }
@@ -1388,7 +1387,7 @@ static inline void ClampUpAxes(const double dux,
    *
    * be an SVD decomposition of Jinv. (The SVD is not unique, but the
    * final ellipse does not depend on the particular SVD.)
-   * 
+   *
    * We could clamp up the entries of the diagonal matrix Sigma so
    * that they are at least 1, and then set
    *
@@ -1922,8 +1921,8 @@ MagickExport void SetResampleFilter(ResampleFilter *resample_filter,
 %                                                                             %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-%  SetResampleFilterInterpolateMethod() changes the interpolation method
-%  associated with the specified resample filter.
+%  SetResampleFilterInterpolateMethod() sets the resample filter interpolation
+%  method.
 %
 %  The format of the SetResampleFilterInterpolateMethod method is:
 %
@@ -1943,13 +1942,10 @@ MagickExport MagickBooleanType SetResampleFilterInterpolateMethod(
   assert(resample_filter != (ResampleFilter *) NULL);
   assert(resample_filter->signature == MagickSignature);
   assert(resample_filter->image != (Image *) NULL);
-
   if (resample_filter->debug != MagickFalse)
     (void) LogMagickEvent(TraceEvent,GetMagickModule(),"%s",
       resample_filter->image->filename);
-
   resample_filter->interpolate=method;
-
   return(MagickTrue);
 }
 

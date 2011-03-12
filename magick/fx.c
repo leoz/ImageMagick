@@ -105,9 +105,6 @@ struct _FxInfo
   const Image
     *images;
 
-  MagickBooleanType
-    matte;
-
   char
     *expression;
 
@@ -157,6 +154,9 @@ MagickExport FxInfo *AcquireFxInfo(const Image *image,const char *expression)
   char
     fx_op[2];
 
+  const Image
+    *next;
+
   FxInfo
     *fx_info;
 
@@ -169,7 +169,6 @@ MagickExport FxInfo *AcquireFxInfo(const Image *image,const char *expression)
   (void) ResetMagickMemory(fx_info,0,sizeof(*fx_info));
   fx_info->exception=AcquireExceptionInfo();
   fx_info->images=image;
-  fx_info->matte=image->matte;
   fx_info->colors=NewSplayTree(CompareSplayTreeString,RelinquishMagickMemory,
     RelinquishMagickMemory);
   fx_info->symbols=NewSplayTree(CompareSplayTreeString,RelinquishMagickMemory,
@@ -178,11 +177,14 @@ MagickExport FxInfo *AcquireFxInfo(const Image *image,const char *expression)
     GetImageListLength(fx_info->images),sizeof(*fx_info->resample_filter));
   if (fx_info->resample_filter == (ResampleFilter **) NULL)
     ThrowFatalException(ResourceLimitFatalError,"MemoryAllocationFailed");
-  for (i=0; i < (ssize_t) GetImageListLength(fx_info->images); i++)
+  i=0;
+  for (next=fx_info->images; next != (Image *) NULL; next=next->next)
   {
-    fx_info->resample_filter[i]=AcquireResampleFilter(GetImageFromList(
-      fx_info->images,i),fx_info->exception);
+    fx_info->resample_filter[i]=AcquireResampleFilter(next,fx_info->exception);
     SetResampleFilter(fx_info->resample_filter[i],PointFilter,1.0);
+    SetResampleFilterInterpolateMethod(fx_info->resample_filter[i],
+      NearestNeighborInterpolatePixel);
+    i++;
   }
   fx_info->random_info=AcquireRandomInfo();
   fx_info->expression=ConstantString(expression);
@@ -1501,10 +1503,7 @@ static MagickRealType FxGetSymbol(FxInfo *fx_info,const ChannelType channel,
         case OpacityChannel:
         {
           if (pixel.matte == MagickFalse)
-            {
-              fx_info->matte=MagickFalse;
-              return(1.0);
-            }
+            return(1.0);
           return((MagickRealType) (QuantumScale*GetAlphaPixelComponent(&pixel)));
         }
         case IndexChannel:
@@ -3056,7 +3055,6 @@ MagickExport Image *FxImageChannel(const Image *image,const ChannelType channel,
           status=MagickFalse;
       }
   }
-  fx_image->matte=fx_info[0]->matte;
   fx_view=DestroyCacheView(fx_view);
   fx_info=DestroyFxThreadSet(fx_info);
   if (status == MagickFalse)
