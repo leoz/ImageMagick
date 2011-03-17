@@ -2,6 +2,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                                                                             %
 %                                                                             %
+%                                                                             %
 %                    M   M   AAA    GGGG  IIIII   CCCC                        %
 %                    MM MM  A   A  G        I    C                            %
 %                    M M M  AAAAA  G GGG    I    C                            %
@@ -84,7 +85,6 @@ typedef struct _MagicMapInfo
 static const MagicMapInfo
   MagicMap[] =
   {
-    { "AVI", 0, MagickString("RIFF") },
     { "8BIMWTEXT", 0, MagickString("8\000B\000I\000M\000#") },
     { "8BIMTEXT", 0, MagickString("8BIM#") },
     { "8BIM", 0, MagickString("8BIM") },

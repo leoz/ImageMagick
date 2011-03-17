@@ -2419,9 +2419,6 @@ MagickExport Image *SparseColorImage(const Image *image,
   Image
     *sparse_image;
 
-  MagickPixelPacket
-    zero;
-
   size_t
     number_colors;
 
@@ -2525,6 +2522,7 @@ MagickExport Image *SparseColorImage(const Image *image,
     }
   { /* ----- MAIN CODE ----- */
     CacheView
+      *image_view,
       *sparse_view;
 
     MagickBooleanType
@@ -2538,7 +2536,7 @@ MagickExport Image *SparseColorImage(const Image *image,
 
     status=MagickTrue;
     progress=0;
-    GetMagickPixelPacket(sparse_image,&zero);
+    image_view=AcquireCacheView(image);
     sparse_view=AcquireCacheView(sparse_image);
 #if defined(MAGICKCORE_OPENMP_SUPPORT)
   #pragma omp parallel for schedule(dynamic,4) shared(progress,status)
@@ -2560,18 +2558,18 @@ MagickExport Image *SparseColorImage(const Image *image,
       register PixelPacket
         *restrict q;
 
-      q=QueueCacheViewAuthenticPixels(sparse_view,0,j,sparse_image->columns,
+      q=GetCacheViewAuthenticPixels(sparse_view,0,j,sparse_image->columns,
         1,exception);
       if (q == (PixelPacket *) NULL)
         {
           status=MagickFalse;
           continue;
         }
-/* FUTURE: get pixel from source image - so channel can replace parts */
       indexes=GetCacheViewAuthenticIndexQueue(sparse_view);
-      pixel=zero;
-      for (i=0; i < (ssize_t) sparse_image->columns; i++)
+      GetMagickPixelPacket(sparse_image,&pixel);
+      for (i=0; i < (ssize_t) image->columns; i++)
       {
+        SetMagickPixelPacket(image,q,indexes,&pixel);
         switch (method)
         {
           case BarycentricColorInterpolate:

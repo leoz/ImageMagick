@@ -1,3 +1,23 @@
+2011-03-17 6.6.8-5 Anthony Thyssen <A.Thyssen@griffith...>
+  * Backed out the patch for Variable Blur Composition that was added
+    2011-02-13 v6.6.7-7, until I can re-think the problem.
+    The existing fix was failing to do circular blurs correctly.
+
+2011-03-14  6.6.8-5 Glenn Randers-Pehrson <glennrp@image...>
+  * Fixed a rounding/truncation error while writing the pHYs chunk in the
+    png encoder.
+  * Don't write a text-encoded profile when "-define PNG:exclude-chunk=text"
+    is present (reference
+    http://www.imagemagick.org/discourse-server/viewtopic.php?f=3&t=17086 and
+    http://www.imagemagick.org/discourse-server/viewtopic.php?f=3&t=18225).
+
+2011-03-14  6.6.8-5 Cristy  <quetzlzacatenango@image...>
+  * Add support for the WebP image format.
+
+2011-03-14  6.6.8-5 Anthony Thyssen <A.Thyssen@griffith...>
+  * Ensured that -sparse-color preserves unused channels when
+    channel limited.  Before this unused channels would be reset to black.
+
 2011-03-11  6.6.8-4 Glenn Randers-Pehrson <glennrp@image...>
   * Don't try to store a bKGD chunk in a PNG8 when there are already
     256 colors in the palette and the background colors is not in that
