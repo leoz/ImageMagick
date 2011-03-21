@@ -8042,9 +8042,13 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
 
           else
             image_matte=MagickFalse;
+
+          if (logging != MagickFalse)
+             (void) LogMagickEvent(CoderEvent,GetMagickModule(),
+             "   PNG colortype %d was specified:",(int) ping_color_type);
         }
 
-      else /* write_ping_colortype not specified */
+      else /* write_png_colortype not specified */
         {
           if (logging != MagickFalse)
              (void) LogMagickEvent(CoderEvent,GetMagickModule(),
@@ -8069,8 +8073,9 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
               image_info->type == PaletteMatteType)
             ping_color_type=(png_byte) PNG_COLOR_TYPE_PALETTE;
 
-          if (image_info->type == UndefinedType ||
-             image_info->type == OptimizeType)
+          if (mng_info->write_png_colortype == 0 &&
+             (image_info->type == UndefinedType ||
+             image_info->type == OptimizeType))
             {
               if (ping_have_color == MagickFalse)
                 {
@@ -8179,10 +8184,13 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
     {
       if (mng_info->IsPalette)
         {
-          ping_color_type=PNG_COLOR_TYPE_GRAY_ALPHA;
+          if (mng_info->write_png_colortype == 0)
+            {
+              ping_color_type=PNG_COLOR_TYPE_GRAY_ALPHA;
 
-          if (ping_have_color != MagickFalse)
-             ping_color_type=PNG_COLOR_TYPE_RGBA;
+              if (ping_have_color != MagickFalse)
+                 ping_color_type=PNG_COLOR_TYPE_RGBA;
+            }
 
           /*
            * Determine if there is any transparent color.
@@ -8194,7 +8202,9 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
               */
 
               image_matte=MagickFalse;
-              ping_color_type&=0x03;
+
+              if (mng_info->write_png_colortype == 0)
+                ping_color_type&=0x03;
             }
 
           else
@@ -8246,7 +8256,8 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
 
           if (ping_have_tRNS != MagickFalse)
             {
-              ping_color_type &= 0x03;  /* changes 4 or 6 to 0 or 2 */
+              if (mng_info->write_png_colortype == 0)
+                ping_color_type &= 0x03;  /* changes 4 or 6 to 0 or 2 */
 
               if (image_depth == 8)
                 {
@@ -8284,7 +8295,7 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
         if (image_matte != MagickFalse)
           ping_color_type=PNG_COLOR_TYPE_GRAY_ALPHA;
 
-        else
+        else if (mng_info->write_png_colortype-1 != PNG_COLOR_TYPE_GRAY_ALPHA)
           {
             ping_color_type=PNG_COLOR_TYPE_GRAY;
 
@@ -8329,12 +8340,9 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
               {
               /* Check if grayscale is reducible */
 
-#define LOW_DEPTH_OK 0 /* To do: eliminate this when low bit-depths work */
                 int
-#if LOW_DEPTH_OK==1
                   depth_4_ok=MagickTrue,
                   depth_2_ok=MagickTrue,
-#endif
                   depth_1_ok=MagickTrue;
 
                 for (i=0; i < (ssize_t) image_colors; i++)
@@ -8344,27 +8352,22 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
 
                    intensity=ScaleQuantumToChar(image->colormap[i].red);
 
-#if LOW_DEPTH_OK==1
                    if ((intensity & 0x0f) != ((intensity & 0xf0) >> 4))
                      depth_4_ok=depth_2_ok=depth_1_ok=MagickFalse;
                    else if ((intensity & 0x03) != ((intensity & 0x0c) >> 2))
                      depth_2_ok=depth_1_ok=MagickFalse;
-                   else
-#endif
-                     if ((intensity & 0x01) != ((intensity & 0x02) >> 1))
+                   else if ((intensity & 0x01) != ((intensity & 0x02) >> 1))
                      depth_1_ok=MagickFalse;
                 }
 
                 if (depth_1_ok && mng_info->write_png_depth <= 1)
                   ping_bit_depth=1;
 
-#if LOW_DEPTH_OK==1
                 else if (depth_2_ok && mng_info->write_png_depth <= 2)
                   ping_bit_depth=2;
 
                 else if (depth_4_ok && mng_info->write_png_depth <= 4)
                   ping_bit_depth=4;
-#endif
               }
           }
 
@@ -9327,15 +9330,8 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
 
                 if (ping_color_type == PNG_COLOR_TYPE_GRAY)
                   {
-                    /* To do:
-                     *
-                     * This is failing to account for 2 and 4-bit depths
-                     * The call to png_set_packing() above is supposed to
-                     * take care of those.
-                     */
-#if LOW_DEPTH_OK==1
-                    quantum_info->depth=ping_bit_depth;
-#endif
+                    quantum_info->depth=image->depth;
+
                     (void) ExportQuantumPixels(image,(const CacheView *) NULL,
                        quantum_info,GrayQuantum,ping_pixels,&image->exception);
                   }

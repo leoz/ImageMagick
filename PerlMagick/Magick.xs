@@ -241,10 +241,14 @@ static struct
     { "Implode", { {"amount", RealReference},
       {"interpolate", MagickInterpolateOptions} } },
     { "Magnify", },
-    { "MedianFilter", { {"radius", RealReference} } },
+    { "MedianFilter", { {"geometry", StringReference},
+      {"width", IntegerReference},{"height", IntegerReference},
+      {"channel", MagickChannelOptions} } },
     { "Minify", },
     { "OilPaint", { {"radius", RealReference} } },
-    { "ReduceNoise", { {"radius", RealReference} } },
+    { "ReduceNoise", { {"geometry", StringReference},
+      {"width", IntegerReference},{"height", IntegerReference},
+      {"channel", MagickChannelOptions} } },
     { "Roll", { {"geometry", StringReference}, {"x", IntegerReference},
       {"y", IntegerReference} } },
     { "Rotate", { {"degrees", RealReference}, {"fill", StringReference},
@@ -532,7 +536,12 @@ static struct
       {"iterations", IntegerReference} } },
     { "ColorMatrix", { {"matrix", ArrayReference} } },
     { "Color", { {"color", StringReference} } },
-    { "Mode", { {"radius", RealReference} } }
+    { "Mode", { {"geometry", StringReference},
+      {"width", IntegerReference},{"height", IntegerReference},
+      {"channel", MagickChannelOptions} } },
+    { "Statistic", { {"geometry", StringReference},
+      {"width", IntegerReference},{"height", IntegerReference},
+      {"channel", MagickChannelOptions}, {"type", MagickStatisticOptions} } }
   };
 
 static SplayTreeInfo
@@ -7281,6 +7290,8 @@ Mogrify(ref,...)
     ColorImage         = 270
     Mode               = 271
     ModeImage          = 272
+    Statistic          = 273
+    StatisticImage     = 274
     MogrifyRegion      = 666
   PPCODE:
   {
@@ -7787,10 +7798,21 @@ Mogrify(ref,...)
         }
         case 18:  /* MedianFilter */
         {
-          if (attribute_flag[0] == 0)
-            argument_list[0].real_reference=0.0;
-          image=MedianFilterImage(image,argument_list[0].real_reference,
-            exception);
+          if (attribute_flag[0] != 0)
+            {
+              flags=ParseGeometry(argument_list[0].string_reference,
+                &geometry_info);
+              if ((flags & SigmaValue) == 0)
+                geometry_info.sigma=1.0;
+            }
+          if (attribute_flag[1] != 0)
+            geometry_info.rho=argument_list[1].real_reference;
+          if (attribute_flag[2] != 0)
+            geometry_info.sigma=argument_list[2].real_reference;
+          if (attribute_flag[3] != 0)
+            channel=(ChannelType) argument_list[3].integer_reference;
+          image=StatisticImageChannel(image,channel,MedianStatistic,
+            (size_t) geometry_info.rho,(size_t) geometry_info.sigma,exception);
           break;
         }
         case 19:  /* Minify */
@@ -7808,10 +7830,21 @@ Mogrify(ref,...)
         }
         case 21:  /* ReduceNoise */
         {
-          if (attribute_flag[0] == 0)
-            argument_list[0].real_reference=0.0;
-          image=ReduceNoiseImage(image,argument_list[0].real_reference,
-            exception);
+          if (attribute_flag[0] != 0)
+            {
+              flags=ParseGeometry(argument_list[0].string_reference,
+                &geometry_info);
+              if ((flags & SigmaValue) == 0)
+                geometry_info.sigma=1.0;
+            }
+          if (attribute_flag[1] != 0)
+            geometry_info.rho=argument_list[1].real_reference;
+          if (attribute_flag[2] != 0)
+            geometry_info.sigma=argument_list[2].real_reference;
+          if (attribute_flag[3] != 0)
+            channel=(ChannelType) argument_list[3].integer_reference;
+          image=StatisticImageChannel(image,channel,NonpeakStatistic,
+            (size_t) geometry_info.rho,(size_t) geometry_info.sigma,exception);
           break;
         }
         case 22:  /* Roll */
@@ -10616,9 +10649,46 @@ Mogrify(ref,...)
         }
         case 136:  /* Mode */
         {
-          if (attribute_flag[0] == 0)
-            argument_list[0].real_reference=0.0;
-          image=ModeImage(image,argument_list[0].real_reference,exception);
+          if (attribute_flag[0] != 0)
+            {
+              flags=ParseGeometry(argument_list[0].string_reference,
+                &geometry_info);
+              if ((flags & SigmaValue) == 0)
+                geometry_info.sigma=1.0;
+            }
+          if (attribute_flag[1] != 0)
+            geometry_info.rho=argument_list[1].real_reference;
+          if (attribute_flag[2] != 0)
+            geometry_info.sigma=argument_list[2].real_reference;
+          if (attribute_flag[3] != 0)
+            channel=(ChannelType) argument_list[3].integer_reference;
+          image=StatisticImageChannel(image,channel,ModeStatistic,
+            (size_t) geometry_info.rho,(size_t) geometry_info.sigma,exception);
+          break;
+        }
+        case 137:  /* Statistic */
+        {
+          StatisticType
+            statistic;
+
+          statistic=UndefinedStatistic;
+          if (attribute_flag[0] != 0)
+            {
+              flags=ParseGeometry(argument_list[0].string_reference,
+                &geometry_info);
+              if ((flags & SigmaValue) == 0)
+                geometry_info.sigma=1.0;
+            }
+          if (attribute_flag[1] != 0)
+            geometry_info.rho=argument_list[1].real_reference;
+          if (attribute_flag[2] != 0)
+            geometry_info.sigma=argument_list[2].real_reference;
+          if (attribute_flag[3] != 0)
+            channel=(ChannelType) argument_list[3].integer_reference;
+          if (attribute_flag[4] != 0)
+            statistic=(StatisticType) argument_list[4].integer_reference;
+          image=StatisticImageChannel(image,channel,statistic,
+            (size_t) geometry_info.rho,(size_t) geometry_info.sigma,exception);
           break;
         }
       }

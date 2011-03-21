@@ -6812,60 +6812,14 @@ WandExport MagickBooleanType MagickMagnifyImage(MagickWand *wand)
 %                                                                             %
 %                                                                             %
 %                                                                             %
-%   M a g i c k M e d i a n F i l t e r I m a g e                             %
-%                                                                             %
-%                                                                             %
-%                                                                             %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%
-%  MagickMedianFilterImage() applies a digital filter that improves the quality
-%  of a noisy image.  Each pixel is replaced by the median in a set of
-%  neighboring pixels as defined by radius.
-%
-%  The format of the MagickMedianFilterImage method is:
-%
-%      MagickBooleanType MagickMedianFilterImage(MagickWand *wand,
-%        const double radius)
-%
-%  A description of each parameter follows:
-%
-%    o wand: the magick wand.
-%
-%    o radius: the radius of the pixel neighborhood.
-%
-*/
-WandExport MagickBooleanType MagickMedianFilterImage(MagickWand *wand,
-  const double radius)
-{
-  Image
-    *median_image;
-
-  assert(wand != (MagickWand *) NULL);
-  assert(wand->signature == WandSignature);
-  if (wand->debug != MagickFalse)
-    (void) LogMagickEvent(WandEvent,GetMagickModule(),"%s",wand->name);
-  if (wand->images == (Image *) NULL)
-    ThrowWandException(WandError,"ContainsNoImages",wand->name);
-  median_image=MedianFilterImage(wand->images,radius,wand->exception);
-  if (median_image == (Image *) NULL)
-    return(MagickFalse);
-  ReplaceImageInList(&wand->images,median_image);
-  return(MagickTrue);
-}
-
-/*
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%                                                                             %
-%                                                                             %
-%                                                                             %
 %   M a g i c k M e r g e I m a g e L a y e r s                               %
 %                                                                             %
 %                                                                             %
 %                                                                             %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-%  MagickMergeImageLayers() composes all the image layers from the current given
-%  image onward to produce a single image of the merged layers.
+%  MagickMergeImageLayers() composes all the image layers from the current
+%  given image onward to produce a single image of the merged layers.
 %
 %  The inital canvas's size depends on the given ImageLayerMethod, and is
 %  initialized using the first images background color.  The images
@@ -6952,51 +6906,6 @@ WandExport MagickBooleanType MagickMinifyImage(MagickWand *wand)
   if (minify_image == (Image *) NULL)
     return(MagickFalse);
   ReplaceImageInList(&wand->images,minify_image);
-  return(MagickTrue);
-}
-
-/*
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%                                                                             %
-%                                                                             %
-%                                                                             %
-%   M a g i c k M o d e I m a g e                                             %
-%                                                                             %
-%                                                                             %
-%                                                                             %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%
-%  MagickModeImage() makes each pixel the 'predominate color' of the
-%  neighborhood if the specified radius.
-%
-%  The format of the MagickModeImage method is:
-%
-%      MagickBooleanType MagickModeImage(MagickWand *wand,
-%        const double radius)
-%
-%  A description of each parameter follows:
-%
-%    o wand: the magick wand.
-%
-%    o radius: the radius of the pixel neighborhood.
-%
-*/
-WandExport MagickBooleanType MagickModeImage(MagickWand *wand,
-  const double radius)
-{
-  Image
-    *mode_image;
-
-  assert(wand != (MagickWand *) NULL);
-  assert(wand->signature == WandSignature);
-  if (wand->debug != MagickFalse)
-    (void) LogMagickEvent(WandEvent,GetMagickModule(),"%s",wand->name);
-  if (wand->images == (Image *) NULL)
-    ThrowWandException(WandError,"ContainsNoImages",wand->name);
-  mode_image=ModeImage(wand->images,radius,wand->exception);
-  if (mode_image == (Image *) NULL)
-    return(MagickFalse);
-  ReplaceImageInList(&wand->images,mode_image);
   return(MagickTrue);
 }
 
@@ -8649,53 +8558,6 @@ WandExport MagickBooleanType MagickReadImageFile(MagickWand *wand,FILE *file)
   if (images == (Image *) NULL)
     return(MagickFalse);
   return(InsertImageInWand(wand,images));
-}
-
-/*
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%                                                                             %
-%                                                                             %
-%                                                                             %
-%     M a g i c k R e d u c e N o i s e I m a g e                             %
-%                                                                             %
-%                                                                             %
-%                                                                             %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%
-%  MagickReduceNoiseImage() smooths the contours of an image while still
-%  preserving edge information.  The algorithm works by replacing each pixel
-%  with its neighbor closest in value.  A neighbor is defined by radius.  Use
-%  a radius of 0 and ReduceNoise() selects a suitable radius for you.
-%
-%  The format of the MagickReduceNoiseImage method is:
-%
-%      MagickBooleanType MagickReduceNoiseImage(MagickWand *wand,
-%        const double radius)
-%
-%  A description of each parameter follows:
-%
-%    o wand: the magick wand.
-%
-%    o radius: the radius of the pixel neighborhood.
-%
-*/
-WandExport MagickBooleanType MagickReduceNoiseImage(MagickWand *wand,
-  const double radius)
-{
-  Image
-    *noise_image;
-
-  assert(wand != (MagickWand *) NULL);
-  assert(wand->signature == WandSignature);
-  if (wand->debug != MagickFalse)
-    (void) LogMagickEvent(WandEvent,GetMagickModule(),"%s",wand->name);
-  if (wand->images == (Image *) NULL)
-    ThrowWandException(WandError,"ContainsNoImages",wand->name);
-  noise_image=ReduceNoiseImage(wand->images,radius,wand->exception);
-  if (noise_image == (Image *) NULL)
-    return(MagickFalse);
-  ReplaceImageInList(&wand->images,noise_image);
-  return(MagickTrue);
 }
 
 /*
@@ -11812,6 +11674,62 @@ WandExport MagickBooleanType MagickSpreadImage(MagickWand *wand,
   if (spread_image == (Image *) NULL)
     return(MagickFalse);
   ReplaceImageInList(&wand->images,spread_image);
+  return(MagickTrue);
+}
+
+/*
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                                             %
+%                                                                             %
+%                                                                             %
+%   M a g i c k S t a t i s t i c I m a g e                                   %
+%                                                                             %
+%                                                                             %
+%                                                                             %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%  MagickStatisticImage() replace each pixel with corresponding statistic from
+%  the neighborhood of the specified width and height.
+%
+%  The format of the MagickStatisticImage method is:
+%
+%      MagickBooleanType MagickStatisticImage(MagickWand *wand,
+%        const StatisticType type,const double width,const size_t height)
+%      MagickBooleanType MagickStatisticImageChannel(MagickWand *wand,
+%        const ChannelType channel,const StatisticType type,const double width,
+%        const size_t height)
+%
+%  A description of each parameter follows:
+%
+%    o wand: the magick wand.
+%
+%    o channel: the image channel(s).
+%
+%    o type: the statistic type (e.g. median, mode, etc.).
+%
+%    o width: the width of the pixel neighborhood.
+%
+%    o height: the height of the pixel neighborhood.
+%
+*/
+WandExport MagickBooleanType MagickStatisticImage(MagickWand *wand,
+  const ChannelType channel,const StatisticType type,const size_t width,
+  const size_t height)
+{
+  Image
+    *statistic_image;
+
+  assert(wand != (MagickWand *) NULL);
+  assert(wand->signature == WandSignature);
+  if (wand->debug != MagickFalse)
+    (void) LogMagickEvent(WandEvent,GetMagickModule(),"%s",wand->name);
+  if (wand->images == (Image *) NULL)
+    ThrowWandException(WandError,"ContainsNoImages",wand->name);
+  statistic_image=StatisticImageChannel(wand->images,channel,type,width,height,
+    wand->exception);
+  if (statistic_image == (Image *) NULL)
+    return(MagickFalse);
+  ReplaceImageInList(&wand->images,statistic_image);
   return(MagickTrue);
 }
 

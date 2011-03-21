@@ -3142,6 +3142,9 @@ MagickExport Image *MorphologyApply(const Image *image, const ChannelType
      const KernelInfo *kernel, const CompositeOperator compose,
      const double bias, ExceptionInfo *exception)
 {
+  CompositeOperator
+    curr_compose;
+
   Image
     *curr_image,    /* Image we are working with or iterating */
     *work_image,    /* secondary image for primative iteration */
@@ -3199,6 +3202,7 @@ MagickExport Image *MorphologyApply(const Image *image, const ChannelType
 
   /* initialise for cleanup */
   curr_image = (Image *) image;
+  curr_compose = image->compose;
   work_image = save_image = rslt_image = (Image *) NULL;
   reflected_kernel = (KernelInfo *) NULL;
 
@@ -3490,16 +3494,12 @@ MagickExport Image *MorphologyApply(const Image *image, const ChannelType
           ** below ensures the methematical compose method is applied in a
           ** purely mathematical way, and only to the selected channels.
           ** IE: Turn off SVG composition 'alpha blending'.
-          **
-          ** The compose image order is specifically so that the new image can
-          ** be subtracted 'Minus' from the collected result, to allow you to
-          ** convert a HitAndMiss methd into a Thinning method.
           */
           if ( verbose == MagickTrue )
             fprintf(stderr, " (compose \"%s\")",
                  MagickOptionToMnemonic(MagickComposeOptions, rslt_compose) );
-          (void) CompositeImageChannel(curr_image,
-               (ChannelType) (channel & ~SyncChannels), rslt_compose,
+          (void) CompositeImageChannel(rslt_image,
+               (ChannelType) (channel & ~SyncChannels), curr_compose,
                rslt_image, 0, 0);
           rslt_image = DestroyImage(rslt_image);
           rslt_image = curr_image;

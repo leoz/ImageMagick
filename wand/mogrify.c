@@ -411,6 +411,7 @@ static Image *SparseColorOption(const Image *image,const ChannelType channel,
     number_colors++;
   if ((channels & OpacityChannel) != 0)
     number_colors++;
+
   /*
     Read string, to determine number of arguments needed,
   */
@@ -1203,16 +1204,6 @@ WandExport MagickBooleanType MogrifyImage(ImageInfo *image_info,const int argc,
             InheritException(exception,&(*image)->exception);
             break;
           }
-        if (LocaleCompare("comment",option+1) == 0)
-          {
-            if (*option == '+')
-              {
-                (void) DeleteImageProperty(*image,option+1);
-                break;
-              }
-            (void) SetImageProperty(*image,option+1,argv[i+1]);
-            break;
-          }
         if (LocaleCompare("contrast",option+1) == 0)
           {
             (void) SyncImageSettings(mogrify_info,*image);
@@ -1978,16 +1969,6 @@ WandExport MagickBooleanType MogrifyImage(ImageInfo *image_info,const int argc,
       }
       case 'l':
       {
-        if (LocaleCompare("label",option+1) == 0)
-          {
-            if (*option == '+')
-              {
-                (void) DeleteImageProperty(*image,option+1);
-                break;
-              }
-            (void) SetImageProperty(*image,option+1,argv[i+1]);
-            break;
-          }
         if (LocaleCompare("lat",option+1) == 0)
           {
             Image
@@ -2210,7 +2191,8 @@ WandExport MagickBooleanType MogrifyImage(ImageInfo *image_info,const int argc,
             */
             (void) SyncImageSettings(mogrify_info,*image);
             (void) ParseGeometry(argv[i+1],&geometry_info);
-            median_image=MedianFilterImage(*image,geometry_info.rho,exception);
+            median_image=StatisticImageChannel(*image,channel,MedianStatistic,
+              (size_t) geometry_info.rho,(size_t) geometry_info.rho,exception);
             if (median_image == (Image *) NULL)
               break;
             *image=DestroyImage(*image);
@@ -2227,7 +2209,8 @@ WandExport MagickBooleanType MogrifyImage(ImageInfo *image_info,const int argc,
             */
             (void) SyncImageSettings(mogrify_info,*image);
             (void) ParseGeometry(argv[i+1],&geometry_info);
-            mode_image=ModeImage(*image,geometry_info.rho,exception);
+            mode_image=StatisticImageChannel(*image,channel,ModeStatistic,
+              (size_t) geometry_info.rho,(size_t) geometry_info.rho,exception);
             if (mode_image == (Image *) NULL)
               break;
             *image=DestroyImage(*image);
@@ -2352,8 +2335,9 @@ WandExport MagickBooleanType MogrifyImage(ImageInfo *image_info,const int argc,
             if (*option == '-')
               {
                 (void) ParseGeometry(argv[i+1],&geometry_info);
-                noisy_image=ReduceNoiseImage(*image,geometry_info.rho,
-                  exception);
+                noisy_image=StatisticImageChannel(*image,channel,
+                  NonpeakStatistic,(size_t) geometry_info.rho,(size_t)
+                  geometry_info.rho,exception);
               }
             else
               {
@@ -3176,6 +3160,27 @@ WandExport MagickBooleanType MogrifyImage(ImageInfo *image_info,const int argc,
             *image=spread_image;
             break;
           }
+        if (LocaleCompare("statistic",option+1) == 0)
+          {
+            Image
+              *statistic_image;
+
+            StatisticType
+              type;
+
+            (void) SyncImageSettings(mogrify_info,*image);
+            type=(StatisticType) ParseMagickOption(MagickStatisticOptions,
+              MagickFalse,argv[i+1]);
+            (void) ParseGeometry(argv[i+2],&geometry_info);
+            statistic_image=StatisticImageChannel(*image,channel,type,
+              (size_t) geometry_info.rho,(size_t) geometry_info.sigma,
+              exception);
+            if (statistic_image == (Image *) NULL)
+              break;
+            *image=DestroyImage(*image);
+            *image=statistic_image;
+            break;
+          }
         if (LocaleCompare("stretch",option+1) == 0)
           {
             if (*option == '+')
@@ -3785,6 +3790,8 @@ static MagickBooleanType MogrifyUsage(void)
       "                     fill in a image based on a few color points",
       "-splice geometry     splice the background color into the image",
       "-spread radius       displace image pixels by a random amount",
+      "-statistic type radius",
+      "                     replace each pixel with corresponding statistic from the neighborhood",
       "-strip               strip image of all profiles and comments",
       "-swirl degrees       swirl image pixels about the center",
       "-threshold value     threshold the image",
@@ -3925,7 +3932,6 @@ static MagickBooleanType MogrifyUsage(void)
     },
     *stack_operators[]=
     {
-      "-clone index         clone an image",
       "-delete index        delete the image from the image sequence",
       "-insert index        insert last image into the image sequence",
       "-swap indexes        swap two images in the image sequence",
@@ -6066,6 +6072,27 @@ WandExport MagickBooleanType MogrifyImageCommand(ImageInfo *image_info,
               ThrowMogrifyInvalidArgumentException(option,argv[i]);
             break;
           }
+        if (LocaleCompare("statistic",option+1) == 0)
+          {
+            ssize_t
+              op;
+
+            if (*option == '+')
+              break;
+            i++;
+            if (i == (ssize_t) argc)
+              ThrowMogrifyException(OptionError,"MissingArgument",option);
+            op=ParseMagickOption(MagickStatisticOptions,MagickFalse,argv[i]);
+            if (op < 0)
+              ThrowMogrifyException(OptionError,"UnrecognizedStatisticType",
+                argv[i]);
+            i++;
+            if (i == (ssize_t) (argc-1))
+              ThrowMogrifyException(OptionError,"MissingArgument",option);
+            if (IsGeometry(argv[i]) == MagickFalse)
+              ThrowMogrifyInvalidArgumentException(option,argv[i]);
+            break;
+          }
         if (LocaleCompare("stretch",option+1) == 0)
           {
             ssize_t
@@ -7957,6 +7984,7 @@ WandExport MagickBooleanType MogrifyImageList(ImageInfo *image_info,
               *fx_image;
 
             (void) SyncImagesSettings(mogrify_info,*images);
+            PageIndexImageList(*images);
             fx_image=FxImageChannel(*images,channel,argv[i+1],exception);
             if (fx_image == (Image *) NULL)
               {
@@ -8600,11 +8628,12 @@ WandExport MagickBooleanType MogrifyImages(ImageInfo *image_info,
     return(MagickTrue);
   (void) SetImageInfoProgressMonitor(image_info,(MagickProgressMonitor) NULL,
     (void *) NULL);
-  mogrify_images=NewImageList();
-  number_images=GetImageListLength(*images);
   status=0;
   if (post == MagickFalse)
     status&=MogrifyImageList(image_info,argc,argv,images,exception);
+  PageIndexImageList(*images);
+  number_images=(*images)->page_total;
+  mogrify_images=NewImageList();
   for (i=0; i < (ssize_t) number_images; i++)
   {
     image=RemoveFirstImageFromList(images);

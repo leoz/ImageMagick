@@ -305,8 +305,10 @@ static const OptionInfo
     { "-dither", 1L, MagickFalse },
     { "+draw", 0L, MagickFalse },
     { "-draw", 1L, MagickFalse },
-    { "+duration", 1L, MagickTrue },
-    { "-duration", 1L, MagickTrue },
+    { "+duplicate", 1L, MagickFalse },
+    { "-duplicate", 2L, MagickFalse },
+    { "+duration", 1L, MagickFalse },
+    { "-duration", 1L, MagickFalse },
     { "+edge", 0L, MagickFalse },
     { "-edge", 1L, MagickFalse },
     { "+emboss", 0L, MagickFalse },
@@ -597,6 +599,8 @@ static const OptionInfo
     { "-sparse-color", 2L, MagickFalse },
     { "+spread", 0L, MagickFalse },
     { "-spread", 1L, MagickFalse },
+    { "+statistic", 2L, MagickFalse },
+    { "-statistic", 2L, MagickFalse },
     { "+stegano", 0L, MagickFalse },
     { "-stegano", 1L, MagickFalse },
     { "+stereo", 0L, MagickFalse },
@@ -719,7 +723,9 @@ static const OptionInfo
     { "CopyRed", (ssize_t) CopyRedCompositeOp, MagickFalse },
     { "CopyYellow", (ssize_t) CopyYellowCompositeOp, MagickFalse },
     { "Darken", (ssize_t) DarkenCompositeOp, MagickFalse },
-    { "Divide", (ssize_t) DivideCompositeOp, MagickFalse },
+    { "Divide", (ssize_t) DivideDstCompositeOp, MagickFalse },
+    { "DivideDst", (ssize_t) DivideDstCompositeOp, MagickFalse },
+    { "DivideSrc", (ssize_t) DivideSrcCompositeOp, MagickFalse },
     { "Dst", (ssize_t) DstCompositeOp, MagickFalse },
     { "Difference", (ssize_t) DifferenceCompositeOp, MagickFalse },
     { "Displace", (ssize_t) DisplaceCompositeOp, MagickFalse },
@@ -740,7 +746,9 @@ static const OptionInfo
     { "LinearLight", (ssize_t) LinearLightCompositeOp, MagickFalse },
     { "Luminize", (ssize_t) LuminizeCompositeOp, MagickFalse },
     { "Mathematics", (ssize_t) MathematicsCompositeOp, MagickFalse },
-    { "Minus", (ssize_t) MinusCompositeOp, MagickFalse },
+    { "Minus", (ssize_t) MinusDstCompositeOp, MagickFalse },
+    { "MinusDst", (ssize_t) MinusDstCompositeOp, MagickFalse },
+    { "MinusSrc", (ssize_t) MinusSrcCompositeOp, MagickFalse },
     { "Modulate", (ssize_t) ModulateCompositeOp, MagickFalse },
     { "ModulusAdd", (ssize_t) ModulusAddCompositeOp, MagickFalse },
     { "ModulusSubtract", (ssize_t) ModulusSubtractCompositeOp, MagickFalse },
@@ -1438,6 +1446,17 @@ static const OptionInfo
     { "Voronoi", (ssize_t) VoronoiColorInterpolate, MagickFalse },
     { (char *) NULL, (ssize_t) UndefinedResource, MagickFalse }
   },
+  StatisticOptions[] =
+  {
+    { "Undefined", (ssize_t) UndefinedStatistic, MagickTrue },
+    { "Maximum", (ssize_t) MaximumStatistic, MagickFalse },
+    { "Mean", (ssize_t) MeanStatistic, MagickFalse },
+    { "Median", (ssize_t) MedianStatistic, MagickFalse },
+    { "Minimum", (ssize_t) MinimumStatistic, MagickFalse },
+    { "Mode", (ssize_t) ModeStatistic, MagickFalse },
+    { "Nonpeak", (ssize_t) NonpeakStatistic, MagickFalse },
+    { (char *) NULL, (ssize_t) UndefinedMethod, MagickFalse }
+  },
   StorageOptions[] =
   {
     { "Undefined", (ssize_t) UndefinedPixel, MagickTrue },
@@ -1805,6 +1824,7 @@ static const OptionInfo *GetOptionInfo(const MagickOption option)
     case MagickResolutionOptions: return(ResolutionOptions);
     case MagickResourceOptions: return(ResourceOptions);
     case MagickSparseColorOptions: return(SparseColorOptions);
+    case MagickStatisticOptions: return(StatisticOptions);
     case MagickStorageOptions: return(StorageOptions);
     case MagickStretchOptions: return(StretchOptions);
     case MagickStyleOptions: return(StyleOptions);
