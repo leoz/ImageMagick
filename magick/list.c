@@ -318,7 +318,7 @@ MagickExport void DeleteImageFromList(Image **images)
 %  of images in list are ignored.
 %
 %  If the referenced images are in the reverse order, that range will be
-%  completely ignored.  Unlike CloneImages().
+%  completely ignored, unlike CloneImages().
 %
 %  The format of the DeleteImages method is:
 %
@@ -382,7 +382,7 @@ MagickExport void DeleteImages(Image **images,const char *scenes,
   */
   for (p=(char *) scenes; *p != '\0';)
   {
-    while ((isspace((int)*p) != 0) || (*p == ','))
+    while ((isspace((int) *p) != 0) || (*p == ','))
       p++;
     first=strtol(p,&p,10);
     if (first < 0)
@@ -450,6 +450,71 @@ MagickExport Image *DestroyImageList(Image *images)
   while (images != (Image *) NULL)
     DeleteImageFromList(&images);
   return((Image *) NULL);
+}
+
+/*
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                                             %
+%                                                                             %
+%                                                                             %
+%   D u p l i c a t e I m a g e s                                             %
+%                                                                             %
+%                                                                             %
+%                                                                             %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%  DuplicateImages() duplicates one or more images from an image sequence,
+%  using a count and a comma separated list of image numbers or ranges.
+%
+%  The numbers start at 0 for the first image, while negative numbers refer to
+%  images starting counting from the end of the range. Images may be refered to
+%  multiple times without problems. Image refered beyond the available number
+%  of images in list are ignored.
+%
+%  The format of the DuplicateImages method is:
+%
+%      Image *DuplicateImages(Image *images,const size_t number_duplicates,
+%        const char *scenes,ExceptionInfo *exception)
+%
+%  A description of each parameter follows:
+%
+%    o images: the image sequence.
+%
+%    o number_duplicates: duplicate the image sequence this number of times.
+%
+%    o scenes: This character string specifies which scenes to duplicate (e.g.
+%      1,3-5,-2-6,2).
+%
+%    o exception: return any errors or warnings in this structure.
+%
+*/
+MagickExport Image *DuplicateImages(Image *images,
+  const size_t number_duplicates,const char *scenes,ExceptionInfo *exception)
+{
+  Image
+    *clone_images,
+    *duplicate_images;
+
+  register ssize_t
+    i;
+
+  /*
+    Duplicate images.
+  */
+  assert(images != (Image *) NULL);
+  assert(images->signature == MagickSignature);
+  assert(scenes != (char *) NULL);
+  if (images->debug != MagickFalse)
+    (void) LogMagickEvent(TraceEvent,GetMagickModule(),"%s",images->filename);
+  assert(exception != (ExceptionInfo *) NULL);
+  assert(exception->signature == MagickSignature);
+  duplicate_images=NewImageList();
+  for (i=0; i < (ssize_t) number_duplicates; i++)
+  {
+    clone_images=CloneImages(images,scenes,exception);
+    AppendImageToList(&duplicate_images,clone_images);
+  }
+  return(duplicate_images);
 }
 
 /*
@@ -867,7 +932,7 @@ MagickExport Image *NewImageList(void)
 */
 MagickExport void PageIndexImageList(Image *images)
 {
-  register ssize_t
+  register size_t
     p,n;
 
   if (images == (Image *) NULL)
@@ -888,7 +953,7 @@ MagickExport void PageIndexImageList(Image *images)
   /* set page_index and page_total attributes */
   p=n-1;
   for (; images != (Image *) NULL; images=images->previous)
-    images->page_index=p--, images->page_total=n;
+    images->page_index=p--, images->page_total=(size_t) n;
 }
 
 /*

@@ -3830,7 +3830,6 @@ static MagickBooleanType MogrifyUsage(void)
       "-mosaic              create a mosaic from an image sequence",
       "-print string        interpret string and print to console",
       "-process arguments   process the image with a custom image filter",
-      "-reverse             reverse image sequence",
       "-separate            separate an image channel into a grayscale image",
       "-smush geometry      smush an image sequence together",
       "-write filename      write images to this file",
@@ -3932,8 +3931,11 @@ static MagickBooleanType MogrifyUsage(void)
     },
     *stack_operators[]=
     {
-      "-delete index        delete the image from the image sequence",
+      "-delete indexes      delete the image from the image sequence",
+      "-duplicate count,indexes",
+      "                     duplicate an image one or more times",
       "-insert index        insert last image into the image sequence",
+      "-reverse             reverse image sequence",
       "-swap indexes        swap two images in the image sequence",
       (char *) NULL
     };
@@ -4659,6 +4661,17 @@ WandExport MagickBooleanType MogrifyImageCommand(ImageInfo *image_info,
               ThrowMogrifyInvalidArgumentException(option,argv[i]);
             break;
           }
+        if (LocaleCompare("delete",option+1) == 0)
+          {
+            if (*option == '+')
+              break;
+            i++;
+            if (i == (ssize_t) (argc-1))
+              ThrowMogrifyException(OptionError,"MissingArgument",option);
+            if (IsGeometry(argv[i]) == MagickFalse)
+              ThrowMogrifyInvalidArgumentException(option,argv[i]);
+            break;
+          }
         if (LocaleCompare("density",option+1) == 0)
           {
             if (*option == '+')
@@ -4778,6 +4791,17 @@ WandExport MagickBooleanType MogrifyImageCommand(ImageInfo *image_info,
             i++;
             if (i == (ssize_t) argc)
               ThrowMogrifyException(OptionError,"MissingArgument",option);
+            break;
+          }
+        if (LocaleCompare("duplicate",option+1) == 0)
+          {
+            if (*option == '+')
+              break;
+            i++;
+            if (i == (ssize_t) (argc-1))
+              ThrowMogrifyException(OptionError,"MissingArgument",option);
+            if (IsGeometry(argv[i]) == MagickFalse)
+              ThrowMogrifyInvalidArgumentException(option,argv[i]);
             break;
           }
         if (LocaleCompare("duration",option+1) == 0)
@@ -6145,6 +6169,17 @@ WandExport MagickBooleanType MogrifyImageCommand(ImageInfo *image_info,
             if (style < 0)
               ThrowMogrifyException(OptionError,"UnrecognizedStyleType",
                 argv[i]);
+            break;
+          }
+        if (LocaleCompare("swap",option+1) == 0)
+          {
+            if (*option == '+')
+              break;
+            i++;
+            if (i == (ssize_t) (argc-1))
+              ThrowMogrifyException(OptionError,"MissingArgument",option);
+            if (IsGeometry(argv[i]) == MagickFalse)
+              ThrowMogrifyInvalidArgumentException(option,argv[i]);
             break;
           }
         if (LocaleCompare("swirl",option+1) == 0)
@@ -7670,6 +7705,7 @@ WandExport MagickBooleanType MogrifyImageList(ImageInfo *image_info,
       (*images)->filename);
   if ((argc <= 0) || (*argv == (char *) NULL))
     return(MagickTrue);
+  PageIndexImageList(*images);
   mogrify_info=CloneImageInfo(image_info);
   quantize_info=AcquireQuantizeInfo(mogrify_info);
   channel=mogrify_info->channel;
@@ -7917,6 +7953,33 @@ WandExport MagickBooleanType MogrifyImageList(ImageInfo *image_info,
             quantize_info->dither=MagickTrue;
             quantize_info->dither_method=(DitherMethod) ParseMagickOption(
               MagickDitherOptions,MagickFalse,argv[i+1]);
+            break;
+          }
+        if (LocaleCompare("duplicate",option+1) == 0)
+          {
+            Image *
+              duplicate_images;
+
+            if (*option == '+')
+              duplicate_images = DuplicateImages(*images,1,"-1",
+                     exception);
+            else {
+                size_t
+                  number_duplicates;
+
+                char
+                  *p;
+
+                number_duplicates=(size_t) StringToLong(argv[i+1]);
+                if ( (p=strchr(argv[i+1],',')) != (char *)NULL )
+                  duplicate_images = DuplicateImages(*images,
+                        number_duplicates,p,exception);
+                else
+                  duplicate_images = DuplicateImages(*images,
+                        number_duplicates,"-1",exception);
+              }
+            AppendImageToList(images, duplicate_images);
+            (void) SyncImagesSettings(mogrify_info,*images);
             break;
           }
         break;

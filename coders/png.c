@@ -2994,6 +2994,16 @@ static Image *ReadOnePNGImage(MngInfo *mng_info,
         }
     }
 #endif
+
+   /* Set image->matte to MagickTrue if the input colortype supports
+    * alpha or if a valid tRNS chunk is present, no matter whether there
+    * is actual transparency present.
+    */
+    image->matte=(((int) ping_color_type == PNG_COLOR_TYPE_RGB_ALPHA) ||
+        ((int) ping_color_type == PNG_COLOR_TYPE_GRAY_ALPHA) ||
+        (png_get_valid(ping,ping_info,PNG_INFO_tRNS))) ?
+        MagickTrue : MagickFalse;
+
   /*
     Relinquish resources.
   */
@@ -6813,7 +6823,9 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
 
     ping_need_colortype_warning,
 
-    status;
+    status,
+    tried_333,
+    tried_444;
 
   QuantumInfo
     *quantum_info;
@@ -6968,10 +6980,17 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
 #endif
 
   /* Normally we run this just once, but in the case of writing PNG8
-   * we reduce the transparency to binary and run again, then reduce
-   * the colors to a simple 3-3-2 palette and run once more.
+   * we reduce the transparency to binary and run again, then if there
+   * are still too many colors we reduce to a simple 4-4-4-1, then 3-3-3-1
+   * RGBA palette and run again, and finally to a simple 3-3-2-1 RGBA
+   * palette.  The final reduction can only fail if there are still 256
+   * colors present and one of them has both transparent and opaque instances.
    */
-  for (j=0; j<3; j++)
+
+  tried_333 = MagickFalse;
+  tried_444 = MagickFalse;
+
+  for (j=0; j<5; j++)
   {
     /* BUILD_PALETTE
      *
@@ -7494,8 +7513,8 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
 
           for (x=0; x < (ssize_t) image->columns; x++)
           {
-              r->opacity = r->opacity > OpaqueOpacity/2 ? 0 :
-                   OpaqueOpacity;
+              r->opacity = r->opacity > TransparentOpacity/2 ?
+                   TransparentOpacity : OpaqueOpacity;
               r++;
           }
   
@@ -7506,15 +7525,219 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
              image->colormap != NULL)
             for (i=0; i<image_colors; i++)
                 image->colormap[i].opacity =
-                    image->colormap[i].opacity > OpaqueOpacity/2 ? 0 :
-                    OpaqueOpacity;
+                    image->colormap[i].opacity > TransparentOpacity/2 ?
+                    TransparentOpacity : OpaqueOpacity;
         }
       continue;
     }
 
     /* PNG8 can't have more than 256 colors so we quantize the pixels and
-     * background color to the 3-3-2 palette.
+     * background color to the 4-4-4-1, 3-3-3-1 or 3-3-2-1 palette.  If the
+     * image is mostly gray, the 4-4-4-1 palette is likely to end up with 256
+     * colors or less.
      */
+    if (tried_444 == MagickFalse && (image_colors == 0 || image_colors > 256))
+      {
+        if (logging != MagickFalse)
+           (void) LogMagickEvent(CoderEvent,GetMagickModule(),
+               "    Quantizing the background color to 4-4-4");
+
+        tried_444 = MagickTrue;
+
+        image->background_color.red=
+            ((((((size_t)
+            image->background_color.red) >> PNGK) & 0xf0)     )  |
+            (((((size_t)
+            image->background_color.red) >> PNGK) & 0xf0) >> 4)) * PNGM;
+        image->background_color.green=
+            ((((((size_t)
+            image->background_color.green) >> PNGK) & 0xf0)     )  |
+            (((((size_t)
+            image->background_color.green) >> PNGK) & 0xf0) >> 4)) * PNGM;
+        image->background_color.blue=
+            ((((((size_t)
+            image->background_color.blue) >> PNGK) & 0xf0)     )  |
+            (((((size_t)
+            image->background_color.blue) >> PNGK) & 0xf0) >> 4)) * PNGM;
+
+        if (logging != MagickFalse)
+          (void) LogMagickEvent(CoderEvent,GetMagickModule(),
+              "    Quantizing the pixel colors to 4-4-4");
+
+        if (image->colormap == NULL)
+        {
+          for (y=0; y < (ssize_t) image->rows; y++)
+          {
+            r=GetAuthenticPixels(image,0,y,image->columns,1,
+                exception);
+
+            if (r == (PixelPacket *) NULL)
+              break;
+
+            for (x=0; x < (ssize_t) image->columns; x++)
+            {
+              if (r->opacity == TransparentOpacity)
+                {
+                  r->red = image->background_color.red;
+                  r->green = image->background_color.green;
+                  r->blue = image->background_color.blue;
+                }
+              else
+                {
+                  r->red=
+                       ((((((size_t) r->red) >> PNGK) & 0xf0)    )  |
+                       (((((size_t) r->red) >> PNGK) & 0xf0) >> 4)) * PNGM;
+                  r->green=
+                       ((((((size_t) r->green) >> PNGK) & 0xf0)    )  |
+                       (((((size_t) r->green) >> PNGK) & 0xf0) >> 4)) * PNGM;
+                  r->blue=
+                       ((((((size_t) r->blue) >> PNGK) & 0xf0)    )  |
+                       (((((size_t) r->blue) >> PNGK) & 0xf0) >> 4)) * PNGM;
+                }
+              r++;
+            }
+    
+            if (SyncAuthenticPixels(image,exception) == MagickFalse)
+               break;
+          }
+        }
+
+        else /* Should not reach this; colormap already exists and
+                must be <= 256 */
+        {
+          if (logging != MagickFalse)
+              (void) LogMagickEvent(CoderEvent,GetMagickModule(),
+              "    Quantizing the colormap to 4-4-4");
+          for (i=0; i<image_colors; i++)
+          {
+              image->colormap[i].red=
+                  ((((((size_t)
+                  image->colormap[i].red) >> PNGK) & 0xf0)     )  |
+                  (((((size_t)
+                  image->colormap[i].red) >> PNGK) & 0xf0) >> 4)) * PNGM;
+              image->colormap[i].green=
+                  ((((((size_t)
+                  image->colormap[i].green) >> PNGK) & 0xf0)     )  |
+                  (((((size_t)
+                  image->colormap[i].green) >> PNGK) & 0xf0) >> 4)) * PNGM;
+              image->colormap[i].blue=
+                  ((((((size_t)
+                  image->colormap[i].blue) >> PNGK) & 0xf0)     )  |
+                  (((((size_t)
+                  image->colormap[i].blue) >> PNGK) & 0xf0) >> 4)) * PNGM;
+          }
+        }
+        continue;
+      }
+
+    if (tried_333 == MagickFalse && (image_colors == 0 || image_colors > 256))
+      {
+        if (logging != MagickFalse)
+           (void) LogMagickEvent(CoderEvent,GetMagickModule(),
+               "    Quantizing the background color to 3-3-3");
+
+        tried_333 = MagickTrue;
+
+        image->background_color.red=
+            ((((((size_t)
+            image->background_color.red) >> PNGK) & 0xe0)     )  |
+            (((((size_t)
+            image->background_color.red) >> PNGK) & 0xe0) >> 3)  |
+            (((((size_t)
+            image->background_color.red) >> PNGK) & 0xc0) >> 6)) * PNGM;
+        image->background_color.green=
+            ((((((size_t)
+            image->background_color.green) >> PNGK) & 0xe0)     )  |
+            (((((size_t)
+            image->background_color.green) >> PNGK) & 0xe0) >> 3)  |
+            (((((size_t)
+            image->background_color.green) >> PNGK) & 0xc0) >> 6)) * PNGM;
+        image->background_color.blue=
+            ((((((size_t)
+            image->background_color.blue) >> PNGK) & 0xe0)     )  |
+            (((((size_t)
+            image->background_color.blue) >> PNGK) & 0xe0) >> 3)  |
+            (((((size_t)
+            image->background_color.blue) >> PNGK) & 0xc0) >> 6)) * PNGM;
+
+        if (logging != MagickFalse)
+          (void) LogMagickEvent(CoderEvent,GetMagickModule(),
+              "    Quantizing the pixel colors to 3-3-3-1");
+
+        if (image->colormap == NULL)
+        {
+          for (y=0; y < (ssize_t) image->rows; y++)
+          {
+            r=GetAuthenticPixels(image,0,y,image->columns,1,
+                exception);
+
+            if (r == (PixelPacket *) NULL)
+              break;
+
+            for (x=0; x < (ssize_t) image->columns; x++)
+            {
+              if (r->opacity == TransparentOpacity)
+                {
+                  r->red = image->background_color.red;
+                  r->green = image->background_color.green;
+                  r->blue = image->background_color.blue;
+                }
+              else
+                {
+                  r->red=
+                       ((((((size_t) r->red) >> PNGK) & 0xe0)    )  |
+                       (((((size_t) r->red) >> PNGK) & 0xe0) >> 3)  |
+                       (((((size_t) r->red) >> PNGK) & 0xc0) >> 6)) * PNGM;
+                  r->green=
+                       ((((((size_t) r->green) >> PNGK) & 0xe0)    )  |
+                       (((((size_t) r->green) >> PNGK) & 0xe0) >> 3)  |
+                       (((((size_t) r->green) >> PNGK) & 0xc0) >> 6)) * PNGM;
+                  r->blue=
+                       ((((((size_t) r->blue) >> PNGK) & 0xe0)    )  |
+                       (((((size_t) r->blue) >> PNGK) & 0xe0) >> 3)  |
+                       (((((size_t) r->blue) >> PNGK) & 0xc0) >> 6)) * PNGM;
+                }
+              r++;
+            }
+    
+            if (SyncAuthenticPixels(image,exception) == MagickFalse)
+               break;
+          }
+        }
+
+        else /* Should not reach this; colormap already exists and
+                must be <= 256 */
+        {
+          if (logging != MagickFalse)
+              (void) LogMagickEvent(CoderEvent,GetMagickModule(),
+              "    Quantizing the colormap to 3-3-3-1");
+          for (i=0; i<image_colors; i++)
+          {
+              image->colormap[i].red=
+                  ((((((size_t)
+                  image->colormap[i].red) >> PNGK) & 0xe0)     )  |
+                  (((((size_t)
+                  image->colormap[i].red) >> PNGK) & 0xe0) >> 3)  |
+                  (((((size_t)
+                  image->colormap[i].red) >> PNGK) & 0xc0) >> 6)) * PNGM;
+              image->colormap[i].green=
+                  ((((((size_t)
+                  image->colormap[i].green) >> PNGK) & 0xe0)     )  |
+                  (((((size_t)
+                  image->colormap[i].green) >> PNGK) & 0xe0) >> 3)  |
+                  (((((size_t)
+                  image->colormap[i].green) >> PNGK) & 0xc0) >> 6)) * PNGM;
+              image->colormap[i].blue=
+                  ((((((size_t)
+                  image->colormap[i].blue) >> PNGK) & 0xe0)     )  |
+                  (((((size_t)
+                  image->colormap[i].blue) >> PNGK) & 0xe0) >> 3)  |
+                  (((((size_t)
+                  image->colormap[i].blue) >> PNGK) & 0xc0) >> 6)) * PNGM;
+          }
+        }
+        continue;
+      }
 
     if (image_colors == 0 || image_colors > 256)
       {
@@ -7548,7 +7771,7 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
 
         if (logging != MagickFalse)
           (void) LogMagickEvent(CoderEvent,GetMagickModule(),
-              "    Quantizing the pixel colors to 3-3-2");
+              "    Quantizing the pixel colors to 3-3-2-1");
 
         if (image->colormap == NULL)
         {
@@ -7562,19 +7785,28 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
 
             for (x=0; x < (ssize_t) image->columns; x++)
             {
-              r->red=
-                   ((((((size_t) r->red) >> PNGK) & 0xe0)    )  |
-                   (((((size_t) r->red) >> PNGK) & 0xe0) >> 3)  |
-                   (((((size_t) r->red) >> PNGK) & 0xc0) >> 6)) * PNGM;
-              r->green=
-                   ((((((size_t) r->green) >> PNGK) & 0xe0)    )  |
-                   (((((size_t) r->green) >> PNGK) & 0xe0) >> 3)  |
-                   (((((size_t) r->green) >> PNGK) & 0xc0) >> 6)) * PNGM;
-              r->blue=
-                   ((((((size_t) r->blue) >> PNGK) & 0xc0)    )  |
-                   (((((size_t) r->blue) >> PNGK) & 0xc0) >> 2)  |
-                   (((((size_t) r->blue) >> PNGK) & 0xc0) >> 4)  |
-                   (((((size_t) r->blue) >> PNGK) & 0xc0) >> 6)) * PNGM;
+              if (r->opacity == TransparentOpacity)
+                {
+                  r->red = image->background_color.red;
+                  r->green = image->background_color.green;
+                  r->blue = image->background_color.blue;
+                }
+              else
+                {
+                  r->red=
+                       ((((((size_t) r->red) >> PNGK) & 0xe0)    )  |
+                       (((((size_t) r->red) >> PNGK) & 0xe0) >> 3)  |
+                       (((((size_t) r->red) >> PNGK) & 0xc0) >> 6)) * PNGM;
+                  r->green=
+                       ((((((size_t) r->green) >> PNGK) & 0xe0)    )  |
+                       (((((size_t) r->green) >> PNGK) & 0xe0) >> 3)  |
+                       (((((size_t) r->green) >> PNGK) & 0xc0) >> 6)) * PNGM;
+                  r->blue=
+                       ((((((size_t) r->blue) >> PNGK) & 0xc0)    )  |
+                       (((((size_t) r->blue) >> PNGK) & 0xc0) >> 2)  |
+                       (((((size_t) r->blue) >> PNGK) & 0xc0) >> 4)  |
+                       (((((size_t) r->blue) >> PNGK) & 0xc0) >> 6)) * PNGM;
+                }
               r++;
             }
     
@@ -7588,7 +7820,7 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
         {
           if (logging != MagickFalse)
               (void) LogMagickEvent(CoderEvent,GetMagickModule(),
-              "    Quantizing the colormap to 3-3-2");
+              "    Quantizing the colormap to 3-3-2-1");
           for (i=0; i<image_colors; i++)
           {
               image->colormap[i].red=
@@ -9591,9 +9823,11 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
 %               (i.e., transparency is binary: fully opaque or fully
 %               transparent).  If other values are present they will be
 %               50%-thresholded to binary transparency.  If more than 256
-%               colors are present, they will be quantized to the 3-3-2
-%               palette.  If you want better quantization or dithering of
-%               the colors or alpha, you need to do it before calling the
+%               colors are present, they will be quantized to the 4-4-4-1,
+%               3-3-3-1, or  3-3-2-1 palette.
+%
+%               If you want better quantization or dithering of the colors
+%               or alpha than that, you need to do it before calling the
 %               PNG encoder. The pixels contain 8-bit indices even if
 %               they could be represented with 1, 2, or 4 bits.  Grayscale
 %               images will be written as indexed PNG files even though the
