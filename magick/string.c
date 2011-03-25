@@ -223,7 +223,7 @@ MagickExport char *CloneString(char **destination,const char *source)
   if (~length < MaxTextExtent)
     ThrowFatalException(ResourceLimitFatalError,"UnableToAcquireString");
   *destination=(char *) ResizeQuantumMemory(*destination,length+MaxTextExtent,
-    sizeof(*destination));
+    sizeof(**destination));
   if (*destination == (char *) NULL)
     ThrowFatalException(ResourceLimitFatalError,"UnableToAcquireString");
   if (length != 0)
@@ -442,7 +442,7 @@ MagickExport MagickBooleanType ConcatenateString(char **destination,
   if (~length < MaxTextExtent)
     ThrowFatalException(ResourceLimitFatalError,"UnableToConcatenateString");
   *destination=(char *) ResizeQuantumMemory(*destination,length+MaxTextExtent,
-    sizeof(*destination));
+    sizeof(**destination));
   if (*destination == (char *) NULL)
     ThrowFatalException(ResourceLimitFatalError,"UnableToConcatenateString");
   if (source_length != 0)
@@ -2178,7 +2178,7 @@ MagickExport char **StringToList(const char *text)
           if ((*q == '\r') || (*q == '\n'))
             break;
         textlist[i]=(char *) AcquireQuantumMemory((size_t) (q-p)+MaxTextExtent,
-          sizeof(*textlist));
+          sizeof(**textlist));
         if (textlist[i] == (char *) NULL)
           ThrowFatalException(ResourceLimitFatalError,"UnableToConvertText");
         (void) memcpy(textlist[i],p,(size_t) (q-p));
@@ -2211,7 +2211,7 @@ MagickExport char **StringToList(const char *text)
       for (i=0; i < (ssize_t) lines; i++)
       {
         textlist[i]=(char *) AcquireQuantumMemory(2UL*MaxTextExtent,
-          sizeof(*textlist));
+          sizeof(**textlist));
         if (textlist[i] == (char *) NULL)
           ThrowFatalException(ResourceLimitFatalError,"UnableToConvertText");
         (void) FormatMagickString(textlist[i],MaxTextExtent,"0x%08lx: ",
