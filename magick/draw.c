@@ -1109,9 +1109,6 @@ MagickExport MagickBooleanType DrawAffineImage(Image *image,
   register ssize_t
     i;
 
-  ResampleFilter
-    **restrict resample_filter;
-
   SegmentInfo
     edge;
 
@@ -1168,8 +1165,6 @@ MagickExport MagickBooleanType DrawAffineImage(Image *image,
   inverse_affine=InverseAffineMatrix(affine);
   GetMagickPixelPacket(image,&zero);
   exception=(&image->exception);
-  resample_filter=AcquireResampleFilterThreadSet(source,
-    UndefinedVirtualPixelMethod,MagickTrue,exception);
   image_view=AcquireCacheView(image);
   source_view=AcquireCacheView(source);
 #if defined(MAGICKCORE_OPENMP_SUPPORT)
@@ -1177,9 +1172,6 @@ MagickExport MagickBooleanType DrawAffineImage(Image *image,
 #endif
   for (y=(ssize_t) ceil(edge.y1-0.5); y <= (ssize_t) floor(edge.y2+0.5); y++)
   {
-    const int
-      id = GetOpenMPThreadId();
-
     MagickPixelPacket
       composite,
       pixel;
@@ -1220,7 +1212,8 @@ MagickExport MagickBooleanType DrawAffineImage(Image *image,
         inverse_affine.tx;
       point.y=(double) x*inverse_affine.rx+y*inverse_affine.sy+
         inverse_affine.ty;
-      (void) ResamplePixelColor(resample_filter[id],point.x,point.y,&pixel);
+      (void) InterpolateMagickPixelPacket(image,image_view,
+        UndefinedInterpolatePixel,point.x,point.y,&pixel,exception);
       SetMagickPixelPacket(image,q,indexes+x_offset,&composite);
       MagickPixelCompositeOver(&pixel,pixel.opacity,&composite,
         composite.opacity,&composite);
@@ -1231,7 +1224,6 @@ MagickExport MagickBooleanType DrawAffineImage(Image *image,
     if (SyncCacheViewAuthenticPixels(image_view,exception) == MagickFalse)
       status=MagickFalse;
   }
-  resample_filter=DestroyResampleFilterThreadSet(resample_filter);
   source_view=DestroyCacheView(source_view);
   image_view=DestroyCacheView(image_view);
   return(status);
