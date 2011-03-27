@@ -259,9 +259,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libMagickWand.so.4*
 %{_bindir}/[a-z]*
 %{_sysconfdir}/%{name}-%{VERSION}
-%{_localstatedir}/lib/%{name}-%{VERSION}
 %{_libdir}/%{name}-%{VERSION}
 %{_datadir}/%{name}-%{VERSION}
+%{_docdir}/%{name}-%{VERSION}
 %{_mandir}/man[145]/[a-zA-Z]*
 %{_mandir}/man1/%{name}.*
 %exclude %{_libdir}/%{name}-%{VERSION}/modules-Q16/coders/djvu.*
@@ -293,7 +293,7 @@ rm -rf $RPM_BUILD_ROOT
 
 %files doc
 %defattr(-,root,root,-)
-%doc %{_datadir}/doc/%{name}-%{VERSION}
+%doc %{_docdir}/%{name}-%{VERSION}
 %doc LICENSE
 
 %files c++
