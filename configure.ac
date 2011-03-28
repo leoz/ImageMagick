@@ -18,9 +18,10 @@ AC_PREREQ(2.64)
 
 m4_define([magick_major_version], [6])
 m4_define([magick_minor_version], [6])
-m4_define([magick_micro_version], [8])
+m4_define([magick_micro_version], [9])
 m4_define([magick_version],
           [magick_major_version.magick_minor_version.magick_micro_version])
+m4_define([magick_svn_revision], esyscmd([sh -c "svnversion | sed -r 's/([0-9]+).*/\1/'"]))
 
 AC_INIT([ImageMagick],[magick_version],[http://www.imagemagick.org],[ImageMagick-magick_version])
 AC_CONFIG_SRCDIR([magick/MagickCore.h])
@@ -112,6 +113,7 @@ AC_SUBST([MAGICK_LIBRARY_CURRENT_MIN],
          [`expr $MAGICK_LIBRARY_CURRENT - $MAGICK_LIBRARY_AGE`])
 AC_SUBST([MAGICK_LIBRARY_VERSION_INFO],
          [$MAGICK_LIBRARY_CURRENT:$MAGICK_LIBRARY_REVISION:$MAGICK_LIBRARY_AGE])
+AC_SUBST([MAGICK_SVN_REVISION],[magick_svn_revision])
 
 AC_SUBST(PACKAGE_NAME)dnl
 AC_SUBST(PACKAGE_VERSION)dnl
@@ -2763,7 +2765,7 @@ AC_DEFINE_UNQUOTED(SHARE_PATH,"$DEFINE_SHARE_PATH",Directory where architecture-
 AC_SUBST(SHARE_PATH)
 
 # Subdirectory to place ImageMagick configuration files
-CONFIGURE_RELATIVE_PATH="${LIBRARY_RELATIVE_PATH}"
+CONFIGURE_RELATIVE_PATH="${PACKAGE_NAME}"
 AC_DEFINE_UNQUOTED(CONFIGURE_RELATIVE_PATH,"$CONFIGURE_RELATIVE_PATH",Subdirectory of lib where architecture-dependent configuration files live.)
 CONFIGURE_PATH="${SYSCONF_DIR}/${CONFIGURE_RELATIVE_PATH}/"
 DEFINE_CONFIGURE_PATH="${SYSCONF_DIR}/${CONFIGURE_RELATIVE_PATH}/"
