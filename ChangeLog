@@ -1,7 +1,22 @@
+2011-03-30  6.6.9-2 Glenn Randers-Pehrson <glennrp@image...>
+  * Revised the png decoder to store the PNG IHDR and other known PNG
+    chunk data as properties, for later retrieval and reporting by "identify",
+    so users can easily and reliably discover the color-type, bit-depth, etc
+    that were in the input PNG datastream.
+  * The PNG decoder sometimes set images with more than 256 different
+    gray-alpha pixels to storage_class=PseudoClass with an incorrect colormap.
+
+2011-03-30  6.6.9-2 Anthony Thyssen <A.Thyssen@griffith...>
+  * Add a "Resize" distortion method (distort equivalent of -resize).
+  * Special CLI handling so -distort Resize takes a "geometry" argument.
+
+2011-03-29  6.6.9-2 Cristy  <quetzlzacatenango@image...>
+  * Expand PCL compressed pixel buffer to prevent delta compressed overrun.
+
 2011-03-29  6.6.9-1 Cristy  <quetzlzacatenango@image...>
   * New version 6.6.9-1.
 
-2011-03-29 6.6.9-1 Anthony Thyssen <A.Thyssen@griffith...>
+2011-03-29  6.6.9-1 Anthony Thyssen <A.Thyssen@griffith...>
   * Fix AdaptiveResizeImage() to use 'Mesh' Interpolation, and fix its
     coordinate handling, as originally defined.
 
@@ -16,7 +31,7 @@
   * Optimize bilinear interpolation.
   * Remove version from etc folder and instead use /etc/ImageMagick.
 
-2011-03-28 6.6.9-0 Anthony Thyssen <A.Thyssen@griffith...>
+2011-03-28  6.6.9-0 Anthony Thyssen <A.Thyssen@griffith...>
   * Separated complex cropping function from TransformImage() as a new
     function CropImageToTiles().  This new function returns either the
     new cropped image, or a list of tiles, according to geometry, without
@@ -26,7 +41,7 @@
 2011-03-27  6.6.8-10 Cristy  <quetzlzacatenango@image...>
   * New version 6.6.8-10.
 
-2011-03-27 6.6.8-10 Anthony Thyssen <A.Thyssen@griffith...>
+2011-03-27  6.6.8-10 Anthony Thyssen <A.Thyssen@griffith...>
   * Modified image handling in MogrifyImages() and MogrifyImage()
     which improves overall handling, and allows correct %p, %n and the
     %[fx:..] 't' and 'n' escape usage to work correctly.
@@ -35,19 +50,19 @@
 2011-03-26  6.6.8-9 Cristy  <quetzlzacatenango@image...>
   * New version 6.6.8-9.
 
-2011-03-25 6.6.8-9 Cristy  <quetzlzacatenango@image...>
+2011-03-25  6.6.8-9 Cristy  <quetzlzacatenango@image...>
   * Add InterpolateMagickPixelPacket() method.
   * Add support for the %[opaque] property.
 
 2011-03-25  6.6.8-8 Cristy  <quetzlzacatenango@image...>
   * New version 6.6.8-8.
 
-2011-03-25 6.6.8-8 Cristy  <quetzlzacatenango@image...>
+2011-03-25  6.6.8-8 Cristy  <quetzlzacatenango@image...>
   * Fix memory access bug in CloneString() (reference
     http://www.imagemagick.org/discourse-server/viewtopic.php?f=2&t=18382).
   * Avoid infinite loop when no space is available in MagickFormatCaption().
 
-2011-03-25 6.6.8-8 Anthony Thyssen <A.Thyssen@griffith...>
+2011-03-25  6.6.8-8 Anthony Thyssen <A.Thyssen@griffith...>
   * Removed the fix for %p and %n escapes, as it was not working right
 
 2011-03-24  6.6.8-7 Cristy  <quetzlzacatenango@image...>
