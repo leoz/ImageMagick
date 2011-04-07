@@ -5121,6 +5121,13 @@ static inline void InsertPixelList(const Image *image,const PixelPacket *pixel,
     AddNodePixelList(pixel_list,4,index);
 }
 
+static inline MagickRealType MagickAbsoluteValue(const MagickRealType x)
+{
+  if (x < 0)
+    return(-x);
+  return(x);
+}
+
 static void ResetPixelList(PixelList *pixel_list)
 {
   int
@@ -5282,8 +5289,27 @@ MagickExport Image *StatisticImageChannel(const Image *image,
         r+=image->columns+StatisticWidth;
         s+=image->columns+StatisticWidth;
       }
+      GetMagickPixelPacket(image,&pixel);
+      SetMagickPixelPacket(image,p+StatisticWidth*StatisticHeight/2,indexes+
+        StatisticWidth*StatisticHeight/2+x,&pixel);
       switch (type)
       {
+        case GradientStatistic:
+        {
+          MagickPixelPacket
+            maximum,
+            minimum;
+
+          minimum=GetMinimumPixelList(pixel_list[id]);
+          maximum=GetMaximumPixelList(pixel_list[id]);
+          pixel.red=MagickAbsoluteValue(maximum.red-minimum.red);
+          pixel.green=MagickAbsoluteValue(maximum.green-minimum.green);
+          pixel.blue=MagickAbsoluteValue(maximum.blue-minimum.blue);
+          pixel.opacity=MagickAbsoluteValue(maximum.opacity-minimum.opacity);
+          if (image->colorspace == CMYKColorspace)
+            pixel.index=MagickAbsoluteValue(maximum.index-minimum.index);
+          break;
+        }
         case MaximumStatistic:
         {
           pixel=GetMaximumPixelList(pixel_list[id]);

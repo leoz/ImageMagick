@@ -61,6 +61,7 @@ typedef enum
 typedef enum
 {
   UndefinedStatistic,
+  GradientStatistic,
   MaximumStatistic,
   MeanStatistic,
   MedianStatistic,

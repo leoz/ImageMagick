@@ -126,7 +126,6 @@ static inline KernelInfo *LastKernelInfo(KernelInfo *kernel)
   return(kernel);
 }
 
-
 /*
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                                                                             %
@@ -254,7 +253,7 @@ static KernelInfo *ParseKernelArray(const char *kernel_string)
   if ( end == (char *) NULL )
     end = strchr(kernel_string, '\0');
 
-  /* clear flags - for Expanding kernal lists thorugh rotations */
+  /* clear flags - for Expanding kernel lists thorugh rotations */
    flags = NoValue;
 
   /* Has a ':' in argument - New user kernel specification */
@@ -421,11 +420,29 @@ static KernelInfo *ParseKernelName(const char *kernel_string)
 
   /* special handling of missing values in input string */
   switch( type ) {
-    case RectangleKernel:
+    /* Shape Kernel Defaults */
+    case UnityKernel:
+      if ( (flags & WidthValue) == 0 )
+        args.rho = 1.0;    /* Default scale = 1.0, zero is valid */
+      break;
+    case SquareKernel:
+    case DiamondKernel:
+    case OctagonKernel:
+    case DiskKernel:
+    case PlusKernel:
+    case CrossKernel:
+      if ( (flags & HeightValue) == 0 )
+        args.sigma = 1.0;    /* Default scale = 1.0, zero is valid */
+      break;
+    case RingKernel:
+      if ( (flags & XValue) == 0 )
+        args.xi = 1.0;       /* Default scale = 1.0, zero is valid */
+      break;
+    case RectangleKernel:    /* Rectangle - set size defaults */
       if ( (flags & WidthValue) == 0 ) /* if no width then */
         args.rho = args.sigma;         /* then  width = height */
       if ( args.rho < 1.0 )            /* if width too small */
-          args.rho = 3;                 /* then  width = 3 */
+          args.rho = 3;                /* then  width = 3 */
       if ( args.sigma < 1.0 )          /* if height too small */
         args.sigma = args.rho;         /* then  height = width */
       if ( (flags & XValue) == 0 )     /* center offset if not defined */
@@ -433,21 +450,10 @@ static KernelInfo *ParseKernelName(const char *kernel_string)
       if ( (flags & YValue) == 0 )
         args.psi = (double)(((ssize_t)args.sigma-1)/2);
       break;
-    case SquareKernel:
-    case DiamondKernel:
-    case DiskKernel:
-    case PlusKernel:
-    case CrossKernel:
-      /* If no scale given (a 0 scale is valid! - set it to 1.0 */
-      if ( (flags & HeightValue) == 0 )
-        args.sigma = 1.0;
-      break;
-    case RingKernel:
-      if ( (flags & XValue) == 0 )
-        args.xi = 1.0;
-      break;
+    /* Distance Kernel Defaults */
     case ChebyshevKernel:
     case ManhattanKernel:
+    case OctagonalKernel:
     case EuclideanKernel:
       if ( (flags & HeightValue) == 0 )           /* no distance scale */
         args.sigma = 100.0;                       /* default distance scaling */
@@ -461,6 +467,8 @@ static KernelInfo *ParseKernelName(const char *kernel_string)
   }
 
   kernel = AcquireKernelBuiltIn((KernelInfoType)type, &args);
+  if ( kernel == (KernelInfo *) NULL )
+    return(kernel);
 
   /* global expand to rotated kernel list - only for single kernels */
   if ( kernel->next == (KernelInfo *) NULL ) {
@@ -566,8 +574,7 @@ MagickExport KernelInfo *AcquireKernelInfo(const char *kernel_string)
 %  Convolution Kernels
 %
 %    Unity
-%       the No-Op kernel, also requivelent to  Gaussian of sigma zero.
-%       Basically a 3x3 kernel of a 1 surrounded by zeros.
+%       The a No-Op or Scaling single element kernel.
 %
 %    Gaussian:{radius},{sigma}
 %       Generate a two-dimentional gaussian kernel, as used by -gaussian.
@@ -652,19 +659,6 @@ MagickExport KernelInfo *AcquireKernelInfo(const char *kernel_string)
 %          | -1, 0, 1 |
 %          | -2, 0,-2 |
 %          | -1, 0, 1 |
-%
-%    Sobel:{type},{angle}
-%      Type 0:  default un-nomalized version shown above.
-%
-%      Type 1:  As default but pre-normalized
-%          | 1, 0, -1 |
-%          | 2, 0, -2 |  / 4
-%          | 1, 0, -1 |
-%
-%      Type 2:  Diagonal version with same normalization as 1
-%          | 1, 0, -1 |
-%          | 2, 0, -2 |  / 4
-%          | 1, 0, -1 |
 %
 %    Roberts:{angle}
 %      Roberts convolution kernel (3x3)
@@ -794,10 +788,31 @@ MagickExport KernelInfo *AcquireKernelInfo(const char *kernel_string)
 %       Generate a square shaped kernel of size radius*2+1, and defaulting
 %       to a 3x3 (radius 1).
 %
-%       Note that using a larger radius for the "Square" or the "Diamond" is
-%       also equivelent to iterating the basic morphological method that many
-%       times. However iterating with the smaller radius is actually faster
-%       than using a larger kernel radius.
+%    Octagon:[{radius}[,{scale}]]
+%       Generate octagonal shaped kernel of given radius and constant scale.
+%       Default radius is 3 producing a 7x7 kernel. A radius of 1 will result
+%       in "Diamond" kernel.
+%
+%    Disk:[{radius}[,{scale}]]
+%       Generate a binary disk, thresholded at the radius given, the radius
+%       may be a float-point value. Final Kernel size is floor(radius)*2+1
+%       square. A radius of 5.3 is the default.
+%
+%       NOTE: That a low radii Disk kernels produce the same results as
+%       many of the previously defined kernels, but differ greatly at larger
+%       radii.  Here is a table of equivalences...
+%          "Disk:1"    => "Diamond", "Octagon:1", or "Cross:1"
+%          "Disk:1.5"  => "Square"
+%          "Disk:2"    => "Diamond:2"
+%          "Disk:2.5"  => "Octagon"
+%          "Disk:2.9"  => "Square:2"
+%          "Disk:3.5"  => "Octagon:3"
+%          "Disk:4.5"  => "Octagon:4"
+%          "Disk:5.4"  => "Octagon:5"
+%          "Disk:6.4"  => "Octagon:6"
+%       All other Disk shapes are unique to this kernel, but because a "Disk"
+%       is more circular when using a larger radius, using a larger radius is
+%       preferred over iterating the morphological operation.
 %
 %    Rectangle:{geometry}
 %       Simply generate a rectangle of 1's with the size given. You can also
@@ -805,23 +820,6 @@ MagickExport KernelInfo *AcquireKernelInfo(const char *kernel_string)
 %       pixel to the center of the rectangle is selected.
 %
 %       Properly centered and odd sized rectangles work the best.
-%
-%    Disk:[{radius}[,{scale}]]
-%       Generate a binary disk of the radius given, radius may be a float.
-%       Kernel size will be ceil(radius)*2+1 square.
-%       NOTE: Here are some disk shapes of specific interest
-%          "Disk:1"    => "diamond" or "cross:1"
-%          "Disk:1.5"  => "square"
-%          "Disk:2"    => "diamond:2"
-%          "Disk:2.5"  => a general disk shape of radius 2
-%          "Disk:2.9"  => "square:2"
-%          "Disk:3.5"  => default - octagonal/disk shape of radius 3
-%          "Disk:4.2"  => roughly octagonal shape of radius 4
-%          "Disk:4.3"  => a general disk shape of radius 4
-%       After this all the kernel shape becomes more and more circular.
-%
-%       Because a "disk" is more circular when using a larger radius, using a
-%       larger radius is preferred over iterating the morphological operation.
 %
 %  Symbol Dilation Kernels
 %
@@ -854,6 +852,8 @@ MagickExport KernelInfo *AcquireKernelInfo(const char *kernel_string)
 %       Find flat orthogonal edges of a binary shape
 %    Corners
 %       Find 90 degree corners of a binary shape
+%    Diagonals:type
+%       A special kernel to thin the 'outside' of diagonals
 %    LineEnds:type
 %       Find end points of lines (for pruning a skeletion)
 %       Two types of lines ends (default to both) can be searched for
@@ -873,13 +873,18 @@ MagickExport KernelInfo *AcquireKernelInfo(const char *kernel_string)
 %         Type 1: Fine single pixel thick lines and ridges
 %         Type 2: Find two pixel thick lines and ridges
 %    ConvexHull
-%       Octagonal thicken kernel, to generate convex hulls of 45 degrees
+%       Octagonal Thickening Kernel, to generate convex hulls of 45 degrees
 %    Skeleton:type
 %       Traditional skeleton generating kernels.
 %         Type 1: Tradional Skeleton kernel (4 connected skeleton)
 %         Type 2: HIPR2 Skeleton kernel (8 connected skeleton)
-%         Type 3: Experimental Variation to try to present left-right symmetry
-%         Type 4: Experimental Variation to preserve left-right symmetry
+%         Type 3: Thinning skeleton based on a ressearch paper by
+%                 Dan S. Bloomberg (Default Type)
+%    ThinSE:type
+%       A huge variety of Thinning Kernels designed to preserve conectivity.
+%       many other kernel sets use these kernels as source definitions.
+%       Type numbers are 41-49, 81-89, 481, and 482 which are based on
+%       the super and sub notations used in the source research paper.
 %
 %  Distance Measuring Kernels
 %
@@ -892,40 +897,45 @@ MagickExport KernelInfo *AcquireKernelInfo(const char *kernel_string)
 %    applied.
 %
 %    Chebyshev:[{radius}][x{scale}[%!]]
-%       Chebyshev Distance (also known as Tchebychev Distance) is a value of
-%       one to any neighbour, orthogonal or diagonal. One why of thinking of
-%       it is the number of squares a 'King' or 'Queen' in chess needs to
-%       traverse reach any other position on a chess board.  It results in a
-%       'square' like distance function, but one where diagonals are closer
-%       than expected.
+%       Chebyshev Distance (also known as Tchebychev or Chessboard distance)
+%       is a value of one to any neighbour, orthogonal or diagonal. One why
+%       of thinking of it is the number of squares a 'King' or 'Queen' in
+%       chess needs to traverse reach any other position on a chess board.
+%       It results in a 'square' like distance function, but one where
+%       diagonals are given a value that is closer than expected.
 %
 %    Manhattan:[{radius}][x{scale}[%!]]
-%       Manhattan Distance (also known as Rectilinear Distance, or the Taxi
-%       Cab metric), is the distance needed when you can only travel in
-%       orthogonal (horizontal or vertical) only.  It is the distance a 'Rook'
-%       in chess would travel. It results in a diamond like distances, where
-%       diagonals are further than expected.
+%       Manhattan Distance (also known as Rectilinear, City Block, or the Taxi
+%       Cab distance metric), it is the distance needed when you can only
+%       travel in horizontal or vertical directions only.  It is the
+%       distance a 'Rook' in chess would have to travel, and results in a
+%       diamond like distances, where diagonals are further than expected.
+%
+%    Octagonal:[{radius}][x{scale}[%!]]
+%       An interleving of Manhatten and Chebyshev metrics producing an
+%       increasing octagonally shaped distance.  Distances matches those of
+%       the "Octagon" shaped kernel of the same radius.  The minimum radius
+%       and default is 2, producing a 5x5 kernel.
 %
 %    Euclidean:[{radius}][x{scale}[%!]]
-%       Euclidean Distance is the 'direct' or 'as the crow flys distance.
+%       Euclidean distance is the 'direct' or 'as the crow flys' distance.
 %       However by default the kernel size only has a radius of 1, which
 %       limits the distance to 'Knight' like moves, with only orthogonal and
 %       diagonal measurements being correct.  As such for the default kernel
-%       you will get octagonal like distance function, which is reasonally
-%       accurate.
+%       you will get octagonal like distance function.
 %
-%       However if you use a larger radius such as "Euclidean:4" you will
-%       get a much smoother distance gradient from the edge of the shape.
-%       Of course a larger kernel is slower to use, and generally not needed.
+%       However using a larger radius such as "Euclidean:4" you will get a
+%       much smoother distance gradient from the edge of the shape. Especially
+%       if the image is pre-processed to include any anti-aliasing pixels.
+%       Of course a larger kernel is slower to use, and not always needed.
 %
-%       To allow the use of fractional distances that you get with diagonals
-%       the actual distance is scaled by a fixed value which the user can
-%       provide.  This is not actually nessary for either ""Chebyshev" or
-%       "Manhattan" distance kernels, but is done for all three distance
-%       kernels.  If no scale is provided it is set to a value of 100,
-%       allowing for a maximum distance measurement of 655 pixels using a Q16
-%       version of IM, from any edge.  However for small images this can
-%       result in quite a dark gradient.
+%    The first three Distance Measuring Kernels will only generate distances
+%    of exact multiples of {scale} in binary images. As such you can use a
+%    scale of 1 without loosing any information.  However you also need some
+%    scaling when handling non-binary anti-aliased shapes.
+%
+%    The "Euclidean" Distance Kernel however does generate a non-integer
+%    fractional results, and as such scaling is vital even for binary shapes.
 %
 */
 
@@ -950,10 +960,10 @@ MagickExport KernelInfo *AcquireKernelBuiltIn(const KernelInfoType type,
   switch(type) {
     case UndefinedKernel:    /* These should not call this function */
     case UserDefinedKernel:
+      assert("Should not call this function" != (char *)NULL);
       break;
-    case UnityKernel:      /* Named Descrete Convolution Kernels */
-    case LaplacianKernel:
-    case SobelKernel:
+    case LaplacianKernel:   /* Named Descrete Convolution Kernels */
+    case SobelKernel:       /* these are defined using other kernels */
     case RobertsKernel:
     case PrewittKernel:
     case CompassKernel:
@@ -961,15 +971,17 @@ MagickExport KernelInfo *AcquireKernelBuiltIn(const KernelInfoType type,
     case FreiChenKernel:
     case EdgesKernel:       /* Hit and Miss kernels */
     case CornersKernel:
-    case ThinDiagonalsKernel:
+    case DiagonalsKernel:
     case LineEndsKernel:
     case LineJunctionsKernel:
     case RidgesKernel:
     case ConvexHullKernel:
     case SkeletonKernel:
+    case ThinSEKernel:
       break;               /* A pre-generated kernel is not needed */
 #if 0
     /* set to 1 to do a compile-time check that we haven't missed anything */
+    case UnityKernel:
     case GaussianKernel:
     case DoGKernel:
     case LoGKernel:
@@ -978,6 +990,7 @@ MagickExport KernelInfo *AcquireKernelBuiltIn(const KernelInfoType type,
     case DiamondKernel:
     case SquareKernel:
     case RectangleKernel:
+    case OctagonKernel:
     case DiskKernel:
     case PlusKernel:
     case CrossKernel:
@@ -985,6 +998,7 @@ MagickExport KernelInfo *AcquireKernelBuiltIn(const KernelInfoType type,
     case PeaksKernel:
     case ChebyshevKernel:
     case ManhattanKernel:
+    case OctangonalKernel:
     case EuclideanKernel:
 #else
     default:
@@ -1003,7 +1017,20 @@ MagickExport KernelInfo *AcquireKernelBuiltIn(const KernelInfoType type,
   }
 
   switch(type) {
-    /* Convolution Kernels */
+    /*
+      Convolution Kernels
+    */
+    case UnityKernel:
+      {
+        kernel->height = kernel->width = (size_t) 1;
+        kernel->x = kernel->y = (ssize_t) 0;
+        kernel->values=(double *) AcquireQuantumMemory(1,sizeof(double));
+        if (kernel->values == (double *) NULL)
+          return(DestroyKernelInfo(kernel));
+        kernel->maximum = kernel->values[0] = args->rho;
+        break;
+      }
+      break;
     case GaussianKernel:
     case DoGKernel:
     case LoGKernel:
@@ -1028,8 +1055,8 @@ MagickExport KernelInfo *AcquireKernelBuiltIn(const KernelInfoType type,
         /* WARNING: The following generates a 'sampled gaussian' kernel.
          * What we really want is a 'discrete gaussian' kernel.
          *
-         * How to do this is currently not known, but appears to be
-         * basied on the Error Function 'erf()' (intergral of a gaussian)
+         * How to do this is I don't know, but appears to be basied on the
+         * Error Function 'erf()' (intergral of a gaussian)
          */
 
         if ( type == GaussianKernel || type == DoGKernel )
@@ -1253,7 +1280,9 @@ MagickExport KernelInfo *AcquireKernelBuiltIn(const KernelInfoType type,
         break;
       }
 
-    /* Convolution Kernels - Well Known Constants */
+    /*
+      Convolution Kernels - Well Known Named Constant Kernels
+    */
     case LaplacianKernel:
       { switch ( (int) args->rho ) {
           case 0:
@@ -1293,40 +1322,6 @@ MagickExport KernelInfo *AcquireKernelBuiltIn(const KernelInfoType type,
         break;
       }
     case SobelKernel:
-#if 0
-      { /* Sobel with optional 'sub-types' */
-        switch ( (int) args->rho ) {
-          default:
-          case 0:
-            kernel=ParseKernelArray("3: 1,0,-1  2,0,-2  1,0,-1");
-            if (kernel == (KernelInfo *) NULL)
-              return(kernel);
-            kernel->type = type;
-            break;
-          case 1:
-            kernel=ParseKernelArray("3: 1,0,-1  2,0,-2  1,0,-1");
-            if (kernel == (KernelInfo *) NULL)
-              return(kernel);
-            kernel->type = type;
-            ScaleKernelInfo(kernel, 0.25, NoValue);
-            break;
-          case 2:
-            kernel=ParseKernelArray("3: 1,2,0  2,0,-2  0,-2,-1");
-            if (kernel == (KernelInfo *) NULL)
-              return(kernel);
-            kernel->type = type;
-            ScaleKernelInfo(kernel, 0.25, NoValue);
-            break;
-        }
-        if ( fabs(args->sigma) > MagickEpsilon )
-          /* Rotate by correctly supplied 'angle' */
-          RotateKernelInfo(kernel, args->sigma);
-        else if ( args->rho > 30.0 || args->rho < -30.0 )
-          /* Rotate by out of bounds 'type' */
-          RotateKernelInfo(kernel, args->rho);
-        break;
-      }
-#else
       { /* Simple Sobel Kernel */
         kernel=ParseKernelArray("3: 1,0,-1  2,0,-2  1,0,-1");
         if (kernel == (KernelInfo *) NULL)
@@ -1335,7 +1330,6 @@ MagickExport KernelInfo *AcquireKernelBuiltIn(const KernelInfoType type,
         RotateKernelInfo(kernel, args->rho);
         break;
       }
-#endif
     case RobertsKernel:
       {
         kernel=ParseKernelArray("3: 0,0,0  1,-1,0  0,0,0");
@@ -1488,7 +1482,9 @@ MagickExport KernelInfo *AcquireKernelBuiltIn(const KernelInfoType type,
         break;
       }
 
-    /* Boolean Kernels */
+    /*
+      Boolean or Shaped Kernels
+    */
     case DiamondKernel:
       {
         if (args->rho < 1.0)
@@ -1551,399 +1547,552 @@ MagickExport KernelInfo *AcquireKernelBuiltIn(const KernelInfoType type,
         kernel->positive_range = scale*u;
         break;
       }
-    case DiskKernel:
-      {
-        ssize_t
-         limit = (ssize_t)(args->rho*args->rho);
+      case OctagonKernel:
+        {
+          if (args->rho < 1.0)
+            kernel->width = kernel->height = 5;  /* default radius = 2 */
+          else
+            kernel->width = kernel->height = ((size_t)args->rho)*2+1;
+          kernel->x = kernel->y = (ssize_t) (kernel->width-1)/2;
 
-        if (args->rho < 0.4)           /* default radius approx 3.5 */
-          kernel->width = kernel->height = 7L, limit = 10L;
-        else
-           kernel->width = kernel->height = (size_t)fabs(args->rho)*2+1;
-        kernel->x = kernel->y = (ssize_t) (kernel->width-1)/2;
+          kernel->values=(double *) AcquireQuantumMemory(kernel->width,
+                                kernel->height*sizeof(double));
+          if (kernel->values == (double *) NULL)
+            return(DestroyKernelInfo(kernel));
 
-        kernel->values=(double *) AcquireQuantumMemory(kernel->width,
-                              kernel->height*sizeof(double));
-        if (kernel->values == (double *) NULL)
-          return(DestroyKernelInfo(kernel));
-
-        /* set all kernel values within disk area to scale given */
-        for ( i=0, v=-kernel->y; v <= (ssize_t)kernel->y; v++)
-          for ( u=-kernel->x; u <= (ssize_t)kernel->x; u++, i++)
-            if ((u*u+v*v) <= limit)
-              kernel->positive_range += kernel->values[i] = args->sigma;
-            else
-              kernel->values[i] = nan;
-        kernel->minimum = kernel->maximum = args->sigma;   /* a flat shape */
-        break;
-      }
-    case PlusKernel:
-      {
-        if (args->rho < 1.0)
-          kernel->width = kernel->height = 5;  /* default radius 2 */
-        else
-           kernel->width = kernel->height = ((size_t)args->rho)*2+1;
-        kernel->x = kernel->y = (ssize_t) (kernel->width-1)/2;
-
-        kernel->values=(double *) AcquireQuantumMemory(kernel->width,
-                              kernel->height*sizeof(double));
-        if (kernel->values == (double *) NULL)
-          return(DestroyKernelInfo(kernel));
-
-        /* set all kernel values along axises to given scale */
-        for ( i=0, v=-kernel->y; v <= (ssize_t)kernel->y; v++)
-          for ( u=-kernel->x; u <= (ssize_t)kernel->x; u++, i++)
-            kernel->values[i] = (u == 0 || v == 0) ? args->sigma : nan;
-        kernel->minimum = kernel->maximum = args->sigma;   /* a flat shape */
-        kernel->positive_range = args->sigma*(kernel->width*2.0 - 1.0);
-        break;
-      }
-    case CrossKernel:
-      {
-        if (args->rho < 1.0)
-          kernel->width = kernel->height = 5;  /* default radius 2 */
-        else
-           kernel->width = kernel->height = ((size_t)args->rho)*2+1;
-        kernel->x = kernel->y = (ssize_t) (kernel->width-1)/2;
-
-        kernel->values=(double *) AcquireQuantumMemory(kernel->width,
-                              kernel->height*sizeof(double));
-        if (kernel->values == (double *) NULL)
-          return(DestroyKernelInfo(kernel));
-
-        /* set all kernel values along axises to given scale */
-        for ( i=0, v=-kernel->y; v <= (ssize_t)kernel->y; v++)
-          for ( u=-kernel->x; u <= (ssize_t)kernel->x; u++, i++)
-            kernel->values[i] = (u == v || u == -v) ? args->sigma : nan;
-        kernel->minimum = kernel->maximum = args->sigma;   /* a flat shape */
-        kernel->positive_range = args->sigma*(kernel->width*2.0 - 1.0);
-        break;
-      }
-    /* HitAndMiss Kernels */
-    case RingKernel:
-    case PeaksKernel:
-      {
-        ssize_t
-          limit1,
-          limit2,
-          scale;
-
-        if (args->rho < args->sigma)
-          {
-            kernel->width = ((size_t)args->sigma)*2+1;
-            limit1 = (ssize_t)(args->rho*args->rho);
-            limit2 = (ssize_t)(args->sigma*args->sigma);
-          }
-        else
-          {
-            kernel->width = ((size_t)args->rho)*2+1;
-            limit1 = (ssize_t)(args->sigma*args->sigma);
-            limit2 = (ssize_t)(args->rho*args->rho);
-          }
-        if ( limit2 <= 0 )
-          kernel->width = 7L, limit1 = 7L, limit2 = 11L;
-
-        kernel->height = kernel->width;
-        kernel->x = kernel->y = (ssize_t) (kernel->width-1)/2;
-        kernel->values=(double *) AcquireQuantumMemory(kernel->width,
-                              kernel->height*sizeof(double));
-        if (kernel->values == (double *) NULL)
-          return(DestroyKernelInfo(kernel));
-
-        /* set a ring of points of 'scale' ( 0.0 for PeaksKernel ) */
-        scale = (ssize_t) (( type == PeaksKernel) ? 0.0 : args->xi);
-        for ( i=0, v= -kernel->y; v <= (ssize_t)kernel->y; v++)
-          for ( u=-kernel->x; u <= (ssize_t)kernel->x; u++, i++)
-            { ssize_t radius=u*u+v*v;
-              if (limit1 < radius && radius <= limit2)
-                kernel->positive_range += kernel->values[i] = (double) scale;
+          for ( i=0, v=-kernel->y; v <= (ssize_t)kernel->y; v++)
+            for ( u=-kernel->x; u <= (ssize_t)kernel->x; u++, i++)
+              if ( (labs((long) u)+labs((long) v)) <=
+                        ((long)kernel->x + (long)(kernel->x/2)) )
+                kernel->positive_range += kernel->values[i] = args->sigma;
               else
                 kernel->values[i] = nan;
-            }
-        kernel->minimum = kernel->maximum = (double) scale;
-        if ( type == PeaksKernel ) {
-          /* set the central point in the middle */
-          kernel->values[kernel->x+kernel->y*kernel->width] = 1.0;
-          kernel->positive_range = 1.0;
-          kernel->maximum = 1.0;
+          kernel->minimum = kernel->maximum = args->sigma;  /* a flat shape */
+          break;
         }
-        break;
-      }
-    case EdgesKernel:
-      {
-        kernel=ParseKernelArray("3: 0,0,0  -,1,-  1,1,1");
-        if (kernel == (KernelInfo *) NULL)
-          return(kernel);
-        kernel->type = type;
-        ExpandMirrorKernelInfo(kernel); /* mirror expansion of other kernels */
-        break;
-      }
-    case CornersKernel:
-      {
-        kernel=ParseKernelArray("3: 0,0,-  0,1,1  -,1,-");
-        if (kernel == (KernelInfo *) NULL)
-          return(kernel);
-        kernel->type = type;
-        ExpandRotateKernelInfo(kernel, 90.0); /* Expand 90 degree rotations */
-        break;
-      }
-    case ThinDiagonalsKernel:
-      {
-        switch ( (int) args->rho ) {
-          case 0:
-          default:
-            { KernelInfo
-                *new_kernel;
-              kernel=ParseKernelArray("3: 0,0,0  0,1,1  1,1,-");
+      case DiskKernel:
+        {
+          ssize_t
+            limit = (ssize_t)(args->rho*args->rho);
+
+          if (args->rho < 0.4)           /* default radius approx 4.3 */
+            kernel->width = kernel->height = 9L, limit = 18L;
+          else
+            kernel->width = kernel->height = (size_t)fabs(args->rho)*2+1;
+          kernel->x = kernel->y = (ssize_t) (kernel->width-1)/2;
+
+          kernel->values=(double *) AcquireQuantumMemory(kernel->width,
+                                kernel->height*sizeof(double));
+          if (kernel->values == (double *) NULL)
+            return(DestroyKernelInfo(kernel));
+
+          for ( i=0, v=-kernel->y; v <= (ssize_t)kernel->y; v++)
+            for ( u=-kernel->x; u <= (ssize_t)kernel->x; u++, i++)
+              if ((u*u+v*v) <= limit)
+                kernel->positive_range += kernel->values[i] = args->sigma;
+              else
+                kernel->values[i] = nan;
+          kernel->minimum = kernel->maximum = args->sigma;   /* a flat shape */
+          break;
+        }
+      case PlusKernel:
+        {
+          if (args->rho < 1.0)
+            kernel->width = kernel->height = 5;  /* default radius 2 */
+          else
+            kernel->width = kernel->height = ((size_t)args->rho)*2+1;
+          kernel->x = kernel->y = (ssize_t) (kernel->width-1)/2;
+
+          kernel->values=(double *) AcquireQuantumMemory(kernel->width,
+                                kernel->height*sizeof(double));
+          if (kernel->values == (double *) NULL)
+            return(DestroyKernelInfo(kernel));
+
+          /* set all kernel values along axises to given scale */
+          for ( i=0, v=-kernel->y; v <= (ssize_t)kernel->y; v++)
+            for ( u=-kernel->x; u <= (ssize_t)kernel->x; u++, i++)
+              kernel->values[i] = (u == 0 || v == 0) ? args->sigma : nan;
+          kernel->minimum = kernel->maximum = args->sigma;   /* a flat shape */
+          kernel->positive_range = args->sigma*(kernel->width*2.0 - 1.0);
+          break;
+        }
+      case CrossKernel:
+        {
+          if (args->rho < 1.0)
+            kernel->width = kernel->height = 5;  /* default radius 2 */
+          else
+            kernel->width = kernel->height = ((size_t)args->rho)*2+1;
+          kernel->x = kernel->y = (ssize_t) (kernel->width-1)/2;
+
+          kernel->values=(double *) AcquireQuantumMemory(kernel->width,
+                                kernel->height*sizeof(double));
+          if (kernel->values == (double *) NULL)
+            return(DestroyKernelInfo(kernel));
+
+          /* set all kernel values along axises to given scale */
+          for ( i=0, v=-kernel->y; v <= (ssize_t)kernel->y; v++)
+            for ( u=-kernel->x; u <= (ssize_t)kernel->x; u++, i++)
+              kernel->values[i] = (u == v || u == -v) ? args->sigma : nan;
+          kernel->minimum = kernel->maximum = args->sigma;   /* a flat shape */
+          kernel->positive_range = args->sigma*(kernel->width*2.0 - 1.0);
+          break;
+        }
+      /*
+        HitAndMiss Kernels
+      */
+      case RingKernel:
+      case PeaksKernel:
+        {
+          ssize_t
+            limit1,
+            limit2,
+            scale;
+
+          if (args->rho < args->sigma)
+            {
+              kernel->width = ((size_t)args->sigma)*2+1;
+              limit1 = (ssize_t)(args->rho*args->rho);
+              limit2 = (ssize_t)(args->sigma*args->sigma);
+            }
+          else
+            {
+              kernel->width = ((size_t)args->rho)*2+1;
+              limit1 = (ssize_t)(args->sigma*args->sigma);
+              limit2 = (ssize_t)(args->rho*args->rho);
+            }
+          if ( limit2 <= 0 )
+            kernel->width = 7L, limit1 = 7L, limit2 = 11L;
+
+          kernel->height = kernel->width;
+          kernel->x = kernel->y = (ssize_t) (kernel->width-1)/2;
+          kernel->values=(double *) AcquireQuantumMemory(kernel->width,
+                                kernel->height*sizeof(double));
+          if (kernel->values == (double *) NULL)
+            return(DestroyKernelInfo(kernel));
+
+          /* set a ring of points of 'scale' ( 0.0 for PeaksKernel ) */
+          scale = (ssize_t) (( type == PeaksKernel) ? 0.0 : args->xi);
+          for ( i=0, v= -kernel->y; v <= (ssize_t)kernel->y; v++)
+            for ( u=-kernel->x; u <= (ssize_t)kernel->x; u++, i++)
+              { ssize_t radius=u*u+v*v;
+                if (limit1 < radius && radius <= limit2)
+                  kernel->positive_range += kernel->values[i] = (double) scale;
+                else
+                  kernel->values[i] = nan;
+              }
+          kernel->minimum = kernel->maximum = (double) scale;
+          if ( type == PeaksKernel ) {
+            /* set the central point in the middle */
+            kernel->values[kernel->x+kernel->y*kernel->width] = 1.0;
+            kernel->positive_range = 1.0;
+            kernel->maximum = 1.0;
+          }
+          break;
+        }
+      case EdgesKernel:
+        {
+          kernel=AcquireKernelInfo("ThinSE:482");
+          if (kernel == (KernelInfo *) NULL)
+            return(kernel);
+          kernel->type = type;
+          ExpandMirrorKernelInfo(kernel); /* mirror expansion of kernels */
+          break;
+        }
+      case CornersKernel:
+        {
+          kernel=AcquireKernelInfo("ThinSE:87");
+          if (kernel == (KernelInfo *) NULL)
+            return(kernel);
+          kernel->type = type;
+          ExpandRotateKernelInfo(kernel, 90.0); /* Expand 90 degree rotations */
+          break;
+        }
+      case DiagonalsKernel:
+        {
+          switch ( (int) args->rho ) {
+            case 0:
+            default:
+              { KernelInfo
+                  *new_kernel;
+                kernel=ParseKernelArray("3: 0,0,0  0,-,1  1,1,-");
+                if (kernel == (KernelInfo *) NULL)
+                  return(kernel);
+                kernel->type = type;
+                new_kernel=ParseKernelArray("3: 0,0,1  0,-,1  0,1,-");
+                if (new_kernel == (KernelInfo *) NULL)
+                  return(DestroyKernelInfo(kernel));
+                new_kernel->type = type;
+                LastKernelInfo(kernel)->next = new_kernel;
+                ExpandMirrorKernelInfo(kernel);
+                return(kernel);
+              }
+            case 1:
+              kernel=ParseKernelArray("3: 0,0,0  0,-,1  1,1,-");
+              break;
+            case 2:
+              kernel=ParseKernelArray("3: 0,0,1  0,-,1  0,1,-");
+              break;
+          }
+          if (kernel == (KernelInfo *) NULL)
+            return(kernel);
+          kernel->type = type;
+          RotateKernelInfo(kernel, args->sigma);
+          break;
+        }
+      case LineEndsKernel:
+        { /* Kernels for finding the end of thin lines */
+          switch ( (int) args->rho ) {
+            case 0:
+            default:
+              /* set of kernels to find all end of lines */
+              return(AcquireKernelInfo("LineEnds:1>;LineEnds:2>"));
+            case 1:
+              /* kernel for 4-connected line ends - no rotation */
+              kernel=ParseKernelArray("3: 0,0,-  0,1,1  0,0,-");
+              break;
+          case 2:
+              /* kernel to add for 8-connected lines - no rotation */
+              kernel=ParseKernelArray("3: 0,0,0  0,1,0  0,0,1");
+              break;
+          case 3:
+              /* kernel to add for orthogonal line ends - does not find corners */
+              kernel=ParseKernelArray("3: 0,0,0  0,1,1  0,0,0");
+              break;
+          case 4:
+              /* traditional line end - fails on last T end */
+              kernel=ParseKernelArray("3: 0,0,0  0,1,-  0,0,-");
+              break;
+          }
+          if (kernel == (KernelInfo *) NULL)
+            return(kernel);
+          kernel->type = type;
+          RotateKernelInfo(kernel, args->sigma);
+          break;
+        }
+      case LineJunctionsKernel:
+        { /* kernels for finding the junctions of multiple lines */
+          switch ( (int) args->rho ) {
+            case 0:
+            default:
+              /* set of kernels to find all line junctions */
+              return(AcquireKernelInfo("LineJunctions:1@;LineJunctions:2>"));
+            case 1:
+              /* Y Junction */
+              kernel=ParseKernelArray("3: 1,-,1  -,1,-  -,1,-");
+              break;
+            case 2:
+              /* Diagonal T Junctions */
+              kernel=ParseKernelArray("3: 1,-,-  -,1,-  1,-,1");
+              break;
+            case 3:
+              /* Orthogonal T Junctions */
+              kernel=ParseKernelArray("3: -,-,-  1,1,1  -,1,-");
+              break;
+            case 4:
+              /* Diagonal X Junctions */
+              kernel=ParseKernelArray("3: 1,-,1  -,1,-  1,-,1");
+              break;
+            case 5:
+              /* Orthogonal X Junctions - minimal diamond kernel */
+              kernel=ParseKernelArray("3: -,1,-  1,1,1  -,1,-");
+              break;
+          }
+          if (kernel == (KernelInfo *) NULL)
+            return(kernel);
+          kernel->type = type;
+          RotateKernelInfo(kernel, args->sigma);
+          break;
+        }
+      case RidgesKernel:
+        { /* Ridges - Ridge finding kernels */
+          KernelInfo
+            *new_kernel;
+          switch ( (int) args->rho ) {
+            case 1:
+            default:
+              kernel=ParseKernelArray("3x1:0,1,0");
               if (kernel == (KernelInfo *) NULL)
                 return(kernel);
               kernel->type = type;
-              new_kernel=ParseKernelArray("3: 0,0,1  0,1,1  0,1,-");
+              ExpandRotateKernelInfo(kernel, 90.0); /* 2 rotated kernels (symmetrical) */
+              break;
+            case 2:
+              kernel=ParseKernelArray("4x1:0,1,1,0");
+              if (kernel == (KernelInfo *) NULL)
+                return(kernel);
+              kernel->type = type;
+              ExpandRotateKernelInfo(kernel, 90.0); /* 4 rotated kernels */
+
+              /* Kernels to find a stepped 'thick' line, 4 rotates + mirrors */
+              /* Unfortunatally we can not yet rotate a non-square kernel */
+              /* But then we can't flip a non-symetrical kernel either */
+              new_kernel=ParseKernelArray("4x3+1+1:0,1,1,- -,1,1,- -,1,1,0");
               if (new_kernel == (KernelInfo *) NULL)
                 return(DestroyKernelInfo(kernel));
               new_kernel->type = type;
               LastKernelInfo(kernel)->next = new_kernel;
-              ExpandMirrorKernelInfo(kernel);
+              new_kernel=ParseKernelArray("4x3+2+1:0,1,1,- -,1,1,- -,1,1,0");
+              if (new_kernel == (KernelInfo *) NULL)
+                return(DestroyKernelInfo(kernel));
+              new_kernel->type = type;
+              LastKernelInfo(kernel)->next = new_kernel;
+              new_kernel=ParseKernelArray("4x3+1+1:-,1,1,0 -,1,1,- 0,1,1,-");
+              if (new_kernel == (KernelInfo *) NULL)
+                return(DestroyKernelInfo(kernel));
+              new_kernel->type = type;
+              LastKernelInfo(kernel)->next = new_kernel;
+              new_kernel=ParseKernelArray("4x3+2+1:-,1,1,0 -,1,1,- 0,1,1,-");
+              if (new_kernel == (KernelInfo *) NULL)
+                return(DestroyKernelInfo(kernel));
+              new_kernel->type = type;
+              LastKernelInfo(kernel)->next = new_kernel;
+              new_kernel=ParseKernelArray("3x4+1+1:0,-,- 1,1,1 1,1,1 -,-,0");
+              if (new_kernel == (KernelInfo *) NULL)
+                return(DestroyKernelInfo(kernel));
+              new_kernel->type = type;
+              LastKernelInfo(kernel)->next = new_kernel;
+              new_kernel=ParseKernelArray("3x4+1+2:0,-,- 1,1,1 1,1,1 -,-,0");
+              if (new_kernel == (KernelInfo *) NULL)
+                return(DestroyKernelInfo(kernel));
+              new_kernel->type = type;
+              LastKernelInfo(kernel)->next = new_kernel;
+              new_kernel=ParseKernelArray("3x4+1+1:-,-,0 1,1,1 1,1,1 0,-,-");
+              if (new_kernel == (KernelInfo *) NULL)
+                return(DestroyKernelInfo(kernel));
+              new_kernel->type = type;
+              LastKernelInfo(kernel)->next = new_kernel;
+              new_kernel=ParseKernelArray("3x4+1+2:-,-,0 1,1,1 1,1,1 0,-,-");
+              if (new_kernel == (KernelInfo *) NULL)
+                return(DestroyKernelInfo(kernel));
+              new_kernel->type = type;
+              LastKernelInfo(kernel)->next = new_kernel;
               break;
-            }
-          case 1:
-            kernel=ParseKernelArray("3: 0,0,0  0,1,1  1,1,-");
-            if (kernel == (KernelInfo *) NULL)
-              return(kernel);
-            kernel->type = type;
-            RotateKernelInfo(kernel, args->sigma);
-            break;
-          case 2:
-            kernel=ParseKernelArray("3: 0,0,1  0,1,1  0,1,-");
-            if (kernel == (KernelInfo *) NULL)
-              return(kernel);
-            kernel->type = type;
-            RotateKernelInfo(kernel, args->sigma);
-            break;
+          }
+          break;
         }
-        break;
-      }
-    case LineEndsKernel:
-      { /* Kernels for finding the end of thin lines */
-        switch ( (int) args->rho ) {
-          case 0:
-          default:
-            /* set of kernels to find all end of lines */
-            kernel=AcquireKernelInfo("LineEnds:1>;LineEnds:2>");
-            if (kernel == (KernelInfo *) NULL)
-              return(kernel);
-            break;
-          case 1:
-            /* kernel for 4-connected line ends - no rotation */
-            kernel=ParseKernelArray("3: 0,0,-  0,1,1  0,0,-");
-            if (kernel == (KernelInfo *) NULL)
-              return(kernel);
-            kernel->type = type;
-            RotateKernelInfo(kernel, args->sigma);
-            break;
-         case 2:
-            /* kernel to add for 8-connected lines - no rotation */
-            kernel=ParseKernelArray("3: 0,0,0  0,1,0  0,0,1");
-            if (kernel == (KernelInfo *) NULL)
-              return(kernel);
-            kernel->type = type;
-            RotateKernelInfo(kernel, args->sigma);
-            break;
-         case 3:
-            /* kernel to add for orthogonal line ends - does not find corners */
-            kernel=ParseKernelArray("3: 0,0,0  0,1,1  0,0,0");
-            if (kernel == (KernelInfo *) NULL)
-              return(kernel);
-            kernel->type = type;
-            RotateKernelInfo(kernel, args->sigma);
-            break;
-         case 4:
-            /* traditional line end - fails on last T end */
-            kernel=ParseKernelArray("3: 0,0,0  0,1,-  0,0,-");
-            if (kernel == (KernelInfo *) NULL)
-              return(kernel);
-            kernel->type = type;
-            RotateKernelInfo(kernel, args->sigma);
-            break;
+      case ConvexHullKernel:
+        {
+          KernelInfo
+            *new_kernel;
+          /* first set of 8 kernels */
+          kernel=ParseKernelArray("3: 1,1,-  1,0,-  1,-,0");
+          if (kernel == (KernelInfo *) NULL)
+            return(kernel);
+          kernel->type = type;
+          ExpandRotateKernelInfo(kernel, 90.0);
+          /* append the mirror versions too - no flip function yet */
+          new_kernel=ParseKernelArray("3: 1,1,1  1,0,-  -,-,0");
+          if (new_kernel == (KernelInfo *) NULL)
+            return(DestroyKernelInfo(kernel));
+          new_kernel->type = type;
+          ExpandRotateKernelInfo(new_kernel, 90.0);
+          LastKernelInfo(kernel)->next = new_kernel;
+          break;
         }
-        break;
-      }
-    case LineJunctionsKernel:
-      { /* kernels for finding the junctions of multiple lines */
-        switch ( (int) args->rho ) {
-          case 0:
-          default:
-            /* set of kernels to find all line junctions */
-            kernel=AcquireKernelInfo("LineJunctions:1@;LineJunctions:2>");
-            if (kernel == (KernelInfo *) NULL)
-              return(kernel);
-            break;
-          case 1:
-            /* Y Junction */
-            kernel=ParseKernelArray("3: 1,-,1  -,1,-  -,1,-");
-            if (kernel == (KernelInfo *) NULL)
-              return(kernel);
-            kernel->type = type;
-            RotateKernelInfo(kernel, args->sigma);
-            break;
-          case 2:
-            /* Diagonal T Junctions */
-            kernel=ParseKernelArray("3: 1,-,-  -,1,-  1,-,1");
-            if (kernel == (KernelInfo *) NULL)
-              return(kernel);
-            kernel->type = type;
-            RotateKernelInfo(kernel, args->sigma);
-            break;
-          case 3:
-            /* Orthogonal T Junctions */
-            kernel=ParseKernelArray("3: -,-,-  1,1,1  -,1,-");
-            if (kernel == (KernelInfo *) NULL)
-              return(kernel);
-            kernel->type = type;
-            RotateKernelInfo(kernel, args->sigma);
-            break;
-          case 4:
-            /* Diagonal X Junctions */
-            kernel=ParseKernelArray("3: 1,-,1  -,1,-  1,-,1");
-            if (kernel == (KernelInfo *) NULL)
-              return(kernel);
-            kernel->type = type;
-            RotateKernelInfo(kernel, args->sigma);
-            break;
-          case 5:
-            /* Orthogonal X Junctions - minimal diamond kernel */
-            kernel=ParseKernelArray("3: -,1,-  1,1,1  -,1,-");
-            if (kernel == (KernelInfo *) NULL)
-              return(kernel);
-            kernel->type = type;
-            RotateKernelInfo(kernel, args->sigma);
-            break;
+      case SkeletonKernel:
+        {
+          switch ( (int) args->rho ) {
+            case 1:
+            default:
+              /* Traditional Skeleton...
+              ** A cyclically rotated single kernel
+              */
+              kernel=AcquireKernelInfo("ThinSE:482");
+              if (kernel == (KernelInfo *) NULL)
+                return(kernel);
+              kernel->type = type;
+              ExpandRotateKernelInfo(kernel, 45.0); /* 8 rotations */
+              break;
+            case 2:
+              /* HIPR Variation of the cyclic skeleton
+              ** Corners of the traditional method made more forgiving,
+              ** but the retain the same cyclic order.
+              */
+              kernel=AcquireKernelInfo("ThinSE:482; ThinSE:87x90;");
+              if (kernel == (KernelInfo *) NULL)
+                return(kernel);
+              if (kernel->next == (KernelInfo *) NULL)
+                return(DestroyKernelInfo(kernel));
+              kernel->type = type;
+              kernel->next->type = type;
+              ExpandRotateKernelInfo(kernel, 90.0); /* 4 rotations of the 2 kernels */
+              break;
+            case 3:
+              /* Dan Bloomberg Skeleton, from his paper on 3x3 thinning SE's
+              ** "Connectivity-Preserving Morphological Image Thransformations"
+              ** by Dan S. Bloomberg, available on Leptonica, Selected Papers,
+              **   http://www.leptonica.com/papers/conn.pdf
+              */
+              kernel=AcquireKernelInfo(
+                            "ThinSE:41; ThinSE:42; ThinSE:43");
+              if (kernel == (KernelInfo *) NULL)
+                return(kernel);
+              kernel->type = type;
+              kernel->next->type = type;
+              kernel->next->next->type = type;
+              ExpandMirrorKernelInfo(kernel); /* 12 kernels total */
+              break;
+           }
+          break;
         }
-        break;
-      }
-    case RidgesKernel:
-      { /* Ridges - Ridge finding kernels */
-        KernelInfo
-          *new_kernel;
-        switch ( (int) args->rho ) {
-          case 1:
-          default:
-            kernel=ParseKernelArray("3x1:0,1,0");
-            if (kernel == (KernelInfo *) NULL)
-              return(kernel);
-            kernel->type = type;
-            ExpandRotateKernelInfo(kernel, 90.0); /* 2 rotated kernels (symmetrical) */
-            break;
-          case 2:
-            kernel=ParseKernelArray("4x1:0,1,1,0");
-            if (kernel == (KernelInfo *) NULL)
-              return(kernel);
-            kernel->type = type;
-            ExpandRotateKernelInfo(kernel, 90.0); /* 4 rotated kernels */
+      case ThinSEKernel:
+        { /* Special kernels for general thinning, while preserving connections
+          ** "Connectivity-Preserving Morphological Image Thransformations"
+          ** by Dan S. Bloomberg, available on Leptonica, Selected Papers,
+          **   http://www.leptonica.com/papers/conn.pdf
+          ** And
+          **   http://tpgit.github.com/Leptonica/ccthin_8c_source.html
+          **
+          ** Note kernels do not specify the origin pixel, allowing them
+          ** to be used for both thickening and thinning operations.
+          */
+          switch ( (int) args->rho ) {
+            /* SE for 4-connected thinning */
+            case 41: /* SE_4_1 */
+              kernel=ParseKernelArray("3: -,-,1  0,-,1  -,-,1");
+              break;
+            case 42: /* SE_4_2 */
+              kernel=ParseKernelArray("3: -,-,1  0,-,1  -,0,-");
+              break;
+            case 43: /* SE_4_3 */
+              kernel=ParseKernelArray("3: -,0,-  0,-,1  -,-,1");
+              break;
+            case 44: /* SE_4_4 */
+              kernel=ParseKernelArray("3: -,0,-  0,-,1  -,0,-");
+              break;
+            case 45: /* SE_4_5 */
+              kernel=ParseKernelArray("3: -,0,1  0,-,1  -,0,-");
+              break;
+            case 46: /* SE_4_6 */
+              kernel=ParseKernelArray("3: -,0,-  0,-,1  -,0,1");
+              break;
+            case 47: /* SE_4_7 */
+              kernel=ParseKernelArray("3: -,1,1  0,-,1  -,0,-");
+              break;
+            case 48: /* SE_4_8 */
+              kernel=ParseKernelArray("3: -,-,1  0,-,1  0,-,1");
+              break;
+            case 49: /* SE_4_9 */
+              kernel=ParseKernelArray("3: 0,-,1  0,-,1  -,-,1");
+              break;
+            /* SE for 8-connected thinning - negatives of the above */
+            case 81: /* SE_8_0 */
+              kernel=ParseKernelArray("3: -,1,-  0,-,1  -,1,-");
+              break;
+            case 82: /* SE_8_2 */
+              kernel=ParseKernelArray("3: -,1,-  0,-,1  0,-,-");
+              break;
+            case 83: /* SE_8_3 */
+              kernel=ParseKernelArray("3: 0,-,-  0,-,1  -,1,-");
+              break;
+            case 84: /* SE_8_4 */
+              kernel=ParseKernelArray("3: 0,-,-  0,-,1  0,-,-");
+              break;
+            case 85: /* SE_8_5 */
+              kernel=ParseKernelArray("3: 0,-,1  0,-,1  0,-,-");
+              break;
+            case 86: /* SE_8_6 */
+              kernel=ParseKernelArray("3: 0,-,-  0,-,1  0,-,1");
+              break;
+            case 87: /* SE_8_7 */
+              kernel=ParseKernelArray("3: -,1,-  0,-,1  0,0,-");
+              break;
+            case 88: /* SE_8_8 */
+              kernel=ParseKernelArray("3: -,1,-  0,-,1  0,1,-");
+              break;
+            case 89: /* SE_8_9 */
+              kernel=ParseKernelArray("3: 0,1,-  0,-,1  -,1,-");
+              break;
+            /* Special combined SE kernels */
+            case 423: /* SE_4_2 , SE_4_3 Combined Kernel */
+              kernel=ParseKernelArray("3: -,-,1  0,-,-  -,0,-");
+              break;
+            case 823: /* SE_8_2 , SE_8_3 Combined Kernel */
+              kernel=ParseKernelArray("3: -,1,-  -,-,1  0,-,-");
+              break;
+            case 481: /* SE_48_1 - General Connected Corner Kernel */
+              kernel=ParseKernelArray("3: -,1,1  0,-,1  0,0,-");
+              break;
+            default:
+            case 482: /* SE_48_2 - General Edge Kernel */
+              kernel=ParseKernelArray("3: 0,-,1  0,-,1  0,-,1");
+              break;
+          }
+          if (kernel == (KernelInfo *) NULL)
+            return(kernel);
+          kernel->type = type;
+          RotateKernelInfo(kernel, args->sigma);
+          break;
+        }
+      /*
+        Distance Measuring Kernels
+      */
+      case ChebyshevKernel:
+        {
+          if (args->rho < 1.0)
+            kernel->width = kernel->height = 3;  /* default radius = 1 */
+          else
+            kernel->width = kernel->height = ((size_t)args->rho)*2+1;
+          kernel->x = kernel->y = (ssize_t) (kernel->width-1)/2;
 
-            /* Kernels to find a stepped 'thick' line, 4 rotates + mirrors */
-            /* Unfortunatally we can not yet rotate a non-square kernel */
-            /* But then we can't flip a non-symetrical kernel either */
-            new_kernel=ParseKernelArray("4x3+1+1:0,1,1,- -,1,1,- -,1,1,0");
-            if (new_kernel == (KernelInfo *) NULL)
-              return(DestroyKernelInfo(kernel));
-            new_kernel->type = type;
-            LastKernelInfo(kernel)->next = new_kernel;
-            new_kernel=ParseKernelArray("4x3+2+1:0,1,1,- -,1,1,- -,1,1,0");
-            if (new_kernel == (KernelInfo *) NULL)
-              return(DestroyKernelInfo(kernel));
-            new_kernel->type = type;
-            LastKernelInfo(kernel)->next = new_kernel;
-            new_kernel=ParseKernelArray("4x3+1+1:-,1,1,0 -,1,1,- 0,1,1,-");
-            if (new_kernel == (KernelInfo *) NULL)
-              return(DestroyKernelInfo(kernel));
-            new_kernel->type = type;
-            LastKernelInfo(kernel)->next = new_kernel;
-            new_kernel=ParseKernelArray("4x3+2+1:-,1,1,0 -,1,1,- 0,1,1,-");
-            if (new_kernel == (KernelInfo *) NULL)
-              return(DestroyKernelInfo(kernel));
-            new_kernel->type = type;
-            LastKernelInfo(kernel)->next = new_kernel;
-            new_kernel=ParseKernelArray("3x4+1+1:0,-,- 1,1,1 1,1,1 -,-,0");
-            if (new_kernel == (KernelInfo *) NULL)
-              return(DestroyKernelInfo(kernel));
-            new_kernel->type = type;
-            LastKernelInfo(kernel)->next = new_kernel;
-            new_kernel=ParseKernelArray("3x4+1+2:0,-,- 1,1,1 1,1,1 -,-,0");
-            if (new_kernel == (KernelInfo *) NULL)
-              return(DestroyKernelInfo(kernel));
-            new_kernel->type = type;
-            LastKernelInfo(kernel)->next = new_kernel;
-            new_kernel=ParseKernelArray("3x4+1+1:-,-,0 1,1,1 1,1,1 0,-,-");
-            if (new_kernel == (KernelInfo *) NULL)
-              return(DestroyKernelInfo(kernel));
-            new_kernel->type = type;
-            LastKernelInfo(kernel)->next = new_kernel;
-            new_kernel=ParseKernelArray("3x4+1+2:-,-,0 1,1,1 1,1,1 0,-,-");
-            if (new_kernel == (KernelInfo *) NULL)
-              return(DestroyKernelInfo(kernel));
-            new_kernel->type = type;
-            LastKernelInfo(kernel)->next = new_kernel;
-            break;
+          kernel->values=(double *) AcquireQuantumMemory(kernel->width,
+                                kernel->height*sizeof(double));
+          if (kernel->values == (double *) NULL)
+            return(DestroyKernelInfo(kernel));
+
+          for ( i=0, v=-kernel->y; v <= (ssize_t)kernel->y; v++)
+            for ( u=-kernel->x; u <= (ssize_t)kernel->x; u++, i++)
+              kernel->positive_range += ( kernel->values[i] =
+                  args->sigma*MagickMax(fabs((double)u),fabs((double)v)) );
+          kernel->maximum = kernel->values[0];
+          break;
         }
-        break;
-      }
-    case ConvexHullKernel:
+      case ManhattanKernel:
+        {
+          if (args->rho < 1.0)
+            kernel->width = kernel->height = 3;  /* default radius = 1 */
+          else
+            kernel->width = kernel->height = ((size_t)args->rho)*2+1;
+          kernel->x = kernel->y = (ssize_t) (kernel->width-1)/2;
+
+          kernel->values=(double *) AcquireQuantumMemory(kernel->width,
+                                kernel->height*sizeof(double));
+          if (kernel->values == (double *) NULL)
+            return(DestroyKernelInfo(kernel));
+
+          for ( i=0, v=-kernel->y; v <= (ssize_t)kernel->y; v++)
+            for ( u=-kernel->x; u <= (ssize_t)kernel->x; u++, i++)
+              kernel->positive_range += ( kernel->values[i] =
+                  args->sigma*(labs((long) u)+labs((long) v)) );
+          kernel->maximum = kernel->values[0];
+          break;
+        }
+      case OctagonalKernel:
       {
-        KernelInfo
-          *new_kernel;
-        /* first set of 8 kernels */
-        kernel=ParseKernelArray("3: 1,1,-  1,0,-  1,-,0");
-        if (kernel == (KernelInfo *) NULL)
-          return(kernel);
-        kernel->type = type;
-        ExpandRotateKernelInfo(kernel, 90.0);
-        /* append the mirror versions too - no flip function yet */
-        new_kernel=ParseKernelArray("3: 1,1,1  1,0,-  -,-,0");
-        if (new_kernel == (KernelInfo *) NULL)
+        if (args->rho < 2.0)
+          kernel->width = kernel->height = 5;  /* default/minimum radius = 2 */
+        else
+          kernel->width = kernel->height = ((size_t)args->rho)*2+1;
+        kernel->x = kernel->y = (ssize_t) (kernel->width-1)/2;
+
+        kernel->values=(double *) AcquireQuantumMemory(kernel->width,
+                              kernel->height*sizeof(double));
+        if (kernel->values == (double *) NULL)
           return(DestroyKernelInfo(kernel));
-        new_kernel->type = type;
-        ExpandRotateKernelInfo(new_kernel, 90.0);
-        LastKernelInfo(kernel)->next = new_kernel;
+
+        for ( i=0, v=-kernel->y; v <= (ssize_t)kernel->y; v++)
+          for ( u=-kernel->x; u <= (ssize_t)kernel->x; u++, i++)
+            {
+              double
+                r1 = MagickMax(fabs((double)u),fabs((double)v)),
+                r2 = floor((double)(labs((long)u)+labs((long)v)+1)/1.5);
+              kernel->positive_range += kernel->values[i] =
+                        args->sigma*MagickMax(r1,r2);
+            }
+        kernel->maximum = kernel->values[0];
         break;
       }
-    case SkeletonKernel:
-      {
-        KernelInfo
-          *new_kernel;
-        switch ( (int) args->rho ) {
-          case 1:
-          default:
-            /* Traditional Skeleton...
-            ** A cyclically rotated single kernel
-            */
-            kernel=ParseKernelArray("3: 0,0,0  -,1,-  1,1,1");
-            if (kernel == (KernelInfo *) NULL)
-              return(kernel);
-            kernel->type = type;
-            ExpandRotateKernelInfo(kernel, 45.0); /* 8 rotations */
-            break;
-          case 2:
-            /* HIPR Variation of the cyclic skeleton
-            ** Corners of the traditional method made more forgiving,
-            ** but the retain the same cyclic order.
-            */
-            kernel=ParseKernelArray("3: 0,0,0  -,1,-  1,1,1");
-            if (kernel == (KernelInfo *) NULL)
-              return(kernel);
-            kernel->type = type;
-            new_kernel=ParseKernelArray("3: -,0,0  1,1,0  -,1,-");
-            if (new_kernel == (KernelInfo *) NULL)
-              return(new_kernel);
-            new_kernel->type = type;
-            LastKernelInfo(kernel)->next = new_kernel;
-            ExpandRotateKernelInfo(kernel, 90.0); /* 4 rotations of the 2 kernels */
-            break;
-        }
-        break;
-      }
-    /* Distance Measuring Kernels */
-    case ChebyshevKernel:
+    case EuclideanKernel:
       {
         if (args->rho < 1.0)
           kernel->width = kernel->height = 3;  /* default radius = 1 */
@@ -1959,63 +2108,21 @@ MagickExport KernelInfo *AcquireKernelBuiltIn(const KernelInfoType type,
         for ( i=0, v=-kernel->y; v <= (ssize_t)kernel->y; v++)
           for ( u=-kernel->x; u <= (ssize_t)kernel->x; u++, i++)
             kernel->positive_range += ( kernel->values[i] =
-                 args->sigma*((labs((long) u)>labs((long) v)) ? labs((long) u) : labs((long) v)) );
-        kernel->maximum = kernel->values[0];
-        break;
-      }
-    case ManhattanKernel:
-      {
-        if (args->rho < 1.0)
-          kernel->width = kernel->height = 3;  /* default radius = 1 */
-        else
-           kernel->width = kernel->height = ((size_t)args->rho)*2+1;
-        kernel->x = kernel->y = (ssize_t) (kernel->width-1)/2;
-
-        kernel->values=(double *) AcquireQuantumMemory(kernel->width,
-                              kernel->height*sizeof(double));
-        if (kernel->values == (double *) NULL)
-          return(DestroyKernelInfo(kernel));
-
-        for ( i=0, v=-kernel->y; v <= (ssize_t)kernel->y; v++)
-          for ( u=-kernel->x; u <= (ssize_t)kernel->x; u++, i++)
-            kernel->positive_range += ( kernel->values[i] =
-                 args->sigma*(labs((long) u)+labs((long) v)) );
-        kernel->maximum = kernel->values[0];
-        break;
-      }
-    case EuclideanKernel:
-      {
-        if (args->rho < 1.0)
-          kernel->width = kernel->height = 3;  /* default radius = 1 */
-        else
-           kernel->width = kernel->height = ((size_t)args->rho)*2+1;
-        kernel->x = kernel->y = (ssize_t) (kernel->width-1)/2;
-
-        kernel->values=(double *) AcquireQuantumMemory(kernel->width,
-                              kernel->height*sizeof(double));
-        if (kernel->values == (double *) NULL)
-          return(DestroyKernelInfo(kernel));
-
-        for ( i=0, v=-kernel->y; v <= (ssize_t)kernel->y; v++)
-          for ( u=-kernel->x; u <= (ssize_t)kernel->x; u++, i++)
-            kernel->positive_range += ( kernel->values[i] =
                  args->sigma*sqrt((double)(u*u+v*v)) );
         kernel->maximum = kernel->values[0];
         break;
       }
-    case UnityKernel:
     default:
       {
-        /* Unity or No-Op Kernel - Basically just a single pixel on its own */
+        /* No-Op Kernel - Basically just a single pixel on its own */
         kernel=ParseKernelArray("1:1");
         if (kernel == (KernelInfo *) NULL)
           return(kernel);
-        kernel->type = ( type == UnityKernel ) ? UnityKernel : UndefinedKernel;
+        kernel->type = UndefinedKernel;
         break;
       }
       break;
   }
-
   return(kernel);
 }
 
@@ -2197,7 +2304,7 @@ static void ExpandMirrorKernelInfo(KernelInfo *kernel)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
 %  ExpandRotateKernelInfo() takes a kernel list, and expands it by rotating
-%  incrementally by the angle given, until the first kernel repeats.
+%  incrementally by the angle given, until the kernel repeats.
 %
 %  WARNING: 45 degree rotations only works for 3x3 kernels.
 %  While 90 degree roatations only works for linear and square kernels
@@ -2352,15 +2459,19 @@ static void CalcKernelMetaData(KernelInfo *kernel)
 %  The format of the MorphologyApply method is:
 %
 %      Image *MorphologyApply(const Image *image,MorphologyMethod method,
-%        const ssize_t iterations,const KernelInfo *kernel,
-%        const CompositeMethod compose, const double bias,
-%        ExceptionInfo *exception)
+%        const ChannelType channel, const ssize_t iterations,
+%        const KernelInfo *kernel, const CompositeMethod compose,
+%        const double bias, ExceptionInfo *exception)
 %
 %  A description of each parameter follows:
 %
 %    o image: the source image
 %
 %    o method: the morphology method to be applied.
+%
+%    o channel: the channels to which the operations are applied
+%               The channel 'sync' flag determines if 'alpha weighting' is
+%               applied for convolution style operations.
 %
 %    o iterations: apply the operation this many times (or no change).
 %                  A value of -1 means loop until no change found.
@@ -2382,14 +2493,13 @@ static void CalcKernelMetaData(KernelInfo *kernel)
 %
 */
 
-
 /* Apply a Morphology Primative to an image using the given kernel.
-** Two pre-created images must be provided, no image is created.
+** Two pre-created images must be provided, and no image is created.
 ** It returns the number of pixels that changed between the images
-** for convergence determination.
+** for result convergence determination.
 */
-static size_t MorphologyPrimitive(const Image *image, Image
-     *result_image, const MorphologyMethod method, const ChannelType channel,
+static size_t MorphologyPrimitive(const Image *image, Image *result_image,
+     const MorphologyMethod method, const ChannelType channel,
      const KernelInfo *kernel,const double bias,ExceptionInfo *exception)
 {
 #define MorphologyTag  "Morphology/Image"
@@ -2399,7 +2509,10 @@ static size_t MorphologyPrimitive(const Image *image, Image
     *q_view;
 
   ssize_t
-    y, offx, offy,
+    y, offx, offy;
+
+  size_t
+    virt_width,
     changed;
 
   MagickBooleanType
@@ -2423,6 +2536,7 @@ static size_t MorphologyPrimitive(const Image *image, Image
 
   p_view=AcquireCacheView(image);
   q_view=AcquireCacheView(result_image);
+  virt_width=image->columns-kernel->width-1;
 
   /* Some methods (including convolve) needs use a reflected kernel.
    * Adjust 'origin' offsets to loop though kernel as a reflection.
@@ -2433,7 +2547,7 @@ static size_t MorphologyPrimitive(const Image *image, Image
     case ConvolveMorphology:
     case DilateMorphology:
     case DilateIntensityMorphology:
-    case DistanceMorphology:
+    /*case DistanceMorphology:*/
       /* kernel needs to used with reflection about origin */
       offx = (ssize_t) kernel->width-offx-1;
       offy = (ssize_t) kernel->height-offy-1;
@@ -2496,7 +2610,7 @@ static size_t MorphologyPrimitive(const Image *image, Image
       if (status == MagickFalse)
         continue;
       p=GetCacheViewVirtualPixels(p_view, x,  -offy,1,
-          image->rows+kernel->height, exception);
+          image->rows+kernel->height-1, exception);
       q=GetCacheViewAuthenticPixels(q_view,x,0,1,result_image->rows,exception);
       if ((p == (const PixelPacket *) NULL) || (q == (PixelPacket *) NULL))
         {
@@ -2505,7 +2619,9 @@ static size_t MorphologyPrimitive(const Image *image, Image
         }
       p_indexes=GetCacheViewVirtualIndexQueue(p_view);
       q_indexes=GetCacheViewAuthenticIndexQueue(q_view);
-      r = offy;  /* offset to the origin pixel in 'p' */
+
+      /* offset to origin in 'p'. while 'q' points to it directly */
+      r = offy;
 
       for (y=0; y < (ssize_t) image->rows; y++)
       {
@@ -2672,8 +2788,8 @@ static size_t MorphologyPrimitive(const Image *image, Image
 
     if (status == MagickFalse)
       continue;
-    p=GetCacheViewVirtualPixels(p_view, -offx,  y-offy,
-         image->columns+kernel->width,  kernel->height,  exception);
+    p=GetCacheViewVirtualPixels(p_view, -offx, y-offy, virt_width,
+         kernel->height,  exception);
     q=GetCacheViewAuthenticPixels(q_view,0,y,result_image->columns,1,
          exception);
     if ((p == (const PixelPacket *) NULL) || (q == (PixelPacket *) NULL))
@@ -2683,7 +2799,9 @@ static size_t MorphologyPrimitive(const Image *image, Image
       }
     p_indexes=GetCacheViewVirtualIndexQueue(p_view);
     q_indexes=GetCacheViewAuthenticIndexQueue(q_view);
-    r = (image->columns+kernel->width)*offy+offx; /* offset to origin in 'p' */
+
+    /* offset to origin in 'p'. while 'q' points to it directly */
+    r = virt_width*offy + offx;
 
     for (x=0; x < (ssize_t) image->columns; x++)
     {
@@ -2790,8 +2908,8 @@ static size_t MorphologyPrimitive(const Image *image, Image
                     if ( image->colorspace == CMYKColorspace)
                       result.index   += (*k)*k_indexes[u];
                   }
-                  k_pixels += image->columns+kernel->width;
-                  k_indexes += image->columns+kernel->width;
+                  k_pixels += virt_width;
+                  k_indexes += virt_width;
                 }
                 if ((channel & RedChannel) != 0)
                   q->red = ClampToQuantum(result.red);
@@ -2829,8 +2947,8 @@ static size_t MorphologyPrimitive(const Image *image, Image
                     if ( image->colorspace == CMYKColorspace)
                       result.index   += alpha*k_indexes[u];
                   }
-                  k_pixels += image->columns+kernel->width;
-                  k_indexes += image->columns+kernel->width;
+                  k_pixels += virt_width;
+                  k_indexes += virt_width;
                 }
                 /* Sync'ed channels, all channels are modified */
                 gamma=1.0/(fabs((double) gamma) <= MagickEpsilon ? 1.0 : gamma);
@@ -2866,8 +2984,8 @@ static size_t MorphologyPrimitive(const Image *image, Image
                 if ( image->colorspace == CMYKColorspace)
                   Minimize(min.index,   (double) k_indexes[u]);
               }
-              k_pixels += image->columns+kernel->width;
-              k_indexes += image->columns+kernel->width;
+              k_pixels += virt_width;
+              k_indexes += virt_width;
             }
             break;
 
@@ -2897,8 +3015,8 @@ static size_t MorphologyPrimitive(const Image *image, Image
                 if ( image->colorspace == CMYKColorspace)
                   Maximize(max.index,   (double) k_indexes[u]);
               }
-              k_pixels += image->columns+kernel->width;
-              k_indexes += image->columns+kernel->width;
+              k_pixels += virt_width;
+              k_indexes += virt_width;
             }
             break;
 
@@ -2943,8 +3061,8 @@ static size_t MorphologyPrimitive(const Image *image, Image
                     Maximize(max.index,   (double) k_indexes[u]);
                 }
               }
-              k_pixels += image->columns+kernel->width;
-              k_indexes += image->columns+kernel->width;
+              k_pixels += virt_width;
+              k_indexes += virt_width;
             }
             /* Pattern Match if difference is positive */
             min.red     -= max.red;     Maximize( min.red,     0.0 );
@@ -2977,8 +3095,8 @@ static size_t MorphologyPrimitive(const Image *image, Image
                   result.red = 1.0;
                 }
               }
-              k_pixels += image->columns+kernel->width;
-              k_indexes += image->columns+kernel->width;
+              k_pixels += virt_width;
+              k_indexes += virt_width;
             }
             break;
 
@@ -3007,11 +3125,19 @@ static size_t MorphologyPrimitive(const Image *image, Image
                   result.red = 1.0;
                 }
               }
-              k_pixels += image->columns+kernel->width;
-              k_indexes += image->columns+kernel->width;
+              k_pixels += virt_width;
+              k_indexes += virt_width;
             }
             break;
+#if 0
+  This code has been obsoleted by the MorphologyPrimitiveDirect() function.
+  However it is still (almost) correct coding for Grayscale Morphology.
+  That is...
 
+  GrayErode    is equivelent but with kernel values subtracted from pixels
+               without the kernel rotation
+  GreyDilate   is equivelent but using Maximum() instead of Minimum()
+               useing kernel rotation
 
         case DistanceMorphology:
             /* Add kernel Value and select the minimum value found.
@@ -3021,9 +3147,6 @@ static size_t MorphologyPrimitive(const Image *image, Image
             ** be the case. For example how about a distance from left edges?
             ** To work correctly with asymetrical kernels the reflected kernel
             ** needs to be applied.
-            **
-            ** Actually this is really a GreyErode with a negative kernel!
-            **
             */
             k = &kernel->values[ kernel->width*kernel->height-1 ];
             k_pixels = p;
@@ -3038,11 +3161,11 @@ static size_t MorphologyPrimitive(const Image *image, Image
                 if ( image->colorspace == CMYKColorspace)
                   Minimize(result.index,   (*k)+k_indexes[u]);
               }
-              k_pixels += image->columns+kernel->width;
-              k_indexes += image->columns+kernel->width;
+              k_pixels += virt_width;
+              k_indexes += virt_width;
             }
             break;
-
+#endif
         case UndefinedMorphology:
         default:
             break; /* Do nothing */
@@ -3130,13 +3253,387 @@ static size_t MorphologyPrimitive(const Image *image, Image
           status=MagickFalse;
       }
   } /* y */
-  result_image->type=image->type;
   q_view=DestroyCacheView(q_view);
   p_view=DestroyCacheView(p_view);
-  return(status ? (size_t) changed : 0);
+  return(status ? (ssize_t)changed : -1);
 }
 
+/* This is almost identical to the MorphologyPrimative() function above,
+** but will apply the primitive directly to the image in two passes.
+**
+** That is after each row is 'Sync'ed' into the image, the next row will
+** make use of those values as part of the calculation of the next row.
+** It then repeats, but going in the oppisite (bottom-up) direction.
+**
+** Because of this 'iterative' handling this function can not make use
+** of multi-threaded, parellel processing.
+*/
+static size_t MorphologyPrimitiveDirect(const Image *image,
+     const MorphologyMethod method, const ChannelType channel,
+     const KernelInfo *kernel,ExceptionInfo *exception)
+{
+  CacheView
+    *auth_view,
+    *virt_view;
 
+  MagickBooleanType
+    status;
+
+  MagickOffsetType
+    progress;
+
+  ssize_t
+    y, offx, offy;
+
+  size_t
+    virt_width,
+    changed;
+
+  status=MagickTrue;
+  changed=0;
+  progress=0;
+
+  assert(image != (Image *) NULL);
+  assert(image->signature == MagickSignature);
+  assert(kernel != (KernelInfo *) NULL);
+  assert(kernel->signature == MagickSignature);
+  assert(exception != (ExceptionInfo *) NULL);
+  assert(exception->signature == MagickSignature);
+
+  /* Some methods (including convolve) needs use a reflected kernel.
+   * Adjust 'origin' offsets to loop though kernel as a reflection.
+   */
+  offx = kernel->x;
+  offy = kernel->y;
+  switch(method) {
+    case DistanceMorphology:
+      /* kernel needs to used with reflection about origin */
+      offx = (ssize_t) kernel->width-offx-1;
+      offy = (ssize_t) kernel->height-offy-1;
+      break;
+#if 0
+    case ?????Morphology:
+      /* kernel is used as is, without reflection */
+      break;
+#endif
+    default:
+      assert("Not a PrimativeDirect Morphology Method" != (char *) NULL);
+      break;
+  }
+
+  /* DO NOT THREAD THIS CODE! */
+  /* two views into same image (virtual, and actual) */
+  virt_view=AcquireCacheView(image);
+  auth_view=AcquireCacheView(image);
+  virt_width=image->columns+kernel->width-1;
+
+  for (y=0; y < (ssize_t) image->rows; y++)
+  {
+    register const PixelPacket
+      *restrict p;
+
+    register const IndexPacket
+      *restrict p_indexes;
+
+    register PixelPacket
+      *restrict q;
+
+    register IndexPacket
+      *restrict q_indexes;
+
+    register ssize_t
+      x;
+
+    ssize_t
+      r;
+
+    /* NOTE read virtual pixels, and authentic pixels, from the same image!
+    ** we read using virtual to get virtual pixel handling, but write back
+    ** into the same image.
+    **
+    ** Only top half of kernel is processed as we do a single pass downward
+    ** through the image iterating the distance function as we go.
+    */
+    if (status == MagickFalse)
+      break;
+    p=GetCacheViewVirtualPixels(virt_view, -offx,  y-offy, virt_width, offy+1,
+         exception);
+    q=GetCacheViewAuthenticPixels(auth_view, 0, y, image->columns, 1,
+         exception);
+    if ((p == (const PixelPacket *) NULL) || (q == (PixelPacket *) NULL))
+      status=MagickFalse;
+    if (status == MagickFalse)
+      break;
+    p_indexes=GetCacheViewVirtualIndexQueue(virt_view);
+    q_indexes=GetCacheViewAuthenticIndexQueue(auth_view);
+
+    /* offset to origin in 'p'. while 'q' points to it directly */
+    r = virt_width*offy + offx;
+
+    for (x=0; x < (ssize_t) image->columns; x++)
+    {
+      ssize_t
+        v;
+
+      register ssize_t
+        u;
+
+      register const double
+        *restrict k;
+
+      register const PixelPacket
+        *restrict k_pixels;
+
+      register const IndexPacket
+        *restrict k_indexes;
+
+      MagickPixelPacket
+        result;
+
+      /* Defaults */
+      result.red     = (MagickRealType) q->red;
+      result.green   = (MagickRealType) q->green;
+      result.blue    = (MagickRealType) q->blue;
+      result.opacity = QuantumRange - (MagickRealType) q->opacity;
+      result.index   = 0.0;
+      if ( image->colorspace == CMYKColorspace)
+         result.index   = (MagickRealType) *q_indexes;
+
+      switch ( method ) {
+        case DistanceMorphology:
+            /* Add kernel Value and select the minimum value found. */
+            k = &kernel->values[ kernel->width*kernel->height-1 ];
+            k_pixels = p;
+            k_indexes = p_indexes;
+            for (v=0; v <= (ssize_t) offy; v++) {
+              for (u=0; u < (ssize_t) kernel->width; u++, k--) {
+                if ( IsNan(*k) ) continue;
+                Minimize(result.red,     (*k)+k_pixels[u].red);
+                Minimize(result.green,   (*k)+k_pixels[u].green);
+                Minimize(result.blue,    (*k)+k_pixels[u].blue);
+                Minimize(result.opacity, (*k)+QuantumRange-k_pixels[u].opacity);
+                if ( image->colorspace == CMYKColorspace)
+                  Minimize(result.index,   (*k)+k_indexes[u]);
+              }
+              k_pixels += virt_width;
+              k_indexes += virt_width;
+            }
+            /* repeat with the just processed pixels of this row */
+            k = &kernel->values[ kernel->width*(kernel->y+1)-1 ];
+            k_pixels = q-offx;
+            k_indexes = q_indexes-offx;
+              for (u=0; u < (ssize_t) offx; u++, k--) {
+                if ( x+u-offx < 0 ) continue;  /* off the edge! */
+                if ( IsNan(*k) ) continue;
+                Minimize(result.red,     (*k)+k_pixels[u].red);
+                Minimize(result.green,   (*k)+k_pixels[u].green);
+                Minimize(result.blue,    (*k)+k_pixels[u].blue);
+                Minimize(result.opacity, (*k)+QuantumRange-k_pixels[u].opacity);
+                if ( image->colorspace == CMYKColorspace)
+                  Minimize(result.index,   (*k)+k_indexes[u]);
+              }
+            break;
+        default:
+          /* result directly calculated or assigned */
+          break;
+      }
+      /* Assign the resulting pixel values - Clamping Result */
+      if ((channel & RedChannel) != 0)
+        q->red = ClampToQuantum(result.red);
+      if ((channel & GreenChannel) != 0)
+        q->green = ClampToQuantum(result.green);
+      if ((channel & BlueChannel) != 0)
+        q->blue = ClampToQuantum(result.blue);
+      if ((channel & OpacityChannel) != 0
+          && image->matte == MagickTrue )
+        q->opacity = ClampToQuantum(QuantumRange-result.opacity);
+      if ((channel & IndexChannel) != 0
+          && image->colorspace == CMYKColorspace)
+        q_indexes[x] = ClampToQuantum(result.index);
+      /* Count up changed pixels */
+      if (   ( p[r].red != q->red )
+          || ( p[r].green != q->green )
+          || ( p[r].blue != q->blue )
+          || ( p[r].opacity != q->opacity )
+          || ( image->colorspace == CMYKColorspace &&
+                  p_indexes[r] != q_indexes[x] ) )
+        changed++;  /* The pixel was changed in some way! */
+
+      p++; /* increment pixel buffers */
+      q++;
+    } /* x */
+
+    if ( SyncCacheViewAuthenticPixels(auth_view,exception) == MagickFalse)
+      status=MagickFalse;
+    if (image->progress_monitor != (MagickProgressMonitor) NULL)
+      if ( SetImageProgress(image,MorphologyTag,progress++,image->rows)
+                == MagickFalse )
+        status=MagickFalse;
+
+  } /* y */
+
+  /* Do the reversed pass through the image */
+  for (y=(ssize_t)image->rows-1; y >= 0; y--)
+  {
+    register const PixelPacket
+      *restrict p;
+
+    register const IndexPacket
+      *restrict p_indexes;
+
+    register PixelPacket
+      *restrict q;
+
+    register IndexPacket
+      *restrict q_indexes;
+
+    register ssize_t
+      x;
+
+    ssize_t
+      r;
+
+    if (status == MagickFalse)
+      break;
+    /* NOTE read virtual pixels, and authentic pixels, from the same image!
+    ** we read using virtual to get virtual pixel handling, but write back
+    ** into the same image.
+    **
+    ** Only the bottom half of the kernel will be processes as we
+    ** up the image.
+    */
+    p=GetCacheViewVirtualPixels(virt_view, -offx, y, virt_width, kernel->y+1,
+         exception);
+    q=GetCacheViewAuthenticPixels(auth_view, 0, y, image->columns, 1,
+         exception);
+    if ((p == (const PixelPacket *) NULL) || (q == (PixelPacket *) NULL))
+      status=MagickFalse;
+    if (status == MagickFalse)
+      break;
+    p_indexes=GetCacheViewVirtualIndexQueue(virt_view);
+    q_indexes=GetCacheViewAuthenticIndexQueue(auth_view);
+
+    /* adjust positions to end of row */
+    p += image->columns-1;
+    q += image->columns-1;
+
+    /* offset to origin in 'p'. while 'q' points to it directly */
+    r = offx;
+
+    for (x=(ssize_t)image->columns-1; x >= 0; x--)
+    {
+      ssize_t
+        v;
+
+      register ssize_t
+        u;
+
+      register const double
+        *restrict k;
+
+      register const PixelPacket
+        *restrict k_pixels;
+
+      register const IndexPacket
+        *restrict k_indexes;
+
+      MagickPixelPacket
+        result;
+
+      /* Defaults */
+      result.red     = (MagickRealType) q->red;
+      result.green   = (MagickRealType) q->green;
+      result.blue    = (MagickRealType) q->blue;
+      result.opacity = QuantumRange - (MagickRealType) q->opacity;
+      result.index   = 0.0;
+      if ( image->colorspace == CMYKColorspace)
+         result.index   = (MagickRealType) *q_indexes;
+
+      switch ( method ) {
+        case DistanceMorphology:
+            /* Add kernel Value and select the minimum value found. */
+            k = &kernel->values[ kernel->width*(kernel->y+1)-1 ];
+            k_pixels = p;
+            k_indexes = p_indexes;
+            for (v=offy; v < (ssize_t) kernel->height; v++) {
+              for (u=0; u < (ssize_t) kernel->width; u++, k--) {
+                if ( IsNan(*k) ) continue;
+                Minimize(result.red,     (*k)+k_pixels[u].red);
+                Minimize(result.green,   (*k)+k_pixels[u].green);
+                Minimize(result.blue,    (*k)+k_pixels[u].blue);
+                Minimize(result.opacity, (*k)+QuantumRange-k_pixels[u].opacity);
+                if ( image->colorspace == CMYKColorspace)
+                  Minimize(result.index,   (*k)+k_indexes[u]);
+              }
+              k_pixels += virt_width;
+              k_indexes += virt_width;
+            }
+            /* repeat with the just processed pixels of this row */
+            k = &kernel->values[ kernel->width*(kernel->y)+kernel->x-1 ];
+            k_pixels = q-offx;
+            k_indexes = q_indexes-offx;
+              for (u=offx+1; u < (ssize_t) kernel->width; u++, k--) {
+                if ( (size_t)(x+u-offx) >= image->columns ) continue;
+                if ( IsNan(*k) ) continue;
+                Minimize(result.red,     (*k)+k_pixels[u].red);
+                Minimize(result.green,   (*k)+k_pixels[u].green);
+                Minimize(result.blue,    (*k)+k_pixels[u].blue);
+                Minimize(result.opacity, (*k)+QuantumRange-k_pixels[u].opacity);
+                if ( image->colorspace == CMYKColorspace)
+                  Minimize(result.index,   (*k)+k_indexes[u]);
+              }
+            break;
+        default:
+          /* result directly calculated or assigned */
+          break;
+      }
+      /* Assign the resulting pixel values - Clamping Result */
+      if ((channel & RedChannel) != 0)
+        q->red = ClampToQuantum(result.red);
+      if ((channel & GreenChannel) != 0)
+        q->green = ClampToQuantum(result.green);
+      if ((channel & BlueChannel) != 0)
+        q->blue = ClampToQuantum(result.blue);
+      if ((channel & OpacityChannel) != 0
+          && image->matte == MagickTrue )
+        q->opacity = ClampToQuantum(QuantumRange-result.opacity);
+      if ((channel & IndexChannel) != 0
+          && image->colorspace == CMYKColorspace)
+        q_indexes[x] = ClampToQuantum(result.index);
+      /* Count up changed pixels */
+      if (   ( p[r].red != q->red )
+          || ( p[r].green != q->green )
+          || ( p[r].blue != q->blue )
+          || ( p[r].opacity != q->opacity )
+          || ( image->colorspace == CMYKColorspace &&
+                  p_indexes[r] != q_indexes[x] ) )
+        changed++;  /* The pixel was changed in some way! */
+
+      p--; /* go backward through pixel buffers */
+      q--;
+    } /* x */
+
+    if ( SyncCacheViewAuthenticPixels(auth_view,exception) == MagickFalse)
+      status=MagickFalse;
+    if (image->progress_monitor != (MagickProgressMonitor) NULL)
+      if ( SetImageProgress(image,MorphologyTag,progress++,image->rows)
+                == MagickFalse )
+        status=MagickFalse;
+
+  } /* y */
+  auth_view=DestroyCacheView(auth_view);
+  virt_view=DestroyCacheView(virt_view);
+  return(status ? (ssize_t)changed : -1);
+}
+
+/* Apply a Morphology by calling theabove low level primitive application
+** functions.  This function handles any iteration loops, composition or
+** re-iteration of results, and compound morphology methods that is based
+** on multiple low-level (staged) morphology methods.
+**
+** Basically this provides the complex grue between the requested morphology
+** method and raw low-level implementation (above).
+*/
 MagickExport Image *MorphologyApply(const Image *image, const ChannelType
      channel,const MorphologyMethod method, const ssize_t iterations,
      const KernelInfo *kernel, const CompositeOperator compose,
@@ -3147,7 +3644,7 @@ MagickExport Image *MorphologyApply(const Image *image, const ChannelType
 
   Image
     *curr_image,    /* Image we are working with or iterating */
-    *work_image,    /* secondary image for primative iteration */
+    *work_image,    /* secondary image for primitive iteration */
     *save_image,    /* saved image - for 'edge' method only */
     *rslt_image;    /* resultant image - after multi-kernel handling */
 
@@ -3158,7 +3655,7 @@ MagickExport Image *MorphologyApply(const Image *image, const ChannelType
     *this_kernel;      /* the kernel being applied */
 
   MorphologyMethod
-    primative;      /* the current morphology primative being applied */
+    primitive;      /* the current morphology primitive being applied */
 
   CompositeOperator
     rslt_compose;   /* multi-kernel compose method for results to use */
@@ -3167,17 +3664,19 @@ MagickExport Image *MorphologyApply(const Image *image, const ChannelType
     verbose;        /* verbose output of results */
 
   size_t
-    method_loop,    /* Loop 1: number of compound method iterations */
+    method_loop,    /* Loop 1: number of compound method iterations (norm 1) */
     method_limit,   /*         maximum number of compound method iterations */
     kernel_number,  /* Loop 2: the kernel number being applied */
-    stage_loop,     /* Loop 3: primative loop for compound morphology */
-    stage_limit,    /*         how many primatives in this compound */
-    kernel_loop,    /* Loop 4: iterate the kernel (basic morphology) */
+    stage_loop,     /* Loop 3: primitive loop for compound morphology */
+    stage_limit,    /*         how many primitives are in this compound */
+    kernel_loop,    /* Loop 4: iterate the kernel over image */
     kernel_limit,   /*         number of times to iterate kernel */
-    count,          /* total count of primative steps applied */
-    changed,        /* number pixels changed by last primative operation */
+    count,          /* total count of primitive steps applied */
     kernel_changed, /* total count of changed using iterated kernel */
     method_changed; /* total count of changed over method iteration */
+
+  ssize_t
+    changed;        /* number pixels changed by last primitive operation */
 
   char
     v_info[80];
@@ -3189,7 +3688,7 @@ MagickExport Image *MorphologyApply(const Image *image, const ChannelType
   assert(exception != (ExceptionInfo *) NULL);
   assert(exception->signature == MagickSignature);
 
-  count = 0;      /* number of low-level morphology primatives performed */
+  count = 0;      /* number of low-level morphology primitives performed */
   if ( iterations == 0 )
     return((Image *)NULL);   /* null operation - nothing to do! */
 
@@ -3208,17 +3707,17 @@ MagickExport Image *MorphologyApply(const Image *image, const ChannelType
 
   /* Initialize specific methods
    * + which loop should use the given iteratations
-   * + how many primatives make up the compound morphology
+   * + how many primitives make up the compound morphology
    * + multi-kernel compose method to use (by default)
    */
   method_limit = 1;       /* just do method once, unless otherwise set */
   stage_limit = 1;        /* assume method is not a compound */
   rslt_compose = compose; /* and we are composing multi-kernels as given */
   switch( method ) {
-    case SmoothMorphology:  /* 4 primative compound morphology */
+    case SmoothMorphology:  /* 4 primitive compound morphology */
       stage_limit = 4;
       break;
-    case OpenMorphology:    /* 2 primative compound morphology */
+    case OpenMorphology:    /* 2 primitive compound morphology */
     case OpenIntensityMorphology:
     case TopHatMorphology:
     case CloseMorphology:
@@ -3235,6 +3734,9 @@ MagickExport Image *MorphologyApply(const Image *image, const ChannelType
       method_limit = kernel_limit;  /* iterate the whole method */
       kernel_limit = 1;             /* do not do kernel iteration  */
       break;
+    case DistanceMorphology:
+      kernel_limit = 1;  /* Can not iterate direct modify in main loop - yet */
+      break;
     default:
       break;
   }
@@ -3245,7 +3747,7 @@ MagickExport Image *MorphologyApply(const Image *image, const ChannelType
   if ( rslt_compose == UndefinedCompositeOp )
     rslt_compose = NoCompositeOp; /* still not defined! Then re-iterate */
 
-  /* Some methods require a reflected kernel to use with primatives.
+  /* Some methods require a reflected kernel to use with primitives.
    * Create the reflected kernel for those methods. */
   switch ( method ) {
     case CorrelateMorphology:
@@ -3282,66 +3784,66 @@ MagickExport Image *MorphologyApply(const Image *image, const ChannelType
       while ( stage_loop < stage_limit ) {
         stage_loop++;   /* The stage of the compound morphology */
 
-        /* Select primative morphology for this stage of compound method */
+        /* Select primitive morphology for this stage of compound method */
         this_kernel = norm_kernel; /* default use unreflected kernel */
-        primative = method;        /* Assume method is a primative */
+        primitive = method;        /* Assume method is a primitive */
         switch( method ) {
           case ErodeMorphology:      /* just erode */
           case EdgeInMorphology:     /* erode and image difference */
-            primative = ErodeMorphology;
+            primitive = ErodeMorphology;
             break;
           case DilateMorphology:     /* just dilate */
           case EdgeOutMorphology:    /* dilate and image difference */
-            primative = DilateMorphology;
+            primitive = DilateMorphology;
             break;
           case OpenMorphology:       /* erode then dialate */
           case TopHatMorphology:     /* open and image difference */
-            primative = ErodeMorphology;
+            primitive = ErodeMorphology;
             if ( stage_loop == 2 )
-              primative = DilateMorphology;
+              primitive = DilateMorphology;
             break;
           case OpenIntensityMorphology:
-            primative = ErodeIntensityMorphology;
+            primitive = ErodeIntensityMorphology;
             if ( stage_loop == 2 )
-              primative = DilateIntensityMorphology;
+              primitive = DilateIntensityMorphology;
             break;
           case CloseMorphology:      /* dilate, then erode */
           case BottomHatMorphology:  /* close and image difference */
             this_kernel = rflt_kernel; /* use the reflected kernel */
-            primative = DilateMorphology;
+            primitive = DilateMorphology;
             if ( stage_loop == 2 )
-              primative = ErodeMorphology;
+              primitive = ErodeMorphology;
             break;
           case CloseIntensityMorphology:
             this_kernel = rflt_kernel; /* use the reflected kernel */
-            primative = DilateIntensityMorphology;
+            primitive = DilateIntensityMorphology;
             if ( stage_loop == 2 )
-              primative = ErodeIntensityMorphology;
+              primitive = ErodeIntensityMorphology;
             break;
           case SmoothMorphology:         /* open, close */
             switch ( stage_loop ) {
               case 1: /* start an open method, which starts with Erode */
-                primative = ErodeMorphology;
+                primitive = ErodeMorphology;
                 break;
               case 2:  /* now Dilate the Erode */
-                primative = DilateMorphology;
+                primitive = DilateMorphology;
                 break;
               case 3:  /* Reflect kernel a close */
                 this_kernel = rflt_kernel; /* use the reflected kernel */
-                primative = DilateMorphology;
+                primitive = DilateMorphology;
                 break;
               case 4:  /* Finish the Close */
                 this_kernel = rflt_kernel; /* use the reflected kernel */
-                primative = ErodeMorphology;
+                primitive = ErodeMorphology;
                 break;
             }
             break;
           case EdgeMorphology:        /* dilate and erode difference */
-            primative = DilateMorphology;
+            primitive = DilateMorphology;
             if ( stage_loop == 2 ) {
               save_image = curr_image;      /* save the image difference */
               curr_image = (Image *) image;
-              primative = ErodeMorphology;
+              primitive = ErodeMorphology;
             }
             break;
           case CorrelateMorphology:
@@ -3355,7 +3857,7 @@ MagickExport Image *MorphologyApply(const Image *image, const ChannelType
             ** default).
             */
             this_kernel = rflt_kernel; /* use the reflected kernel */
-            primative = ConvolveMorphology;
+            primitive = ConvolveMorphology;
             break;
           default:
             break;
@@ -3368,7 +3870,7 @@ MagickExport Image *MorphologyApply(const Image *image, const ChannelType
             (void) FormatMagickString(v_info,MaxTextExtent,"%s:%.20g.%.20g -> ",
              MagickOptionToMnemonic(MagickMorphologyOptions,method),(double)
              method_loop,(double) stage_loop);
-          else if ( primative != method )
+          else if ( primitive != method )
             (void) FormatMagickString(v_info, MaxTextExtent, "%s:%.20g -> ",
               MagickOptionToMnemonic(MagickMorphologyOptions, method),(double)
               method_loop);
@@ -3376,14 +3878,14 @@ MagickExport Image *MorphologyApply(const Image *image, const ChannelType
             v_info[0] = '\0';
         }
 
-        /* Loop 4: Iterate the kernel with primative */
+        /* Loop 4: Iterate the kernel with primitive */
         kernel_loop = 0;
         kernel_changed = 0;
         changed = 1;
         while ( kernel_loop < kernel_limit && changed > 0 ) {
           kernel_loop++;     /* the iteration of this kernel */
 
-          /* Create a destination image, if not yet defined */
+          /* Create a clone as the destination image, if not yet defined */
           if ( work_image == (Image *) NULL )
             {
               work_image=CloneImage(image,0,0,MagickTrue,exception);
@@ -3394,24 +3896,32 @@ MagickExport Image *MorphologyApply(const Image *image, const ChannelType
                   InheritException(exception,&work_image->exception);
                   goto error_cleanup;
                 }
+              /* work_image->type=image->type; ??? */
             }
 
           /* APPLY THE MORPHOLOGICAL PRIMITIVE (curr -> work) */
           count++;
-          changed = MorphologyPrimitive(curr_image, work_image, primative,
-                        channel, this_kernel, bias, exception);
-          kernel_changed += changed;
-          method_changed += changed;
+          if ( method != DistanceMorphology )
+            changed = MorphologyPrimitive(curr_image, work_image, primitive,
+                          channel, this_kernel, bias, exception);
+          else
+            changed = MorphologyPrimitiveDirect(work_image, primitive,
+                          channel, this_kernel, exception);
 
           if ( verbose == MagickTrue ) {
             if ( kernel_loop > 1 )
               fprintf(stderr, "\n"); /* add end-of-line from previous */
             (void) fprintf(stderr, "%s%s%s:%.20g.%.20g #%.20g => Changed %.20g",
               v_info,MagickOptionToMnemonic(MagickMorphologyOptions,
-              primative),(this_kernel == rflt_kernel ) ? "*" : "",
+              primitive),(this_kernel == rflt_kernel ) ? "*" : "",
               (double) (method_loop+kernel_loop-1),(double) kernel_number,
               (double) count,(double) changed);
           }
+          if ( changed < 0 )
+            goto error_cleanup;
+          kernel_changed += changed;
+          method_changed += changed;
+
           /* prepare next loop */
           { Image *tmp = work_image;   /* swap images for iteration */
             work_image = curr_image;
@@ -3420,9 +3930,9 @@ MagickExport Image *MorphologyApply(const Image *image, const ChannelType
           if ( work_image == image )
             work_image = (Image *) NULL; /* replace input 'image' */
 
-        } /* End Loop 4: Iterate the kernel with primative */
+        } /* End Loop 4: Iterate the kernel with primitive */
 
-        if ( verbose == MagickTrue && kernel_changed != changed )
+        if ( verbose == MagickTrue && kernel_changed != (size_t)changed )
           fprintf(stderr, "   Total %.20g",(double) kernel_changed);
         if ( verbose == MagickTrue && stage_loop < stage_limit )
           fprintf(stderr, "\n"); /* add end-of-line before looping */
@@ -3499,10 +4009,9 @@ MagickExport Image *MorphologyApply(const Image *image, const ChannelType
             fprintf(stderr, " (compose \"%s\")",
                  MagickOptionToMnemonic(MagickComposeOptions, rslt_compose) );
           (void) CompositeImageChannel(rslt_image,
-               (ChannelType) (channel & ~SyncChannels), curr_compose,
-               rslt_image, 0, 0);
-          rslt_image = DestroyImage(rslt_image);
-          rslt_image = curr_image;
+               (ChannelType) (channel & ~SyncChannels), rslt_compose,
+               curr_image, 0, 0);
+          curr_image = DestroyImage(curr_image);
           curr_image = (Image *) image;  /* continue with original image */
         }
       if ( verbose == MagickTrue )
@@ -3538,6 +4047,7 @@ exit_cleanup:
     reflected_kernel = DestroyKernelInfo(reflected_kernel);
   return(rslt_image);
 }
+
 
 /*
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

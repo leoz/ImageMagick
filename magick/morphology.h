@@ -43,6 +43,7 @@ typedef enum
   DiamondKernel,      /* Shape Kernels */
   SquareKernel,
   RectangleKernel,
+  OctagonKernel,
   DiskKernel,
   PlusKernel,
   CrossKernel,
@@ -50,14 +51,16 @@ typedef enum
   PeaksKernel,         /* Hit And Miss Kernels */
   EdgesKernel,
   CornersKernel,
-  ThinDiagonalsKernel,
+  DiagonalsKernel,
   LineEndsKernel,
   LineJunctionsKernel,
   RidgesKernel,
   ConvexHullKernel,
+  ThinSEKernel,
   SkeletonKernel,
   ChebyshevKernel,    /* Distance Measuring Kernels */
   ManhattanKernel,
+  OctagonalKernel,
   EuclideanKernel,
   UserDefinedKernel   /* User Specified Kernel Array */
 } KernelInfoType;
