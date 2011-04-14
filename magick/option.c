@@ -723,6 +723,7 @@ static const OptionInfo
     { "CopyRed", (ssize_t) CopyRedCompositeOp, MagickFalse },
     { "CopyYellow", (ssize_t) CopyYellowCompositeOp, MagickFalse },
     { "Darken", (ssize_t) DarkenCompositeOp, MagickFalse },
+    { "DarkenIntensity", (ssize_t) DarkenIntensityCompositeOp, MagickFalse },
     { "DivideDst", (ssize_t) DivideDstCompositeOp, MagickFalse },
     { "DivideSrc", (ssize_t) DivideSrcCompositeOp, MagickFalse },
     { "Dst", (ssize_t) DstCompositeOp, MagickFalse },
@@ -740,6 +741,7 @@ static const OptionInfo
     { "Hue", (ssize_t) HueCompositeOp, MagickFalse },
     { "In", (ssize_t) InCompositeOp, MagickFalse },
     { "Lighten", (ssize_t) LightenCompositeOp, MagickFalse },
+    { "LightenIntensity", (ssize_t) LightenIntensityCompositeOp, MagickFalse },
     { "LinearBurn", (ssize_t) LinearBurnCompositeOp, MagickFalse },
     { "LinearDodge", (ssize_t) LinearDodgeCompositeOp, MagickFalse },
     { "LinearLight", (ssize_t) LinearLightCompositeOp, MagickFalse },
@@ -1318,6 +1320,7 @@ static const OptionInfo
     { "HitAndMiss", (ssize_t) HitAndMissMorphology, MagickFalse },
     { "Thinning", (ssize_t) ThinningMorphology, MagickFalse },
     { "Thicken", (ssize_t) ThickenMorphology, MagickFalse },
+    { "Voronoi", (ssize_t) VoronoiMorphology, MagickTrue },
     { (char *) NULL, (ssize_t) UndefinedMorphology, MagickFalse }
   },
   NoiseOptions[] =

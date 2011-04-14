@@ -568,8 +568,6 @@ static Image *ReadMIFFImage(const ImageInfo *image_info,
             p=keyword;
             do
             {
-              if (isspace((int) ((unsigned char) c)) != 0)
-                break;
               if (c == (int) '=')
                 break;
               if ((size_t) (p-keyword) < (MaxTextExtent-1))
@@ -1585,6 +1583,7 @@ ModuleExport size_t RegisterMIFFImage(void)
   entry->decoder=(DecodeImageHandler *) ReadMIFFImage;
   entry->encoder=(EncodeImageHandler *) WriteMIFFImage;
   entry->magick=(IsImageFormatHandler *) IsMIFF;
+  entry->seekable_stream=MagickTrue;
   entry->description=ConstantString("Magick Image File Format");
   if (*version != '\0')
     entry->version=ConstantString(version);

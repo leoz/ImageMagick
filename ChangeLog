@@ -1,13 +1,41 @@
+2011-04-15  6.6.9-5 Cristy  <quetzlzacatenango@image...>
+  * New version 6.6.9-5.
+
+2011-04-15  6.6.9-5 Glenn Randers-Pehrson <glennrp@image...>
+  * Added "#define PNG_PTR_NORETURN" because this macro does not work
+    on all platforms with libpng15, with failure to load png_longjmp() (ref
+    http://www.imagemagick.org/discourse-server/viewtopic.php?f=3&t=18518).
+
+2011-04-14  6.6.9-5 Anthony Thyssen <A.Thyssen@griffith...>
+  * Layers Composition Bug Fix, animations attributes of first image not
+    transferred in a single destination, multi-source image composition.
+
+2011-04-09  6.6.9-5 Anthony Thyssen <A.Thyssen@griffith...>
+  * Add a special 'Voronoi' Distance method that will fill in holes using
+    the nearest non-transparent edge pixel. This is experimental, and one
+    step toward a fast Color 'Diffusion' method.
+
+2011-04-08  6.6.9-5 Cristy  <quetzlzacatenango@image...>
+  * MIFF keywords sometimes includes spaces.
+
+2011-04-07  6.6.9-5 Anthony Thyssen <A.Thyssen@griffith...>
+  * Major BUG FIX - wrong sign breaks most morphology methods in IM v6.6.9-4
+  * Fixed -region handling of transparency. Original images without
+    transparency will use 'Over' while images with transparency will
+    preserve transparency using 'Copy'. Before this only 'Over' was used
+    due to the testing of the wrong image.
+  * Added Compose methods  DarkenIntensity and LightenIntensity
+
 2011-04-06  6.6.9-4 Cristy  <quetzlzacatenango@image...>
   * New version 6.6.9-4.
 
 2011-04-03  6.6.9-4 Anthony Thyssen <A.Thyssen@griffith...>
-  * Add of Octagon shape and Octagonal distance kernels for Morphology
+  * Add Octagon shape and Octagonal distance kernels for Morphology
   * Fix minor Morphology kernel compose bug (cleanup after Src/Dst swap)
   * Fix segmentation fault after error in a morphology 'named' kernel
   * Added a range of kernels used for specialised thinning purposes
     as defined in a research paper by Dan S. Bloomberg.
-  * Added Dan Bloomberd best thinning skeletion, "Skeleton:3"
+  * Added Dan Bloomberg best thinning skeletion, "Skeleton:3"
   * Removed origin pixel from many Hit-and-Miss kernels allowing kernels
     to not only be used for thinning, but also thickening.
   * Renamed "ThinDiagonals" kernel to just "Diagonals"
