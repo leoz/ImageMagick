@@ -3200,8 +3200,7 @@ MagickExport void XGetPixelPacket(Display *display,
             Initialize pixel array for images of type PseudoClass.
           */
           for (i=0; i < (ssize_t) image->colors; i++)
-            pixel->pixels[i]=
-              XGammaPixel(map_info,image->colormap+i);
+            pixel->pixels[i]=XGammaPixel(map_info,image->colormap+i);
           for (i=0; i < MaxNumberPens; i++)
             pixel->pixels[image->colors+i]=pixel->pen_colors[i].pixel;
           pixel->colors+=MaxNumberPens;
@@ -3528,7 +3527,7 @@ MagickExport void XGetResourceInfo(const ImageInfo *image_info,
     client_name,"geometry",(char *) NULL));
   resource_value=XGetResourceClass(database,client_name,"gravity",
     (char *) "Center");
-  resource_info->gravity=(GravityType) ParseMagickOption(MagickGravityOptions,
+  resource_info->gravity=(GravityType) ParseCommandOption(MagickGravityOptions,
     MagickFalse,resource_value);
   directory=getcwd(resource_info->home_directory,MaxTextExtent);
   (void) directory;
@@ -6385,7 +6384,7 @@ static void XMakeImageLSBFirst(const XResourceInfo *resource_info,
         for (x=(int) canvas->columns-1; x >= 0; x--)
         {
           byte>>=1;
-          if (p->opacity > (QuantumRange/2))
+          if (GetOpacityPixelComponent(p) > (QuantumRange/2))
             byte|=0x80;
           bit++;
           if (bit == 8)
@@ -7012,7 +7011,7 @@ static void XMakeImageMSBFirst(const XResourceInfo *resource_info,
         for (x=(int) canvas->columns-1; x >= 0; x--)
         {
           byte<<=1;
-          if (p->opacity > (QuantumRange/2))
+          if (GetOpacityPixelComponent(p) > (QuantumRange/2))
             byte|=0x01;
           bit++;
           if (bit == 8)

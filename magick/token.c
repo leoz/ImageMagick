@@ -145,9 +145,9 @@ MagickExport TokenInfo *DestroyTokenInfo(TokenInfo *token_info)
 %                                                                             %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-%  GetMagickToken() gets a token from the token stream.  A token is defined as a
-%  sequence of characters delimited by whitespace (e.g. clip-path), a sequence
-%  delimited with quotes (.e.g "Quote me"), or a sequence enclosed in
+%  GetMagickToken() gets a token from the token stream.  A token is defined as
+%  a sequence of characters delimited by whitespace (e.g. clip-path), a
+%  sequence delimited with quotes (.e.g "Quote me"), or a sequence enclosed in
 %  parenthesis (e.g. rgb(0,0,0)).  GetMagickToken() also recognizes these
 %  separator characters: ':', '=', ',', and ';'.
 %
@@ -175,6 +175,8 @@ MagickExport void GetMagickToken(const char *start,const char **end,char *token)
   register ssize_t
     i;
 
+  assert(start != (const char *) NULL);
+  assert(token != (char *) NULL);
   i=0;
   for (p=start; *p != '\0'; )
   {
@@ -236,7 +238,7 @@ MagickExport void GetMagickToken(const char *start,const char **end,char *token)
               token[i++]=(*p++);
             break;
           }
-        if ((isalpha((int) ((unsigned char) *p)) == 0) &&
+        if ((*p != '\0') && (isalpha((int) ((unsigned char) *p)) == 0) &&
             (*p != *DirectorySeparator) && (*p != '#') && (*p != '<'))
           {
             token[i++]=(*p++);

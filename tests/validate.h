@@ -256,10 +256,8 @@ static const struct ReferenceFormats
     { "DPX", UndefinedCompression, 0.003 },
     { "ERF", UndefinedCompression, 0.0 },
     { "EXR", UndefinedCompression, 0.0 },
-    { "FITS", UndefinedCompression, 0.003 },
     { "FPX", UndefinedCompression, 0.0 },
     { "FRACTAL", UndefinedCompression, 0.0 },
-    { "FTS", UndefinedCompression, 0.003 },
     { "GIF", UndefinedCompression, 0.0 },
     { "GIF87", UndefinedCompression, 0.0 },
     { "GRAY", UndefinedCompression, 0.0 },
@@ -300,7 +298,9 @@ static const struct ReferenceFormats
     { "PFM", UndefinedCompression, 0.0 },
     { "PGM", UndefinedCompression, 0.0 },
     { "PGX", UndefinedCompression, 0.0 },
+#if !defined(MAGICKCORE_HDRI_SUPPORT)
     { "PICT", UndefinedCompression, 0.003 },
+#endif
     { "PIX", UndefinedCompression, 0.0 },
     { "PJPEG", UndefinedCompression, 0.003 },
     { "PLASMA", UndefinedCompression, 0.0 },

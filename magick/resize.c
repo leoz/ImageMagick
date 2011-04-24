@@ -840,7 +840,7 @@ MagickExport ResizeFilter *AcquireResizeFilter(const Image *image,
       ssize_t
         option;
 
-      option=ParseMagickOption(MagickFilterOptions,MagickFalse,artifact);
+      option=ParseCommandOption(MagickFilterOptions,MagickFalse,artifact);
       if ((UndefinedFilter < option) && (option < SentinelFilter))
         { /* Raw filter request - no window function. */
           filter_type=(FilterTypes) option;
@@ -850,7 +850,7 @@ MagickExport ResizeFilter *AcquireResizeFilter(const Image *image,
       artifact=GetImageArtifact(image,"filter:window");
       if (artifact != (const char *) NULL)
         {
-          option=ParseMagickOption(MagickFilterOptions,MagickFalse,artifact);
+          option=ParseCommandOption(MagickFilterOptions,MagickFalse,artifact);
           if ((UndefinedFilter < option) && (option < SentinelFilter))
             window_type=(FilterTypes) option;
         }
@@ -864,7 +864,7 @@ MagickExport ResizeFilter *AcquireResizeFilter(const Image *image,
           ssize_t
             option;
 
-          option=ParseMagickOption(MagickFilterOptions,MagickFalse,
+          option=ParseCommandOption(MagickFilterOptions,MagickFalse,
             artifact);
           if ((UndefinedFilter < option) && (option < SentinelFilter))
             {
@@ -933,7 +933,7 @@ MagickExport ResizeFilter *AcquireResizeFilter(const Image *image,
   /* Blur Override */
   artifact=GetImageArtifact(image,"filter:blur");
   if (artifact != (const char *) NULL)
-    resize_filter->blur=StringToDouble(artifact);
+    resize_filter->blur *= StringToDouble(artifact);
   if (resize_filter->blur < MagickEpsilon)
     resize_filter->blur=(MagickRealType) MagickEpsilon;
 
@@ -1058,9 +1058,9 @@ MagickExport ResizeFilter *AcquireResizeFilter(const Image *image,
         support=GetResizeFilterSupport(resize_filter); /* practical_support */
         (void) fprintf(stdout,"# Resize Filter (for graphing)\n#\n");
         (void) fprintf(stdout,"# filter = %s\n",
-             MagickOptionToMnemonic(MagickFilterOptions,filter_type));
+             CommandOptionToMnemonic(MagickFilterOptions,filter_type));
         (void) fprintf(stdout,"# window = %s\n",
-             MagickOptionToMnemonic(MagickFilterOptions, window_type));
+             CommandOptionToMnemonic(MagickFilterOptions, window_type));
         (void) fprintf(stdout,"# support = %.*g\n",
              GetMagickPrecision(),(double) resize_filter->support);
         (void) fprintf(stdout,"# win-support = %.*g\n",
@@ -2182,10 +2182,10 @@ static MagickBooleanType HorizontalFilter(const ResizeFilter *resize_filter,
             pixel.blue+=alpha*(p+j)->blue;
             pixel.opacity+=alpha*(p+j)->opacity;
           }
-          SetRedPixelComponent(q,ClampRedPixelComponent(&pixel));
-          SetGreenPixelComponent(q,ClampGreenPixelComponent(&pixel));
-          SetBluePixelComponent(q,ClampBluePixelComponent(&pixel));
-          SetOpacityPixelComponent(q,ClampOpacityPixelComponent(&pixel));
+          SetRedPixelComponent(q,ClampToQuantum(pixel.red));
+          SetGreenPixelComponent(q,ClampToQuantum(pixel.green));
+          SetBluePixelComponent(q,ClampToQuantum(pixel.blue));
+          SetOpacityPixelComponent(q,ClampToQuantum(pixel.opacity));
           if ((image->colorspace == CMYKColorspace) &&
               (resize_image->colorspace == CMYKColorspace))
             {
@@ -2218,10 +2218,10 @@ static MagickBooleanType HorizontalFilter(const ResizeFilter *resize_filter,
             gamma+=alpha;
           }
           gamma=1.0/(fabs((double) gamma) <= MagickEpsilon ? 1.0 : gamma);
-          q->red=ClampToQuantum(gamma*GetRedPixelComponent(&pixel));
-          q->green=ClampToQuantum(gamma*GetGreenPixelComponent(&pixel));
-          q->blue=ClampToQuantum(gamma*GetBluePixelComponent(&pixel));
-          SetOpacityPixelComponent(q,ClampOpacityPixelComponent(&pixel));
+          q->red=ClampToQuantum(gamma*pixel.red);
+          q->green=ClampToQuantum(gamma*pixel.green);
+          q->blue=ClampToQuantum(gamma*pixel.blue);
+          SetOpacityPixelComponent(q,ClampToQuantum(pixel.opacity));
           if ((image->colorspace == CMYKColorspace) &&
               (resize_image->colorspace == CMYKColorspace))
             {
@@ -2234,7 +2234,7 @@ static MagickBooleanType HorizontalFilter(const ResizeFilter *resize_filter,
                 pixel.index+=alpha*indexes[j];
               }
               resize_indexes[y]=(IndexPacket) ClampToQuantum(gamma*
-                GetIndexPixelComponent(&pixel));
+                pixel.index);
             }
         }
       if ((resize_image->storage_class == PseudoClass) &&
@@ -2425,10 +2425,10 @@ static MagickBooleanType VerticalFilter(const ResizeFilter *resize_filter,
             pixel.blue+=alpha*(p+j)->blue;
             pixel.opacity+=alpha*(p+j)->opacity;
           }
-          SetRedPixelComponent(q,ClampRedPixelComponent(&pixel));
-          SetGreenPixelComponent(q,ClampGreenPixelComponent(&pixel));
-          SetBluePixelComponent(q,ClampBluePixelComponent(&pixel));
-          SetOpacityPixelComponent(q,ClampOpacityPixelComponent(&pixel));
+          SetRedPixelComponent(q,ClampToQuantum(pixel.red));
+          SetGreenPixelComponent(q,ClampToQuantum(pixel.green));
+          SetBluePixelComponent(q,ClampToQuantum(pixel.blue));
+          SetOpacityPixelComponent(q,ClampToQuantum(pixel.opacity));
           if ((image->colorspace == CMYKColorspace) &&
               (resize_image->colorspace == CMYKColorspace))
             {
@@ -2461,10 +2461,10 @@ static MagickBooleanType VerticalFilter(const ResizeFilter *resize_filter,
             gamma+=alpha;
           }
           gamma=1.0/(fabs((double) gamma) <= MagickEpsilon ? 1.0 : gamma);
-          q->red=ClampToQuantum(gamma*GetRedPixelComponent(&pixel));
-          q->green=ClampToQuantum(gamma*GetGreenPixelComponent(&pixel));
-          q->blue=ClampToQuantum(gamma*GetBluePixelComponent(&pixel));
-          SetOpacityPixelComponent(q,ClampOpacityPixelComponent(&pixel));
+          q->red=ClampToQuantum(gamma*pixel.red);
+          q->green=ClampToQuantum(gamma*pixel.green);
+          q->blue=ClampToQuantum(gamma*pixel.blue);
+          SetOpacityPixelComponent(q,ClampToQuantum(pixel.opacity));
           if ((image->colorspace == CMYKColorspace) &&
               (resize_image->colorspace == CMYKColorspace))
             {
@@ -2477,7 +2477,7 @@ static MagickBooleanType VerticalFilter(const ResizeFilter *resize_filter,
                 pixel.index+=alpha*indexes[j];
               }
               resize_indexes[x]=(IndexPacket) ClampToQuantum(gamma*
-                GetIndexPixelComponent(&pixel));
+                pixel.index);
             }
         }
       if ((resize_image->storage_class == PseudoClass) &&

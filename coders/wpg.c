@@ -296,7 +296,7 @@ static void InsertRow(unsigned char *p,ssize_t y,Image *image, int bpp)
             for (bit=0; bit < 8; bit++)
               {
                 index=((*p) & (0x80 >> bit) ? 0x01 : 0x00);
-                indexes[x+bit]=index;
+                SetIndexPixelComponent(indexes+x+bit,index);
                 *q++=image->colormap[(int) index];
               }
             p++;
@@ -306,7 +306,7 @@ static void InsertRow(unsigned char *p,ssize_t y,Image *image, int bpp)
             for (bit=0; bit < (ssize_t) (image->columns % 8); bit++)
               {
                 index=((*p) & (0x80 >> bit) ? 0x01 : 0x00);
-                indexes[x+bit]=index;
+                SetIndexPixelComponent(indexes+x+bit,index);
                 *q++=image->colormap[(int) index];
               }
             p++;
@@ -414,9 +414,9 @@ static void InsertRow(unsigned char *p,ssize_t y,Image *image, int bpp)
         break;
       for (x=0; x < (ssize_t) image->columns; x++)
         {
-          q->red=ScaleCharToQuantum(*p++);
-          q->green=ScaleCharToQuantum(*p++);
-          q->blue=ScaleCharToQuantum(*p++);
+          SetRedPixelComponent(q,ScaleCharToQuantum(*p++));
+          SetGreenPixelComponent(q,ScaleCharToQuantum(*p++));
+          SetBluePixelComponent(q,ScaleCharToQuantum(*p++));
           q++;
         }
       if (!SyncAuthenticPixels(image,exception))

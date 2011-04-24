@@ -288,7 +288,7 @@ MagickExport Image *AcquireImage(const ImageInfo *image_info)
     }
   option=GetImageOption(image_info,"dispose");
   if (option != (const char *) NULL)
-    image->dispose=(DisposeType) ParseMagickOption(MagickDisposeOptions,
+    image->dispose=(DisposeType) ParseCommandOption(MagickDisposeOptions,
       MagickFalse,option);
   return(image);
 }
@@ -2373,8 +2373,8 @@ MagickExport MagickBooleanType SeparateImageChannel(Image *image,
       {
         for (x=0; x < (ssize_t) image->columns; x++)
         {
-          q->green=q->red;
-          q->blue=q->red;
+          SetGreenPixelComponent(q,GetRedPixelComponent(q));
+          SetBluePixelComponent(q,GetRedPixelComponent(q));
           q++;
         }
         break;
@@ -2383,8 +2383,8 @@ MagickExport MagickBooleanType SeparateImageChannel(Image *image,
       {
         for (x=0; x < (ssize_t) image->columns; x++)
         {
-          q->red=q->green;
-          q->blue=q->green;
+          SetRedPixelComponent(q,GetGreenPixelComponent(q));
+          SetBluePixelComponent(q,GetGreenPixelComponent(q));
           q++;
         }
         break;
@@ -2393,8 +2393,8 @@ MagickExport MagickBooleanType SeparateImageChannel(Image *image,
       {
         for (x=0; x < (ssize_t) image->columns; x++)
         {
-          q->red=q->blue;
-          q->green=q->blue;
+          SetRedPixelComponent(q,GetBluePixelComponent(q));
+          SetGreenPixelComponent(q,GetBluePixelComponent(q));
           q++;
         }
         break;
@@ -2403,9 +2403,9 @@ MagickExport MagickBooleanType SeparateImageChannel(Image *image,
       {
         for (x=0; x < (ssize_t) image->columns; x++)
         {
-          q->red=q->opacity;
-          q->green=q->opacity;
-          q->blue=q->opacity;
+          SetRedPixelComponent(q,GetOpacityPixelComponent(q));
+          SetGreenPixelComponent(q,GetOpacityPixelComponent(q));
+          SetBluePixelComponent(q,GetOpacityPixelComponent(q));
           q++;
         }
         break;
@@ -2417,9 +2417,9 @@ MagickExport MagickBooleanType SeparateImageChannel(Image *image,
           break;
         for (x=0; x < (ssize_t) image->columns; x++)
         {
-          q->red=indexes[x];
-          q->green=indexes[x];
-          q->blue=indexes[x];
+          SetRedPixelComponent(q,indexes[x]);
+          SetGreenPixelComponent(q,indexes[x]);
+          SetBluePixelComponent(q,indexes[x]);
           q++;
         }
         break;
@@ -2428,9 +2428,9 @@ MagickExport MagickBooleanType SeparateImageChannel(Image *image,
       {
         for (x=0; x < (ssize_t) image->columns; x++)
         {
-          q->red=(Quantum) GetAlphaPixelComponent(q);
-          q->green=(Quantum) GetAlphaPixelComponent(q);
-          q->blue=(Quantum) GetAlphaPixelComponent(q);
+          SetRedPixelComponent(q,GetAlphaPixelComponent(q));
+          SetGreenPixelComponent(q,GetAlphaPixelComponent(q));
+          SetBluePixelComponent(q,GetAlphaPixelComponent(q));
           q++;
         }
         break;
@@ -2439,7 +2439,8 @@ MagickExport MagickBooleanType SeparateImageChannel(Image *image,
       {
         for (x=0; x < (ssize_t) image->columns; x++)
         {
-          q->opacity=(Quantum) (QuantumRange-PixelIntensityToQuantum(q));
+          SetOpacityPixelComponent(q,(QuantumRange-
+            PixelIntensityToQuantum(q)));
           q++;
         }
         break;
@@ -2658,9 +2659,9 @@ MagickExport MagickBooleanType SetImageAlphaChannel(Image *image,
         {
           if (q->opacity == TransparentOpacity)
             {
-              q->red=pixel.red;
-              q->green=pixel.green;
-              q->blue=pixel.blue;
+              SetRedPixelComponent(q,pixel.red);
+              SetGreenPixelComponent(q,pixel.green);
+              SetBluePixelComponent(q,pixel.blue);
             }
           q++;
         }
@@ -3886,7 +3887,7 @@ static ssize_t SmushXGap(const Image *smush_image,const Image *images,
     {
       p=GetCacheViewVirtualPixels(left_view,x,left_geometry.y+y,1,1,exception);
       if ((p == (const PixelPacket *) NULL) ||
-          (p->opacity != TransparentOpacity) ||
+          (GetOpacityPixelComponent(p) != TransparentOpacity) ||
           ((left_image->columns-x-1) >= gap))
         break;
     }
@@ -3896,7 +3897,7 @@ static ssize_t SmushXGap(const Image *smush_image,const Image *images,
       p=GetCacheViewVirtualPixels(right_view,x,right_geometry.y+y,1,1,
         exception);
       if ((p == (const PixelPacket *) NULL) ||
-          (p->opacity != TransparentOpacity) || ((x+i) >= (ssize_t) gap))
+          (GetOpacityPixelComponent(p) != TransparentOpacity) || ((x+i) >= (ssize_t) gap))
         break;
     }
     if ((x+i) < (ssize_t) gap)
@@ -3956,7 +3957,7 @@ static ssize_t SmushYGap(const Image *smush_image,const Image *images,
     {
       p=GetCacheViewVirtualPixels(top_view,top_geometry.x+x,y,1,1,exception);
       if ((p == (const PixelPacket *) NULL) ||
-          (p->opacity != TransparentOpacity) || ((top_image->rows-y-1) >= gap))
+          (GetOpacityPixelComponent(p) != TransparentOpacity) || ((top_image->rows-y-1) >= gap))
         break;
     }
     i=(ssize_t) top_image->rows-y-1;
@@ -3965,7 +3966,7 @@ static ssize_t SmushYGap(const Image *smush_image,const Image *images,
       p=GetCacheViewVirtualPixels(bottom_view,bottom_geometry.x+x,y,1,1,
         exception);
       if ((p == (const PixelPacket *) NULL) ||
-          (p->opacity != TransparentOpacity) || ((y+i) >= (ssize_t) gap))
+          (GetOpacityPixelComponent(p) != TransparentOpacity) || ((y+i) >= (ssize_t) gap))
         break;
     }
     if ((y+i) < (ssize_t) gap)
@@ -4232,14 +4233,13 @@ MagickExport MagickBooleanType SyncImage(Image *image)
     indexes=GetCacheViewAuthenticIndexQueue(image_view);
     for (x=0; x < (ssize_t) image->columns; x++)
     {
-      index=PushColormapIndex(image,(size_t) indexes[x],
-        &range_exception);
+      index=PushColormapIndex(image,(size_t) indexes[x],&range_exception);
       pixel=image->colormap[(ssize_t) index];
-      q->red=pixel.red;
-      q->green=pixel.green;
-      q->blue=pixel.blue;
+      SetRedPixelComponent(q,pixel.red);
+      SetGreenPixelComponent(q,pixel.green);
+      SetBluePixelComponent(q,pixel.blue);
       if (image->matte != MagickFalse)
-        q->opacity=pixel.opacity;
+        SetOpacityPixelComponent(q,pixel.opacity);
       q++;
     }
     if (SyncCacheViewAuthenticPixels(image_view,exception) == MagickFalse)
@@ -4336,7 +4336,7 @@ MagickExport MagickBooleanType SyncImageSettings(const ImageInfo *image_info,
     image->bias=SiPrefixToDouble(option,QuantumRange);
   option=GetImageOption(image_info,"black-point-compensation");
   if (option != (const char *) NULL)
-    image->black_point_compensation=(MagickBooleanType) ParseMagickOption(
+    image->black_point_compensation=(MagickBooleanType) ParseCommandOption(
       MagickBooleanOptions,MagickFalse,option);
   option=GetImageOption(image_info,"blue-primary");
   if (option != (const char *) NULL)
@@ -4355,15 +4355,15 @@ MagickExport MagickBooleanType SyncImageSettings(const ImageInfo *image_info,
     image->colors=StringToUnsignedLong(option);
   option=GetImageOption(image_info,"compose");
   if (option != (const char *) NULL)
-    image->compose=(CompositeOperator) ParseMagickOption(MagickComposeOptions,
+    image->compose=(CompositeOperator) ParseCommandOption(MagickComposeOptions,
       MagickFalse,option);
   option=GetImageOption(image_info,"compress");
   if (option != (const char *) NULL)
-    image->compression=(CompressionType) ParseMagickOption(
+    image->compression=(CompressionType) ParseCommandOption(
       MagickCompressOptions,MagickFalse,option);
   option=GetImageOption(image_info,"debug");
   if (option != (const char *) NULL)
-    image->debug=(MagickBooleanType) ParseMagickOption(MagickBooleanOptions,
+    image->debug=(MagickBooleanType) ParseCommandOption(MagickBooleanOptions,
       MagickFalse,option);
   option=GetImageOption(image_info,"density");
   if (option != (const char *) NULL)
@@ -4385,18 +4385,18 @@ MagickExport MagickBooleanType SyncImageSettings(const ImageInfo *image_info,
     image->depth=StringToUnsignedLong(option);
   option=GetImageOption(image_info,"endian");
   if (option != (const char *) NULL)
-    image->endian=(EndianType) ParseMagickOption(MagickEndianOptions,
+    image->endian=(EndianType) ParseCommandOption(MagickEndianOptions,
       MagickFalse,option);
   option=GetImageOption(image_info,"filter");
   if (option != (const char *) NULL)
-    image->filter=(FilterTypes) ParseMagickOption(MagickFilterOptions,
+    image->filter=(FilterTypes) ParseCommandOption(MagickFilterOptions,
       MagickFalse,option);
   option=GetImageOption(image_info,"fuzz");
   if (option != (const char *) NULL)
     image->fuzz=SiPrefixToDouble(option,QuantumRange);
   option=GetImageOption(image_info,"gravity");
   if (option != (const char *) NULL)
-    image->gravity=(GravityType) ParseMagickOption(MagickGravityOptions,
+    image->gravity=(GravityType) ParseCommandOption(MagickGravityOptions,
       MagickFalse,option);
   option=GetImageOption(image_info,"green-primary");
   if (option != (const char *) NULL)
@@ -4409,15 +4409,15 @@ MagickExport MagickBooleanType SyncImageSettings(const ImageInfo *image_info,
     }
   option=GetImageOption(image_info,"intent");
   if (option != (const char *) NULL)
-    image->rendering_intent=(RenderingIntent) ParseMagickOption(
+    image->rendering_intent=(RenderingIntent) ParseCommandOption(
       MagickIntentOptions,MagickFalse,option);
   option=GetImageOption(image_info,"interlace");
   if (option != (const char *) NULL)
-    image->interlace=(InterlaceType) ParseMagickOption(MagickInterlaceOptions,
+    image->interlace=(InterlaceType) ParseCommandOption(MagickInterlaceOptions,
       MagickFalse,option);
   option=GetImageOption(image_info,"interpolate");
   if (option != (const char *) NULL)
-    image->interpolate=(InterpolatePixelMethod) ParseMagickOption(
+    image->interpolate=(InterpolatePixelMethod) ParseCommandOption(
       MagickInterpolateOptions,MagickFalse,option);
   option=GetImageOption(image_info,"loop");
   if (option != (const char *) NULL)
@@ -4427,7 +4427,7 @@ MagickExport MagickBooleanType SyncImageSettings(const ImageInfo *image_info,
     (void) QueryColorDatabase(option,&image->matte_color,&image->exception);
   option=GetImageOption(image_info,"orient");
   if (option != (const char *) NULL)
-    image->orientation=(OrientationType) ParseMagickOption(
+    image->orientation=(OrientationType) ParseCommandOption(
       MagickOrientationOptions,MagickFalse,option);
   option=GetImageOption(image_info,"page");
   if (option != (const char *) NULL)
@@ -4458,7 +4458,7 @@ MagickExport MagickBooleanType SyncImageSettings(const ImageInfo *image_info,
     image->scene=StringToUnsignedLong(option);
   option=GetImageOption(image_info,"taint");
   if (option != (const char *) NULL)
-    image->taint=(MagickBooleanType) ParseMagickOption(MagickBooleanOptions,
+    image->taint=(MagickBooleanType) ParseCommandOption(MagickBooleanOptions,
       MagickFalse,option);
   option=GetImageOption(image_info,"tile-offset");
   if (option != (const char *) NULL)
@@ -4476,11 +4476,11 @@ MagickExport MagickBooleanType SyncImageSettings(const ImageInfo *image_info,
       &image->exception);
   option=GetImageOption(image_info,"type");
   if (option != (const char *) NULL)
-    image->type=(ImageType) ParseMagickOption(MagickTypeOptions,MagickFalse,
+    image->type=(ImageType) ParseCommandOption(MagickTypeOptions,MagickFalse,
       option);
   option=GetImageOption(image_info,"units");
   if (option != (const char *) NULL)
-    units=(ResolutionType) ParseMagickOption(MagickResolutionOptions,
+    units=(ResolutionType) ParseCommandOption(MagickResolutionOptions,
       MagickFalse,option);
   else
     units = image_info->units;

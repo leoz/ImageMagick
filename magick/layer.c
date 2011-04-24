@@ -191,7 +191,7 @@ static MagickBooleanType IsBoundsCleared(const Image *image1,
       break;
     for (x=0; x < (ssize_t) bounds->width; x++)
     {
-      if ((p->opacity <= (Quantum) (QuantumRange/2)) &&
+      if ((GetOpacityPixelComponent(p) <= (Quantum) (QuantumRange/2)) &&
           (q->opacity > (Quantum) (QuantumRange/2)))
         break;
       p++;
@@ -538,7 +538,7 @@ static MagickBooleanType ComparePixels(const ImageLayerMethod method,
   if (method == CompareAnyLayer)
     return((MagickBooleanType)(IsMagickColorSimilar(p,q) == MagickFalse));
 
-  o1 = (p->matte != MagickFalse) ? p->opacity : OpaqueOpacity;
+  o1 = (p->matte != MagickFalse) ? GetOpacityPixelComponent(p) : OpaqueOpacity;
   o2 = (q->matte != MagickFalse) ? q->opacity : OpaqueOpacity;
 
   /*
@@ -1352,14 +1352,14 @@ static Image *OptimizeLayerFrames(const Image *image,
 #if DEBUG_OPT_FRAME
     fprintf(stderr, "final   %.20g : %s  %.20gx%.20g%+.20g%+.20g\n",
          (double) i-1,
-         MagickOptionToMnemonic(MagickDisposeOptions, disposals[i-1]),
+         CommandOptionToMnemonic(MagickDisposeOptions, disposals[i-1]),
          (double) bounds[i-1].width, (double) bounds[i-1].height,
          (double) bounds[i-1].x, (double) bounds[i-1].y );
 #endif
 #if DEBUG_OPT_FRAME
     fprintf(stderr, "interum %.20g : %s  %.20gx%.20g%+.20g%+.20g\n",
          (double) i,
-         MagickOptionToMnemonic(MagickDisposeOptions, disposals[i]),
+         CommandOptionToMnemonic(MagickDisposeOptions, disposals[i]),
          (double) bounds[i].width, (double) bounds[i].height,
          (double) bounds[i].x, (double) bounds[i].y );
     fprintf(stderr, "\n");

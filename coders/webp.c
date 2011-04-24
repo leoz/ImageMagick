@@ -170,10 +170,10 @@ static Image *ReadWEBPImage(const ImageInfo *image_info,
       break;
     for (x=0; x < (ssize_t) image->columns; x++)
     {
-      q->red=ScaleCharToQuantum(*p++);
-      q->green=ScaleCharToQuantum(*p++);
-      q->blue=ScaleCharToQuantum(*p++);
-      q->opacity=(Quantum) (QuantumRange-ScaleCharToQuantum(*p++));
+      SetRedPixelComponent(q,ScaleCharToQuantum(*p++));
+      SetGreenPixelComponent(q,ScaleCharToQuantum(*p++));
+      SetBluePixelComponent(q,ScaleCharToQuantum(*p++));
+      SetOpacityPixelComponent(q,(QuantumRange-ScaleCharToQuantum(*p++)));
       if (q->opacity != OpaqueOpacity)
         image->matte=MagickTrue;
       q++;
@@ -376,7 +376,7 @@ static MagickBooleanType WriteWEBPImage(const ImageInfo *image_info,
       *q++=ScaleQuantumToChar(GetBluePixelComponent(p));
       if (image->matte != MagickFalse)
         *q++=ScaleQuantumToChar((Quantum) (QuantumRange-
-          (image->matte != MagickFalse ? p->opacity : OpaqueOpacity)));
+          (image->matte != MagickFalse ? GetOpacityPixelComponent(p) : OpaqueOpacity)));
       p++;
     }
     status=SetImageProgress(image,SaveImageTag,(MagickOffsetType) y,

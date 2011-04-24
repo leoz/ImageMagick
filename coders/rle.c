@@ -443,11 +443,11 @@ static Image *ReadRLEImage(const ImageInfo *image_info,ExceptionInfo *exception)
             break;
           for (x=0; x < (ssize_t) image->columns; x++)
           {
-            q->red=ScaleCharToQuantum(*p++);
-            q->green=ScaleCharToQuantum(*p++);
-            q->blue=ScaleCharToQuantum(*p++);
+            SetRedPixelComponent(q,ScaleCharToQuantum(*p++));
+            SetGreenPixelComponent(q,ScaleCharToQuantum(*p++));
+            SetBluePixelComponent(q,ScaleCharToQuantum(*p++));
             if (image->matte != MagickFalse)
-              q->opacity=(Quantum) (QuantumRange-ScaleCharToQuantum(*p++));
+              SetOpacityPixelComponent(q,(QuantumRange-ScaleCharToQuantum(*p++)));
             q++;
           }
           if (SyncAuthenticPixels(image,exception) == MagickFalse)
@@ -531,7 +531,7 @@ static Image *ReadRLEImage(const ImageInfo *image_info,ExceptionInfo *exception)
                 q->red=image->colormap[*p++].red;
                 q->green=image->colormap[*p++].green;
                 q->blue=image->colormap[*p++].blue;
-                q->opacity=(Quantum) (QuantumRange-ScaleCharToQuantum(*p++));
+                SetOpacityPixelComponent(q,(QuantumRange-ScaleCharToQuantum(*p++)));
                 q++;
               }
               if (SyncAuthenticPixels(image,exception) == MagickFalse)

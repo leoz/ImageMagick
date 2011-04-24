@@ -117,12 +117,12 @@ static Image *ReadBGRImage(const ImageInfo *image_info,
   register ssize_t
     i;
 
+  size_t
+    length;
+
   ssize_t
     count,
     y;
-
-  size_t
-    length;
 
   unsigned char
     *pixels;
@@ -319,8 +319,8 @@ static Image *ReadBGRImage(const ImageInfo *image_info,
             if (((y-image->extract_info.y) >= 0) && 
                 ((y-image->extract_info.y) < (ssize_t) image->rows))
               {
-                p=GetVirtualPixels(canvas_image,canvas_image->extract_info.x,
-                  0,canvas_image->columns,1,exception);
+                p=GetVirtualPixels(canvas_image,canvas_image->extract_info.x,0,
+                  canvas_image->columns,1,exception);
                 q=GetAuthenticPixels(image,0,y-image->extract_info.y,
                   image->columns,1,exception);
                 if ((p == (const PixelPacket *) NULL) ||
@@ -1047,8 +1047,7 @@ ModuleExport void UnregisterBGRImage(void)
 %    o image:  The image.
 %
 */
-static MagickBooleanType WriteBGRImage(const ImageInfo *image_info,
-  Image *image)
+static MagickBooleanType WriteBGRImage(const ImageInfo *image_info,Image *image)
 {
   MagickBooleanType
     status;
@@ -1062,12 +1061,12 @@ static MagickBooleanType WriteBGRImage(const ImageInfo *image_info,
   QuantumType
     quantum_type;
 
+  size_t
+    length;
+
   ssize_t
     count,
     y;
-
-  size_t
-    length;
 
   unsigned char
     *pixels;

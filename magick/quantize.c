@@ -379,7 +379,7 @@ MagickExport QuantizeInfo *AcquireQuantizeInfo(const ImageInfo *image_info)
       quantize_info->dither=image_info->dither;
       option=GetImageOption(image_info,"dither");
       if (option != (const char *) NULL)
-        quantize_info->dither_method=(DitherMethod) ParseMagickOption(
+        quantize_info->dither_method=(DitherMethod) ParseCommandOption(
           MagickDitherOptions,MagickFalse,option);
       quantize_info->measure_error=image_info->verbose;
     }
@@ -476,9 +476,9 @@ static inline size_t ColorToNodeId(const CubeInfo *cube_info,
 static inline MagickBooleanType IsSameColor(const Image *image,
   const PixelPacket *p,const PixelPacket *q)
 {
-  if ((p->red != q->red) || (p->green != q->green) || (p->blue != q->blue))
+  if ((GetRedPixelComponent(p) != q->red) || (GetGreenPixelComponent(p) != q->green) || (GetBluePixelComponent(p) != q->blue))
     return(MagickFalse);
-  if ((image->matte != MagickFalse) && (p->opacity != q->opacity))
+  if ((image->matte != MagickFalse) && (GetOpacityPixelComponent(p) != q->opacity))
     return(MagickFalse);
   return(MagickTrue);
 }
@@ -1091,15 +1091,15 @@ static void ClosestColor(const Image *image,CubeInfo *cube_info,
           alpha=(MagickRealType) (QuantumScale*GetAlphaPixelComponent(p));
           beta=(MagickRealType) (QuantumScale*GetAlphaPixelComponent(q));
         }
-      pixel=alpha*p->red-beta*q->red;
+      pixel=alpha*GetRedPixelComponent(p)-beta*q->red;
       distance=pixel*pixel;
       if (distance <= cube_info->distance)
         {
-          pixel=alpha*p->green-beta*q->green;
+          pixel=alpha*GetGreenPixelComponent(p)-beta*q->green;
           distance+=pixel*pixel;
           if (distance <= cube_info->distance)
             {
-              pixel=alpha*p->blue-beta*q->blue;
+              pixel=alpha*GetBluePixelComponent(p)-beta*q->blue;
               distance+=pixel*pixel;
               if (distance <= cube_info->distance)
                 {
@@ -1465,9 +1465,6 @@ static MagickBooleanType FloydSteinbergDither(Image *image,CubeInfo *cube_info)
   exception=(&image->exception);
   status=MagickTrue;
   image_view=AcquireCacheView(image);
-#if defined(MAGICKCORE_OPENMP_SUPPORT)
-  #pragma omp parallel for schedule(dynamic,4) shared(status)
-#endif
   for (y=0; y < (ssize_t) image->rows; y++)
   {
     const int
@@ -2182,17 +2179,17 @@ MagickExport MagickBooleanType GetImageQuantizeError(Image *image)
           beta=(MagickRealType) (QuantumScale*(QuantumRange-
             image->colormap[index].opacity));
         }
-      distance=fabs(alpha*p->red-beta*image->colormap[index].red);
+      distance=fabs(alpha*GetRedPixelComponent(p)-beta*image->colormap[index].red);
       mean_error_per_pixel+=distance;
       mean_error+=distance*distance;
       if (distance > maximum_error)
         maximum_error=distance;
-      distance=fabs(alpha*p->green-beta*image->colormap[index].green);
+      distance=fabs(alpha*GetGreenPixelComponent(p)-beta*image->colormap[index].green);
       mean_error_per_pixel+=distance;
       mean_error+=distance*distance;
       if (distance > maximum_error)
         maximum_error=distance;
-      distance=fabs(alpha*p->blue-beta*image->colormap[index].blue);
+      distance=fabs(alpha*GetBluePixelComponent(p)-beta*image->colormap[index].blue);
       mean_error_per_pixel+=distance;
       mean_error+=distance*distance;
       if (distance > maximum_error)
@@ -2603,65 +2600,6 @@ static void PruneToCubeDepth(const Image *image,CubeInfo *cube_info,
 %    o image: the image.
 %
 */
-static MagickBooleanType DirectToColormapImage(Image *image,
-  ExceptionInfo *exception)
-{
-  CacheView
-    *image_view;
-
-  MagickBooleanType
-    status;
-
-  register ssize_t
-    i;
-
-  size_t
-    number_colors;
-
-  ssize_t
-    y;
-
-  status=MagickTrue;
-  number_colors=(size_t) (image->columns*image->rows);
-  if (AcquireImageColormap(image,number_colors) == MagickFalse)
-    ThrowBinaryException(ResourceLimitError,"MemoryAllocationFailed",
-      image->filename);
-  i=0;
-  image_view=AcquireCacheView(image);
-  for (y=0; y < (ssize_t) image->rows; y++)
-  {
-    MagickBooleanType
-      proceed;
-
-    register IndexPacket
-      *restrict indexes;
-
-    register PixelPacket
-      *restrict q;
-
-    register ssize_t
-      x;
-
-    q=GetCacheViewAuthenticPixels(image_view,0,y,image->columns,1,exception);
-    if (q == (const PixelPacket *) NULL)
-      break;
-    indexes=GetCacheViewAuthenticIndexQueue(image_view);
-    for (x=0; x < (ssize_t) image->columns; x++)
-    {
-      indexes[x]=(IndexPacket) i;
-      image->colormap[i++]=(*q++);
-    }
-    if (SyncCacheViewAuthenticPixels(image_view,exception) == MagickFalse)
-      break;
-    proceed=SetImageProgress(image,AssignImageTag,(MagickOffsetType) y,
-      image->rows);
-    if (proceed == MagickFalse)
-      status=MagickFalse;
-  }
-  image_view=DestroyCacheView(image_view);
-  return(status);
-}
-
 MagickExport MagickBooleanType QuantizeImage(const QuantizeInfo *quantize_info,
   Image *image)
 {
@@ -2686,14 +2624,9 @@ MagickExport MagickBooleanType QuantizeImage(const QuantizeInfo *quantize_info,
     maximum_colors=MaxColormapSize;
   if (maximum_colors > MaxColormapSize)
     maximum_colors=MaxColormapSize;
-  if (IsGrayImage(image,&image->exception) != MagickFalse)
-    {
-      if (image->matte == MagickFalse)
-        (void) SetGrayscaleImage(image);
-      else
-        if ((image->columns*image->rows) <= maximum_colors)
-          return(DirectToColormapImage(image,&image->exception));
-    }
+  if ((IsGrayImage(image,&image->exception) != MagickFalse) &&
+      (image->matte == MagickFalse))
+    (void) SetGrayscaleImage(image);
   if ((image->storage_class == PseudoClass) &&
       (image->colors <= maximum_colors))
     return(MagickTrue);

@@ -108,12 +108,12 @@ static Image *ReadCAPTIONImage(const ImageInfo *image_info,
   register ssize_t
     i;
 
-  TypeMetric
-    metrics;
-
   size_t
     height,
     width;
+
+  TypeMetric
+    metrics;
 
   /*
     Initialize Image structure.
@@ -140,7 +140,7 @@ static Image *ReadCAPTIONImage(const ImageInfo *image_info,
   draw_info->text=ConstantString(caption);
   gravity=GetImageOption(image_info,"gravity");
   if (gravity != (char *) NULL)
-    draw_info->gravity=(GravityType) ParseMagickOption(MagickGravityOptions,
+    draw_info->gravity=(GravityType) ParseCommandOption(MagickGravityOptions,
       MagickFalse,gravity);
   if ((*caption != '\0') && (image->rows != 0) &&
       (image_info->pointsize == 0.0))
@@ -164,8 +164,7 @@ static Image *ReadCAPTIONImage(const ImageInfo *image_info,
         status=GetMultilineTypeMetrics(image,draw_info,&metrics);
         (void) status;
         width=(size_t) floor(metrics.width+draw_info->stroke_width+0.5);
-        height=(size_t) floor(metrics.height+draw_info->stroke_width+
-          0.5);
+        height=(size_t) floor(metrics.height+draw_info->stroke_width+0.5);
         if ((width > (image->columns+1)) || (height > (image->rows+1)))
           break;
         draw_info->pointsize*=2.0;
@@ -183,8 +182,7 @@ static Image *ReadCAPTIONImage(const ImageInfo *image_info,
           (void) CloneString(&draw_info->geometry,geometry);
         status=GetMultilineTypeMetrics(image,draw_info,&metrics);
         width=(size_t) floor(metrics.width+draw_info->stroke_width+0.5);
-        height=(size_t) floor(metrics.height+draw_info->stroke_width+
-          0.5);
+        height=(size_t) floor(metrics.height+draw_info->stroke_width+0.5);
         if ((width > (image->columns+1)) || (height > (image->rows+1)))
           break;
         draw_info->pointsize++;

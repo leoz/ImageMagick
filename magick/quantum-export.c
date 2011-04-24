@@ -511,25 +511,25 @@ MagickExport size_t ExportQuantumPixels(const Image *image,
           {
             pixel=(unsigned char) *indexes++;
             *q=((pixel & 0x01) << 7);
-            pixel=(unsigned char) (p->opacity == (Quantum) TransparentOpacity ?
+            pixel=(unsigned char) (GetOpacityPixelComponent(p) == (Quantum) TransparentOpacity ?
               1 : 0);
             *q|=((pixel & 0x01) << 6);
             p++;
             pixel=(unsigned char) *indexes++;
             *q|=((pixel & 0x01) << 5);
-            pixel=(unsigned char) (p->opacity == (Quantum) TransparentOpacity ?
+            pixel=(unsigned char) (GetOpacityPixelComponent(p) == (Quantum) TransparentOpacity ?
               1 : 0);
             *q|=((pixel & 0x01) << 4);
             p++;
             pixel=(unsigned char) *indexes++;
             *q|=((pixel & 0x01) << 3);
-            pixel=(unsigned char) (p->opacity == (Quantum) TransparentOpacity ?
+            pixel=(unsigned char) (GetOpacityPixelComponent(p) == (Quantum) TransparentOpacity ?
               1 : 0);
             *q|=((pixel & 0x01) << 2);
             p++;
             pixel=(unsigned char) *indexes++;
             *q|=((pixel & 0x01) << 1);
-            pixel=(unsigned char) (p->opacity == (Quantum) TransparentOpacity ?
+            pixel=(unsigned char) (GetOpacityPixelComponent(p) == (Quantum) TransparentOpacity ?
               1 : 0);
             *q|=((pixel & 0x01) << 0);
             p++;
@@ -542,7 +542,7 @@ MagickExport size_t ExportQuantumPixels(const Image *image,
               {
                 pixel=(unsigned char) *indexes++;
                 *q|=((pixel & 0x01) << (unsigned char) (bit+4));
-                pixel=(unsigned char) (p->opacity == (Quantum)
+                pixel=(unsigned char) (GetOpacityPixelComponent(p) == (Quantum)
                   TransparentOpacity ? 1 : 0);
                 *q|=((pixel & 0x01) << (unsigned char) (bit+4-1));
                 p++;
@@ -704,9 +704,9 @@ MagickExport size_t ExportQuantumPixels(const Image *image,
             {
               for (x=0; x < (ssize_t) number_pixels; x++)
               {
-                pixel=(unsigned int) (ScaleQuantumToAny(p->red,range) << 22 |
-                  ScaleQuantumToAny(p->green,range) << 12 |
-                  ScaleQuantumToAny(p->blue,range) << 2);
+                pixel=(unsigned int) (ScaleQuantumToAny(GetRedPixelComponent(p),range) << 22 |
+                  ScaleQuantumToAny(GetGreenPixelComponent(p),range) << 12 |
+                  ScaleQuantumToAny(GetBluePixelComponent(p),range) << 2);
                 q=PopLongPixel(endian,pixel,q);
                 p++;
                 q+=quantum_info->pad;
@@ -717,13 +717,13 @@ MagickExport size_t ExportQuantumPixels(const Image *image,
             {
               for (x=0; x < (ssize_t) number_pixels; x++)
               {
-                pixel=(unsigned int) ScaleQuantumToAny(p->red,range);
+                pixel=(unsigned int) ScaleQuantumToAny(GetRedPixelComponent(p),range);
                 q=PopQuantumLongPixel(&quantum_state,quantum_info->depth,pixel,
                   q);
-                pixel=(unsigned int) ScaleQuantumToAny(p->green,range);
+                pixel=(unsigned int) ScaleQuantumToAny(GetGreenPixelComponent(p),range);
                 q=PopQuantumLongPixel(&quantum_state,quantum_info->depth,pixel,
                   q);
-                pixel=(unsigned int) ScaleQuantumToAny(p->blue,range);
+                pixel=(unsigned int) ScaleQuantumToAny(GetBluePixelComponent(p),range);
                 q=PopQuantumLongPixel(&quantum_state,quantum_info->depth,pixel,
                   q);
                 p++;
@@ -733,11 +733,11 @@ MagickExport size_t ExportQuantumPixels(const Image *image,
             }
           for (x=0; x < (ssize_t) number_pixels; x++)
           {
-            pixel=(unsigned int) ScaleQuantumToAny(p->red,range);
+            pixel=(unsigned int) ScaleQuantumToAny(GetRedPixelComponent(p),range);
             q=PopQuantumPixel(&quantum_state,quantum_info->depth,pixel,q);
-            pixel=(unsigned int) ScaleQuantumToAny(p->green,range);
+            pixel=(unsigned int) ScaleQuantumToAny(GetGreenPixelComponent(p),range);
             q=PopQuantumPixel(&quantum_state,quantum_info->depth,pixel,q);
-            pixel=(unsigned int) ScaleQuantumToAny(p->blue,range);
+            pixel=(unsigned int) ScaleQuantumToAny(GetBluePixelComponent(p),range);
             q=PopQuantumPixel(&quantum_state,quantum_info->depth,pixel,q);
             p++;
             q+=quantum_info->pad;
@@ -759,17 +759,17 @@ MagickExport size_t ExportQuantumPixels(const Image *image,
                   default:
                   case 0:
                   {
-                    pixel=(unsigned int) ScaleQuantumToAny(p->red,range);
+                    pixel=(unsigned int) ScaleQuantumToAny(GetRedPixelComponent(p),range);
                     break;
                   }
                   case 1:
                   {
-                    pixel=(unsigned int) ScaleQuantumToAny(p->green,range);
+                    pixel=(unsigned int) ScaleQuantumToAny(GetGreenPixelComponent(p),range);
                     break;
                   }
                   case 2:
                   {
-                    pixel=(unsigned int) ScaleQuantumToAny(p->blue,range);
+                    pixel=(unsigned int) ScaleQuantumToAny(GetBluePixelComponent(p),range);
                     p++;
                     break;
                   }
@@ -780,17 +780,17 @@ MagickExport size_t ExportQuantumPixels(const Image *image,
                   default:
                   case 0:
                   {
-                    pixel=(unsigned int) ScaleQuantumToAny(p->red,range);
+                    pixel=(unsigned int) ScaleQuantumToAny(GetRedPixelComponent(p),range);
                     break;
                   }
                   case 1:
                   {
-                    pixel=(unsigned int) ScaleQuantumToAny(p->green,range);
+                    pixel=(unsigned int) ScaleQuantumToAny(GetGreenPixelComponent(p),range);
                     break;
                   }
                   case 2:
                   {
-                    pixel=(unsigned int) ScaleQuantumToAny(p->blue,range);
+                    pixel=(unsigned int) ScaleQuantumToAny(GetBluePixelComponent(p),range);
                     p++;
                     break;
                   }
@@ -805,17 +805,17 @@ MagickExport size_t ExportQuantumPixels(const Image *image,
                   default:
                   case 0:
                   {
-                    pixel=(unsigned int) ScaleQuantumToAny(p->red,range);
+                    pixel=(unsigned int) ScaleQuantumToAny(GetRedPixelComponent(p),range);
                     break;
                   }
                   case 1:
                   {
-                    pixel=(unsigned int) ScaleQuantumToAny(p->green,range);
+                    pixel=(unsigned int) ScaleQuantumToAny(GetGreenPixelComponent(p),range);
                     break;
                   }
                   case 2:
                   {
-                    pixel=(unsigned int) ScaleQuantumToAny(p->blue,range);
+                    pixel=(unsigned int) ScaleQuantumToAny(GetBluePixelComponent(p),range);
                     p++;
                     break;
                   }
@@ -831,13 +831,13 @@ MagickExport size_t ExportQuantumPixels(const Image *image,
             {
               for (x=0; x < (ssize_t) number_pixels; x++)
               {
-                pixel=(unsigned int) ScaleQuantumToAny(p->red,range);
+                pixel=(unsigned int) ScaleQuantumToAny(GetRedPixelComponent(p),range);
                 q=PopQuantumLongPixel(&quantum_state,quantum_info->depth,pixel,
                   q);
-                pixel=(unsigned int) ScaleQuantumToAny(p->green,range);
+                pixel=(unsigned int) ScaleQuantumToAny(GetGreenPixelComponent(p),range);
                 q=PopQuantumLongPixel(&quantum_state,quantum_info->depth,pixel,
                   q);
-                pixel=(unsigned int) ScaleQuantumToAny(p->blue,range);
+                pixel=(unsigned int) ScaleQuantumToAny(GetBluePixelComponent(p),range);
                 q=PopQuantumLongPixel(&quantum_state,quantum_info->depth,pixel,
                   q);
                 p++;
@@ -847,11 +847,11 @@ MagickExport size_t ExportQuantumPixels(const Image *image,
             }
           for (x=0; x < (ssize_t) number_pixels; x++)
           {
-            pixel=(unsigned int) ScaleQuantumToAny(p->red,range);
+            pixel=(unsigned int) ScaleQuantumToAny(GetRedPixelComponent(p),range);
             q=PopQuantumPixel(&quantum_state,quantum_info->depth,pixel,q);
-            pixel=(unsigned int) ScaleQuantumToAny(p->green,range);
+            pixel=(unsigned int) ScaleQuantumToAny(GetGreenPixelComponent(p),range);
             q=PopQuantumPixel(&quantum_state,quantum_info->depth,pixel,q);
-            pixel=(unsigned int) ScaleQuantumToAny(p->blue,range);
+            pixel=(unsigned int) ScaleQuantumToAny(GetBluePixelComponent(p),range);
             q=PopQuantumPixel(&quantum_state,quantum_info->depth,pixel,q);
             p++;
             q+=quantum_info->pad;
@@ -903,9 +903,9 @@ MagickExport size_t ExportQuantumPixels(const Image *image,
             {
               for (x=0; x < (ssize_t) number_pixels; x++)
               {
-                q=PopFloatPixel(&quantum_state,(float) p->red,q);
-                q=PopFloatPixel(&quantum_state,(float) p->green,q);
-                q=PopFloatPixel(&quantum_state,(float) p->blue,q);
+                q=PopFloatPixel(&quantum_state,(float) GetRedPixelComponent(p),q);
+                q=PopFloatPixel(&quantum_state,(float) GetGreenPixelComponent(p),q);
+                q=PopFloatPixel(&quantum_state,(float) GetBluePixelComponent(p),q);
                 p++;
                 q+=quantum_info->pad;
               }
@@ -930,9 +930,9 @@ MagickExport size_t ExportQuantumPixels(const Image *image,
             {
               for (x=0; x < (ssize_t) number_pixels; x++)
               {
-                q=PopDoublePixel(&quantum_state,(double) p->red,q);
-                q=PopDoublePixel(&quantum_state,(double) p->green,q);
-                q=PopDoublePixel(&quantum_state,(double) p->blue,q);
+                q=PopDoublePixel(&quantum_state,(double) GetRedPixelComponent(p),q);
+                q=PopDoublePixel(&quantum_state,(double) GetGreenPixelComponent(p),q);
+                q=PopDoublePixel(&quantum_state,(double) GetBluePixelComponent(p),q);
                 p++;
                 q+=quantum_info->pad;
               }
@@ -945,11 +945,11 @@ MagickExport size_t ExportQuantumPixels(const Image *image,
           for (x=0; x < (ssize_t) number_pixels; x++)
           {
             q=PopQuantumPixel(&quantum_state,quantum_info->depth,
-              ScaleQuantumToAny(p->red,range),q);
+              ScaleQuantumToAny(GetRedPixelComponent(p),range),q);
             q=PopQuantumPixel(&quantum_state,quantum_info->depth,
-              ScaleQuantumToAny(p->green,range),q);
+              ScaleQuantumToAny(GetGreenPixelComponent(p),range),q);
             q=PopQuantumPixel(&quantum_state,quantum_info->depth,
-              ScaleQuantumToAny(p->blue,range),q);
+              ScaleQuantumToAny(GetBluePixelComponent(p),range),q);
             p++;
             q+=quantum_info->pad;
           }
@@ -1009,10 +1009,10 @@ MagickExport size_t ExportQuantumPixels(const Image *image,
                 {
                   switch (i)
                   {
-                    case 0: quantum=p->red; break;
-                    case 1: quantum=p->green; break;
-                    case 2: quantum=p->blue; break;
-                    case 3: quantum=(Quantum) (QuantumRange-p->opacity); break;
+                    case 0: quantum=GetRedPixelComponent(p); break;
+                    case 1: quantum=GetGreenPixelComponent(p); break;
+                    case 2: quantum=GetBluePixelComponent(p); break;
+                    case 3: quantum=(Quantum) (QuantumRange-GetOpacityPixelComponent(p)); break;
                   }
                   switch (n % 3)
                   {
@@ -1048,17 +1048,17 @@ MagickExport size_t ExportQuantumPixels(const Image *image,
             {
               for (x=0; x < (ssize_t) number_pixels; x++)
               {
-                pixel=(unsigned int) ScaleQuantumToAny(p->red,range);
+                pixel=(unsigned int) ScaleQuantumToAny(GetRedPixelComponent(p),range);
                 q=PopQuantumLongPixel(&quantum_state,quantum_info->depth,pixel,
                   q);
-                pixel=(unsigned int) ScaleQuantumToAny(p->green,range);
+                pixel=(unsigned int) ScaleQuantumToAny(GetGreenPixelComponent(p),range);
                 q=PopQuantumLongPixel(&quantum_state,quantum_info->depth,pixel,
                   q);
-                pixel=(unsigned int) ScaleQuantumToAny(p->blue,range);
+                pixel=(unsigned int) ScaleQuantumToAny(GetBluePixelComponent(p),range);
                 q=PopQuantumLongPixel(&quantum_state,quantum_info->depth,pixel,
                   q);
                 pixel=(unsigned int) ScaleQuantumToAny((Quantum) (QuantumRange-
-                  p->opacity),range);
+                  GetOpacityPixelComponent(p)),range);
                 q=PopQuantumLongPixel(&quantum_state,quantum_info->depth,pixel,
                   q);
                 p++;
@@ -1068,14 +1068,14 @@ MagickExport size_t ExportQuantumPixels(const Image *image,
             }
           for (x=0; x < (ssize_t) number_pixels; x++)
           {
-            pixel=(unsigned int) ScaleQuantumToAny(p->red,range);
+            pixel=(unsigned int) ScaleQuantumToAny(GetRedPixelComponent(p),range);
             q=PopQuantumPixel(&quantum_state,quantum_info->depth,pixel,q);
-            pixel=(unsigned int) ScaleQuantumToAny(p->green,range);
+            pixel=(unsigned int) ScaleQuantumToAny(GetGreenPixelComponent(p),range);
             q=PopQuantumPixel(&quantum_state,quantum_info->depth,pixel,q);
-            pixel=(unsigned int) ScaleQuantumToAny(p->blue,range);
+            pixel=(unsigned int) ScaleQuantumToAny(GetBluePixelComponent(p),range);
             q=PopQuantumPixel(&quantum_state,quantum_info->depth,pixel,q);
             pixel=(unsigned int) ScaleQuantumToAny((Quantum) (QuantumRange-
-              p->opacity),range);
+              GetOpacityPixelComponent(p)),range);
             q=PopQuantumPixel(&quantum_state,quantum_info->depth,pixel,q);
             p++;
             q+=quantum_info->pad;
@@ -1135,9 +1135,9 @@ MagickExport size_t ExportQuantumPixels(const Image *image,
                 float
                   pixel;
 
-                q=PopFloatPixel(&quantum_state,(float) p->red,q);
-                q=PopFloatPixel(&quantum_state,(float) p->green,q);
-                q=PopFloatPixel(&quantum_state,(float) p->blue,q);
+                q=PopFloatPixel(&quantum_state,(float) GetRedPixelComponent(p),q);
+                q=PopFloatPixel(&quantum_state,(float) GetGreenPixelComponent(p),q);
+                q=PopFloatPixel(&quantum_state,(float) GetBluePixelComponent(p),q);
                 pixel=(float) GetAlphaPixelComponent(p);
                 q=PopFloatPixel(&quantum_state,pixel,q);
                 p++;
@@ -1169,9 +1169,9 @@ MagickExport size_t ExportQuantumPixels(const Image *image,
 
               for (x=0; x < (ssize_t) number_pixels; x++)
               {
-                q=PopDoublePixel(&quantum_state,(double) p->red,q);
-                q=PopDoublePixel(&quantum_state,(double) p->green,q);
-                q=PopDoublePixel(&quantum_state,(double) p->blue,q);
+                q=PopDoublePixel(&quantum_state,(double) GetRedPixelComponent(p),q);
+                q=PopDoublePixel(&quantum_state,(double) GetGreenPixelComponent(p),q);
+                q=PopDoublePixel(&quantum_state,(double) GetBluePixelComponent(p),q);
                 pixel=(double) GetAlphaPixelComponent(p);
                 q=PopDoublePixel(&quantum_state,pixel,q);
                 p++;
@@ -1469,19 +1469,19 @@ MagickExport size_t ExportQuantumPixels(const Image *image,
           {
             *q='\0';
             *q|=(PixelIntensityToQuantum(p) > threshold ? black : white) << 7;
-            pixel=(unsigned char) (p->opacity == OpaqueOpacity ? 0x00 : 0x01);
+            pixel=(unsigned char) (GetOpacityPixelComponent(p) == OpaqueOpacity ? 0x00 : 0x01);
             *q|=(((int) pixel != 0 ? 0x00 : 0x01) << 6);
             p++;
             *q|=(PixelIntensityToQuantum(p) > threshold ? black : white) << 5;
-            pixel=(unsigned char) (p->opacity == OpaqueOpacity ? 0x00 : 0x01);
+            pixel=(unsigned char) (GetOpacityPixelComponent(p) == OpaqueOpacity ? 0x00 : 0x01);
             *q|=(((int) pixel != 0 ? 0x00 : 0x01) << 4);
             p++;
             *q|=(PixelIntensityToQuantum(p) > threshold ? black : white) << 3;
-            pixel=(unsigned char) (p->opacity == OpaqueOpacity ? 0x00 : 0x01);
+            pixel=(unsigned char) (GetOpacityPixelComponent(p) == OpaqueOpacity ? 0x00 : 0x01);
             *q|=(((int) pixel != 0 ? 0x00 : 0x01) << 2);
             p++;
             *q|=(PixelIntensityToQuantum(p) > threshold ? black : white) << 1;
-            pixel=(unsigned char) (p->opacity == OpaqueOpacity ? 0x00 : 0x01);
+            pixel=(unsigned char) (GetOpacityPixelComponent(p) == OpaqueOpacity ? 0x00 : 0x01);
             *q|=(((int) pixel != 0 ? 0x00 : 0x01) << 0);
             p++;
             q++;
@@ -1493,7 +1493,7 @@ MagickExport size_t ExportQuantumPixels(const Image *image,
               {
                 *q|=(PixelIntensityToQuantum(p) > threshold ? black : white) <<
                   (7-bit);
-                pixel=(unsigned char) (p->opacity == OpaqueOpacity ? 0x00 :
+                pixel=(unsigned char) (GetOpacityPixelComponent(p) == OpaqueOpacity ? 0x00 :
                   0x01);
                 *q|=(((int) pixel != 0 ? 0x00 : 0x01) << (unsigned char)
                   (7-bit-1));
@@ -1692,7 +1692,7 @@ MagickExport size_t ExportQuantumPixels(const Image *image,
             {
               for (x=0; x < (ssize_t) number_pixels; x++)
               {
-                q=PopFloatPixel(&quantum_state,(float) p->red,q);
+                q=PopFloatPixel(&quantum_state,(float) GetRedPixelComponent(p),q);
                 p++;
                 q+=quantum_info->pad;
               }
@@ -1713,7 +1713,7 @@ MagickExport size_t ExportQuantumPixels(const Image *image,
             {
               for (x=0; x < (ssize_t) number_pixels; x++)
               {
-                q=PopDoublePixel(&quantum_state,(double) p->red,q);
+                q=PopDoublePixel(&quantum_state,(double) GetRedPixelComponent(p),q);
                 p++;
                 q+=quantum_info->pad;
               }
@@ -1726,7 +1726,7 @@ MagickExport size_t ExportQuantumPixels(const Image *image,
           for (x=0; x < (ssize_t) number_pixels; x++)
           {
             q=PopQuantumPixel(&quantum_state,quantum_info->depth,
-              ScaleQuantumToAny(p->red,range),q);
+              ScaleQuantumToAny(GetRedPixelComponent(p),range),q);
             p++;
             q+=quantum_info->pad;
           }
@@ -1789,7 +1789,7 @@ MagickExport size_t ExportQuantumPixels(const Image *image,
             {
               for (x=0; x < (ssize_t) number_pixels; x++)
               {
-                q=PopFloatPixel(&quantum_state,(float) p->green,q);
+                q=PopFloatPixel(&quantum_state,(float) GetGreenPixelComponent(p),q);
                 p++;
                 q+=quantum_info->pad;
               }
@@ -1810,7 +1810,7 @@ MagickExport size_t ExportQuantumPixels(const Image *image,
             {
               for (x=0; x < (ssize_t) number_pixels; x++)
               {
-                q=PopDoublePixel(&quantum_state,(double) p->green,q);
+                q=PopDoublePixel(&quantum_state,(double) GetGreenPixelComponent(p),q);
                 p++;
                 q+=quantum_info->pad;
               }
@@ -1823,7 +1823,7 @@ MagickExport size_t ExportQuantumPixels(const Image *image,
           for (x=0; x < (ssize_t) number_pixels; x++)
           {
             q=PopQuantumPixel(&quantum_state,quantum_info->depth,
-              ScaleQuantumToAny(p->green,range),q);
+              ScaleQuantumToAny(GetGreenPixelComponent(p),range),q);
             p++;
             q+=quantum_info->pad;
           }
@@ -1886,7 +1886,7 @@ MagickExport size_t ExportQuantumPixels(const Image *image,
             {
               for (x=0; x < (ssize_t) number_pixels; x++)
               {
-                q=PopFloatPixel(&quantum_state,(float) p->blue,q);
+                q=PopFloatPixel(&quantum_state,(float) GetBluePixelComponent(p),q);
                 p++;
                 q+=quantum_info->pad;
               }
@@ -1907,7 +1907,7 @@ MagickExport size_t ExportQuantumPixels(const Image *image,
             {
               for (x=0; x < (ssize_t) number_pixels; x++)
               {
-                q=PopDoublePixel(&quantum_state,(double) p->blue,q);
+                q=PopDoublePixel(&quantum_state,(double) GetBluePixelComponent(p),q);
                 p++;
                 q+=quantum_info->pad;
               }
@@ -1920,7 +1920,7 @@ MagickExport size_t ExportQuantumPixels(const Image *image,
           for (x=0; x < (ssize_t) number_pixels; x++)
           {
             q=PopQuantumPixel(&quantum_state,quantum_info->depth,
-              ScaleQuantumToAny(p->blue,range),q);
+              ScaleQuantumToAny(GetBluePixelComponent(p),range),q);
             p++;
             q+=quantum_info->pad;
           }
@@ -2089,7 +2089,7 @@ MagickExport size_t ExportQuantumPixels(const Image *image,
             {
               for (x=0; x < (ssize_t) number_pixels; x++)
               {
-                q=PopFloatPixel(&quantum_state,(float) p->opacity,q);
+                q=PopFloatPixel(&quantum_state,(float) GetOpacityPixelComponent(p),q);
                 p++;
                 q+=quantum_info->pad;
               }
@@ -2110,7 +2110,7 @@ MagickExport size_t ExportQuantumPixels(const Image *image,
             {
               for (x=0; x < (ssize_t) number_pixels; x++)
               {
-                q=PopDoublePixel(&quantum_state,(double) p->opacity,q);
+                q=PopDoublePixel(&quantum_state,(double) GetOpacityPixelComponent(p),q);
                 p++;
                 q+=quantum_info->pad;
               }
@@ -2123,7 +2123,7 @@ MagickExport size_t ExportQuantumPixels(const Image *image,
           for (x=0; x < (ssize_t) number_pixels; x++)
           {
             q=PopQuantumPixel(&quantum_state,quantum_info->depth,
-              ScaleQuantumToAny(p->opacity,range),q);
+              ScaleQuantumToAny(GetOpacityPixelComponent(p),range),q);
             p++;
             q+=quantum_info->pad;
           }
@@ -2260,9 +2260,9 @@ MagickExport size_t ExportQuantumPixels(const Image *image,
             {
               for (x=0; x < (ssize_t) number_pixels; x++)
               {
-                pixel=(unsigned int) (ScaleQuantumToAny(p->red,range) << 22 |
-                  ScaleQuantumToAny(p->green,range) << 12 |
-                  ScaleQuantumToAny(p->blue,range) << 2);
+                pixel=(unsigned int) (ScaleQuantumToAny(GetRedPixelComponent(p),range) << 22 |
+                  ScaleQuantumToAny(GetGreenPixelComponent(p),range) << 12 |
+                  ScaleQuantumToAny(GetBluePixelComponent(p),range) << 2);
                 q=PopLongPixel(endian,pixel,q);
                 p++;
                 q+=quantum_info->pad;
@@ -2273,13 +2273,13 @@ MagickExport size_t ExportQuantumPixels(const Image *image,
             {
               for (x=0; x < (ssize_t) number_pixels; x++)
               {
-                pixel=(unsigned int) ScaleQuantumToAny(p->red,range);
+                pixel=(unsigned int) ScaleQuantumToAny(GetRedPixelComponent(p),range);
                 q=PopQuantumLongPixel(&quantum_state,quantum_info->depth,pixel,
                   q);
-                pixel=(unsigned int) ScaleQuantumToAny(p->green,range);
+                pixel=(unsigned int) ScaleQuantumToAny(GetGreenPixelComponent(p),range);
                 q=PopQuantumLongPixel(&quantum_state,quantum_info->depth,pixel,
                   q);
-                pixel=(unsigned int) ScaleQuantumToAny(p->blue,range);
+                pixel=(unsigned int) ScaleQuantumToAny(GetBluePixelComponent(p),range);
                 q=PopQuantumLongPixel(&quantum_state,quantum_info->depth,pixel,
                   q);
                 p++;
@@ -2289,11 +2289,11 @@ MagickExport size_t ExportQuantumPixels(const Image *image,
             }
           for (x=0; x < (ssize_t) number_pixels; x++)
           {
-            pixel=(unsigned int) ScaleQuantumToAny(p->red,range);
+            pixel=(unsigned int) ScaleQuantumToAny(GetRedPixelComponent(p),range);
             q=PopQuantumPixel(&quantum_state,quantum_info->depth,pixel,q);
-            pixel=(unsigned int) ScaleQuantumToAny(p->green,range);
+            pixel=(unsigned int) ScaleQuantumToAny(GetGreenPixelComponent(p),range);
             q=PopQuantumPixel(&quantum_state,quantum_info->depth,pixel,q);
-            pixel=(unsigned int) ScaleQuantumToAny(p->blue,range);
+            pixel=(unsigned int) ScaleQuantumToAny(GetBluePixelComponent(p),range);
             q=PopQuantumPixel(&quantum_state,quantum_info->depth,pixel,q);
             p++;
             q+=quantum_info->pad;
@@ -2315,17 +2315,17 @@ MagickExport size_t ExportQuantumPixels(const Image *image,
                   default:
                   case 0:
                   {
-                    pixel=(unsigned int) ScaleQuantumToAny(p->red,range);
+                    pixel=(unsigned int) ScaleQuantumToAny(GetRedPixelComponent(p),range);
                     break;
                   }
                   case 1:
                   {
-                    pixel=(unsigned int) ScaleQuantumToAny(p->green,range);
+                    pixel=(unsigned int) ScaleQuantumToAny(GetGreenPixelComponent(p),range);
                     break;
                   }
                   case 2:
                   {
-                    pixel=(unsigned int) ScaleQuantumToAny(p->blue,range);
+                    pixel=(unsigned int) ScaleQuantumToAny(GetBluePixelComponent(p),range);
                     p++;
                     break;
                   }
@@ -2336,17 +2336,17 @@ MagickExport size_t ExportQuantumPixels(const Image *image,
                   default:
                   case 0:
                   {
-                    pixel=(unsigned int) ScaleQuantumToAny(p->red,range);
+                    pixel=(unsigned int) ScaleQuantumToAny(GetRedPixelComponent(p),range);
                     break;
                   }
                   case 1:
                   {
-                    pixel=(unsigned int) ScaleQuantumToAny(p->green,range);
+                    pixel=(unsigned int) ScaleQuantumToAny(GetGreenPixelComponent(p),range);
                     break;
                   }
                   case 2:
                   {
-                    pixel=(unsigned int) ScaleQuantumToAny(p->blue,range);
+                    pixel=(unsigned int) ScaleQuantumToAny(GetBluePixelComponent(p),range);
                     p++;
                     break;
                   }
@@ -2361,17 +2361,17 @@ MagickExport size_t ExportQuantumPixels(const Image *image,
                   default:
                   case 0:
                   {
-                    pixel=(unsigned int) ScaleQuantumToAny(p->red,range);
+                    pixel=(unsigned int) ScaleQuantumToAny(GetRedPixelComponent(p),range);
                     break;
                   }
                   case 1:
                   {
-                    pixel=(unsigned int) ScaleQuantumToAny(p->green,range);
+                    pixel=(unsigned int) ScaleQuantumToAny(GetGreenPixelComponent(p),range);
                     break;
                   }
                   case 2:
                   {
-                    pixel=(unsigned int) ScaleQuantumToAny(p->blue,range);
+                    pixel=(unsigned int) ScaleQuantumToAny(GetBluePixelComponent(p),range);
                     p++;
                     break;
                   }
@@ -2387,13 +2387,13 @@ MagickExport size_t ExportQuantumPixels(const Image *image,
             {
               for (x=0; x < (ssize_t) number_pixels; x++)
               {
-                pixel=(unsigned int) ScaleQuantumToAny(p->red,range);
+                pixel=(unsigned int) ScaleQuantumToAny(GetRedPixelComponent(p),range);
                 q=PopQuantumLongPixel(&quantum_state,quantum_info->depth,pixel,
                   q);
-                pixel=(unsigned int) ScaleQuantumToAny(p->green,range);
+                pixel=(unsigned int) ScaleQuantumToAny(GetGreenPixelComponent(p),range);
                 q=PopQuantumLongPixel(&quantum_state,quantum_info->depth,pixel,
                   q);
-                pixel=(unsigned int) ScaleQuantumToAny(p->blue,range);
+                pixel=(unsigned int) ScaleQuantumToAny(GetBluePixelComponent(p),range);
                 q=PopQuantumLongPixel(&quantum_state,quantum_info->depth,pixel,
                   q);
                 p++;
@@ -2403,11 +2403,11 @@ MagickExport size_t ExportQuantumPixels(const Image *image,
             }
           for (x=0; x < (ssize_t) number_pixels; x++)
           {
-            pixel=(unsigned int) ScaleQuantumToAny(p->red,range);
+            pixel=(unsigned int) ScaleQuantumToAny(GetRedPixelComponent(p),range);
             q=PopQuantumPixel(&quantum_state,quantum_info->depth,pixel,q);
-            pixel=(unsigned int) ScaleQuantumToAny(p->green,range);
+            pixel=(unsigned int) ScaleQuantumToAny(GetGreenPixelComponent(p),range);
             q=PopQuantumPixel(&quantum_state,quantum_info->depth,pixel,q);
-            pixel=(unsigned int) ScaleQuantumToAny(p->blue,range);
+            pixel=(unsigned int) ScaleQuantumToAny(GetBluePixelComponent(p),range);
             q=PopQuantumPixel(&quantum_state,quantum_info->depth,pixel,q);
             p++;
             q+=quantum_info->pad;
@@ -2459,9 +2459,9 @@ MagickExport size_t ExportQuantumPixels(const Image *image,
             {
               for (x=0; x < (ssize_t) number_pixels; x++)
               {
-                q=PopFloatPixel(&quantum_state,(float) p->red,q);
-                q=PopFloatPixel(&quantum_state,(float) p->green,q);
-                q=PopFloatPixel(&quantum_state,(float) p->blue,q);
+                q=PopFloatPixel(&quantum_state,(float) GetRedPixelComponent(p),q);
+                q=PopFloatPixel(&quantum_state,(float) GetGreenPixelComponent(p),q);
+                q=PopFloatPixel(&quantum_state,(float) GetBluePixelComponent(p),q);
                 p++;
                 q+=quantum_info->pad;
               }
@@ -2486,9 +2486,9 @@ MagickExport size_t ExportQuantumPixels(const Image *image,
             {
               for (x=0; x < (ssize_t) number_pixels; x++)
               {
-                q=PopDoublePixel(&quantum_state,(double) p->red,q);
-                q=PopDoublePixel(&quantum_state,(double) p->green,q);
-                q=PopDoublePixel(&quantum_state,(double) p->blue,q);
+                q=PopDoublePixel(&quantum_state,(double) GetRedPixelComponent(p),q);
+                q=PopDoublePixel(&quantum_state,(double) GetGreenPixelComponent(p),q);
+                q=PopDoublePixel(&quantum_state,(double) GetBluePixelComponent(p),q);
                 p++;
                 q+=quantum_info->pad;
               }
@@ -2501,11 +2501,11 @@ MagickExport size_t ExportQuantumPixels(const Image *image,
           for (x=0; x < (ssize_t) number_pixels; x++)
           {
             q=PopQuantumPixel(&quantum_state,quantum_info->depth,
-              ScaleQuantumToAny(p->red,range),q);
+              ScaleQuantumToAny(GetRedPixelComponent(p),range),q);
             q=PopQuantumPixel(&quantum_state,quantum_info->depth,
-              ScaleQuantumToAny(p->green,range),q);
+              ScaleQuantumToAny(GetGreenPixelComponent(p),range),q);
             q=PopQuantumPixel(&quantum_state,quantum_info->depth,
-              ScaleQuantumToAny(p->blue,range),q);
+              ScaleQuantumToAny(GetBluePixelComponent(p),range),q);
             p++;
             q+=quantum_info->pad;
           }
@@ -2566,10 +2566,10 @@ MagickExport size_t ExportQuantumPixels(const Image *image,
                 {
                   switch (i)
                   {
-                    case 0: quantum=p->red; break;
-                    case 1: quantum=p->green; break;
-                    case 2: quantum=p->blue; break;
-                    case 3: quantum=(Quantum) (QuantumRange-p->opacity); break;
+                    case 0: quantum=GetRedPixelComponent(p); break;
+                    case 1: quantum=GetGreenPixelComponent(p); break;
+                    case 2: quantum=GetBluePixelComponent(p); break;
+                    case 3: quantum=(Quantum) (QuantumRange-GetOpacityPixelComponent(p)); break;
                   }
                   switch (n % 3)
                   {
@@ -2605,17 +2605,17 @@ MagickExport size_t ExportQuantumPixels(const Image *image,
             {
               for (x=0; x < (ssize_t) number_pixels; x++)
               {
-                pixel=(unsigned int) ScaleQuantumToAny(p->red,range);
+                pixel=(unsigned int) ScaleQuantumToAny(GetRedPixelComponent(p),range);
                 q=PopQuantumLongPixel(&quantum_state,quantum_info->depth,pixel,
                   q);
-                pixel=(unsigned int) ScaleQuantumToAny(p->green,range);
+                pixel=(unsigned int) ScaleQuantumToAny(GetGreenPixelComponent(p),range);
                 q=PopQuantumLongPixel(&quantum_state,quantum_info->depth,pixel,
                   q);
-                pixel=(unsigned int) ScaleQuantumToAny(p->blue,range);
+                pixel=(unsigned int) ScaleQuantumToAny(GetBluePixelComponent(p),range);
                 q=PopQuantumLongPixel(&quantum_state,quantum_info->depth,pixel,
                   q);
                 pixel=(unsigned int) ScaleQuantumToAny((Quantum) (QuantumRange-
-                  p->opacity),range);
+                  GetOpacityPixelComponent(p)),range);
                 q=PopQuantumLongPixel(&quantum_state,quantum_info->depth,pixel,
                   q);
                 p++;
@@ -2625,14 +2625,14 @@ MagickExport size_t ExportQuantumPixels(const Image *image,
             }
           for (x=0; x < (ssize_t) number_pixels; x++)
           {
-            pixel=(unsigned int) ScaleQuantumToAny(p->red,range);
+            pixel=(unsigned int) ScaleQuantumToAny(GetRedPixelComponent(p),range);
             q=PopQuantumPixel(&quantum_state,quantum_info->depth,pixel,q);
-            pixel=(unsigned int) ScaleQuantumToAny(p->green,range);
+            pixel=(unsigned int) ScaleQuantumToAny(GetGreenPixelComponent(p),range);
             q=PopQuantumPixel(&quantum_state,quantum_info->depth,pixel,q);
-            pixel=(unsigned int) ScaleQuantumToAny(p->blue,range);
+            pixel=(unsigned int) ScaleQuantumToAny(GetBluePixelComponent(p),range);
             q=PopQuantumPixel(&quantum_state,quantum_info->depth,pixel,q);
             pixel=(unsigned int) ScaleQuantumToAny((Quantum) (QuantumRange-
-              p->opacity),range);
+              GetOpacityPixelComponent(p)),range);
             q=PopQuantumPixel(&quantum_state,quantum_info->depth,pixel,q);
             p++;
             q+=quantum_info->pad;
@@ -2692,9 +2692,9 @@ MagickExport size_t ExportQuantumPixels(const Image *image,
                 float
                   pixel;
 
-                q=PopFloatPixel(&quantum_state,(float) p->red,q);
-                q=PopFloatPixel(&quantum_state,(float) p->green,q);
-                q=PopFloatPixel(&quantum_state,(float) p->blue,q);
+                q=PopFloatPixel(&quantum_state,(float) GetRedPixelComponent(p),q);
+                q=PopFloatPixel(&quantum_state,(float) GetGreenPixelComponent(p),q);
+                q=PopFloatPixel(&quantum_state,(float) GetBluePixelComponent(p),q);
                 pixel=(float) GetAlphaPixelComponent(p);
                 q=PopFloatPixel(&quantum_state,pixel,q);
                 p++;
@@ -2726,9 +2726,9 @@ MagickExport size_t ExportQuantumPixels(const Image *image,
 
               for (x=0; x < (ssize_t) number_pixels; x++)
               {
-                q=PopDoublePixel(&quantum_state,(double) p->red,q);
-                q=PopDoublePixel(&quantum_state,(double) p->green,q);
-                q=PopDoublePixel(&quantum_state,(double) p->blue,q);
+                q=PopDoublePixel(&quantum_state,(double) GetRedPixelComponent(p),q);
+                q=PopDoublePixel(&quantum_state,(double) GetGreenPixelComponent(p),q);
+                q=PopDoublePixel(&quantum_state,(double) GetBluePixelComponent(p),q);
                 pixel=(double) GetAlphaPixelComponent(p);
                 q=PopDoublePixel(&quantum_state,pixel,q);
                 p++;
@@ -2837,9 +2837,9 @@ MagickExport size_t ExportQuantumPixels(const Image *image,
             {
               for (x=0; x < (ssize_t) number_pixels; x++)
               {
-                q=PopFloatPixel(&quantum_state,(float) p->red,q);
-                q=PopFloatPixel(&quantum_state,(float) p->green,q);
-                q=PopFloatPixel(&quantum_state,(float) p->blue,q);
+                q=PopFloatPixel(&quantum_state,(float) GetRedPixelComponent(p),q);
+                q=PopFloatPixel(&quantum_state,(float) GetGreenPixelComponent(p),q);
+                q=PopFloatPixel(&quantum_state,(float) GetBluePixelComponent(p),q);
                 q=PopFloatPixel(&quantum_state,(float) indexes[x],q);
                 p++;
                 q+=quantum_info->pad;
@@ -2867,9 +2867,9 @@ MagickExport size_t ExportQuantumPixels(const Image *image,
             {
               for (x=0; x < (ssize_t) number_pixels; x++)
               {
-                q=PopDoublePixel(&quantum_state,(double) p->red,q);
-                q=PopDoublePixel(&quantum_state,(double) p->green,q);
-                q=PopDoublePixel(&quantum_state,(double) p->blue,q);
+                q=PopDoublePixel(&quantum_state,(double) GetRedPixelComponent(p),q);
+                q=PopDoublePixel(&quantum_state,(double) GetGreenPixelComponent(p),q);
+                q=PopDoublePixel(&quantum_state,(double) GetBluePixelComponent(p),q);
                 q=PopDoublePixel(&quantum_state,(double) indexes[x],q);
                 p++;
                 q+=quantum_info->pad;
@@ -2883,13 +2883,13 @@ MagickExport size_t ExportQuantumPixels(const Image *image,
           for (x=0; x < (ssize_t) number_pixels; x++)
           {
             q=PopQuantumPixel(&quantum_state,quantum_info->depth,
-              ScaleQuantumToAny(p->red,range),q);
+              ScaleQuantumToAny(GetRedPixelComponent(p),range),q);
             q=PopQuantumPixel(&quantum_state,quantum_info->depth,
-              ScaleQuantumToAny(p->green,range),q);
+              ScaleQuantumToAny(GetGreenPixelComponent(p),range),q);
             q=PopQuantumPixel(&quantum_state,quantum_info->depth,
-              ScaleQuantumToAny(p->blue,range),q);
+              ScaleQuantumToAny(GetBluePixelComponent(p),range),q);
             q=PopQuantumPixel(&quantum_state,quantum_info->depth,
-              ScaleQuantumToAny(indexes[x],range),q);
+              ScaleQuantumToAny(GetIndexPixelComponent(indexes+x),range),q);
             p++;
             q+=quantum_info->pad;
           }
@@ -2990,9 +2990,9 @@ MagickExport size_t ExportQuantumPixels(const Image *image,
                 float
                   pixel;
 
-                q=PopFloatPixel(&quantum_state,(float) p->red,q);
-                q=PopFloatPixel(&quantum_state,(float) p->green,q);
-                q=PopFloatPixel(&quantum_state,(float) p->blue,q);
+                q=PopFloatPixel(&quantum_state,(float) GetRedPixelComponent(p),q);
+                q=PopFloatPixel(&quantum_state,(float) GetGreenPixelComponent(p),q);
+                q=PopFloatPixel(&quantum_state,(float) GetBluePixelComponent(p),q);
                 q=PopFloatPixel(&quantum_state,(float) indexes[x],q);
                 pixel=(float) (GetAlphaPixelComponent(p));
                 q=PopFloatPixel(&quantum_state,pixel,q);
@@ -3028,9 +3028,9 @@ MagickExport size_t ExportQuantumPixels(const Image *image,
 
               for (x=0; x < (ssize_t) number_pixels; x++)
               {
-                q=PopDoublePixel(&quantum_state,(double) p->red,q);
-                q=PopDoublePixel(&quantum_state,(double) p->green,q);
-                q=PopDoublePixel(&quantum_state,(double) p->blue,q);
+                q=PopDoublePixel(&quantum_state,(double) GetRedPixelComponent(p),q);
+                q=PopDoublePixel(&quantum_state,(double) GetGreenPixelComponent(p),q);
+                q=PopDoublePixel(&quantum_state,(double) GetBluePixelComponent(p),q);
                 q=PopDoublePixel(&quantum_state,(double) indexes[x],q);
                 pixel=(double) (GetAlphaPixelComponent(p));
                 q=PopDoublePixel(&quantum_state,pixel,q);
@@ -3046,15 +3046,15 @@ MagickExport size_t ExportQuantumPixels(const Image *image,
           for (x=0; x < (ssize_t) number_pixels; x++)
           {
             q=PopQuantumPixel(&quantum_state,quantum_info->depth,
-              ScaleQuantumToAny(p->red,range),q);
+              ScaleQuantumToAny(GetRedPixelComponent(p),range),q);
             q=PopQuantumPixel(&quantum_state,quantum_info->depth,
-              ScaleQuantumToAny(p->green,range),q);
+              ScaleQuantumToAny(GetGreenPixelComponent(p),range),q);
             q=PopQuantumPixel(&quantum_state,quantum_info->depth,
-              ScaleQuantumToAny(p->blue,range),q);
+              ScaleQuantumToAny(GetBluePixelComponent(p),range),q);
             q=PopQuantumPixel(&quantum_state,quantum_info->depth,
-              ScaleQuantumToAny(indexes[x],range),q);
+              ScaleQuantumToAny(GetIndexPixelComponent(indexes+x),range),q);
             q=PopQuantumPixel(&quantum_state,quantum_info->depth,
-              ScaleQuantumToAny(p->opacity,range),q);
+              ScaleQuantumToAny(GetOpacityPixelComponent(p),range),q);
             p++;
             q+=quantum_info->pad;
           }

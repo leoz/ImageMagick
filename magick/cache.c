@@ -3280,9 +3280,9 @@ MagickExport const PixelPacket *GetVirtualPixelsFromNexus(const Image *image,
     }
     case GrayVirtualPixelMethod:
     {
-      SetRedPixelComponent(&virtual_pixel,(Quantum) QuantumRange/2);
-      SetGreenPixelComponent(&virtual_pixel,(Quantum) QuantumRange/2);
-      SetBluePixelComponent(&virtual_pixel,(Quantum) QuantumRange/2);
+      SetRedPixelComponent(&virtual_pixel,QuantumRange/2);
+      SetGreenPixelComponent(&virtual_pixel,QuantumRange/2);
+      SetBluePixelComponent(&virtual_pixel,QuantumRange/2);
       SetOpacityPixelComponent(&virtual_pixel,OpaqueOpacity);
       break;
     }
@@ -3297,9 +3297,9 @@ MagickExport const PixelPacket *GetVirtualPixelsFromNexus(const Image *image,
     case MaskVirtualPixelMethod:
     case WhiteVirtualPixelMethod:
     {
-      SetRedPixelComponent(&virtual_pixel,(Quantum) QuantumRange);
-      SetGreenPixelComponent(&virtual_pixel,(Quantum) QuantumRange);
-      SetBluePixelComponent(&virtual_pixel,(Quantum) QuantumRange);
+      SetRedPixelComponent(&virtual_pixel,QuantumRange);
+      SetGreenPixelComponent(&virtual_pixel,QuantumRange);
+      SetBluePixelComponent(&virtual_pixel,QuantumRange);
       SetOpacityPixelComponent(&virtual_pixel,OpaqueOpacity);
       break;
     }
@@ -3870,12 +3870,12 @@ static MagickBooleanType MaskPixelCacheNexus(Image *image,NexusInfo *nexus_info,
     SetMagickPixelPacket(image,q,nexus_indexes+i,&beta);
     MagickPixelCompositeMask(&beta,(MagickRealType) PixelIntensityToQuantum(r),
       &alpha,alpha.opacity,&beta);
-    q->red=ClampToQuantum(beta.red);
-    q->green=ClampToQuantum(beta.green);
-    q->blue=ClampToQuantum(beta.blue);
-    q->opacity=ClampToQuantum(beta.opacity);
+    SetRedPixelComponent(q,ClampToQuantum(beta.red));
+    SetGreenPixelComponent(q,ClampToQuantum(beta.green));
+    SetBluePixelComponent(q,ClampToQuantum(beta.blue));
+    SetOpacityPixelComponent(q,ClampToQuantum(beta.opacity));
     if (cache_info->active_index_channel != MagickFalse)
-      nexus_indexes[i]=indexes[i];
+      SetIndexPixelComponent(nexus_indexes+i,indexes[i]);
     p++;
     q++;
     r++;
