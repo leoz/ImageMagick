@@ -549,7 +549,8 @@ MagickExport Image *AppendImages(const Image *images,
           SetOpacityPixelComponent(q,GetOpacityPixelComponent(p));
         if ((image->colorspace == CMYKColorspace) &&
             (append_image->colorspace == CMYKColorspace))
-          append_indexes[x]=indexes[x];
+          SetIndexPixelComponent(append_indexes+x,GetIndexPixelComponent(
+            indexes+x));
         p++;
         q++;
       }
@@ -780,6 +781,7 @@ MagickExport Image *CloneImage(const Image *image,const size_t columns,
   (void) ResetMagickMemory(clone_image,0,sizeof(*clone_image));
   clone_image->signature=MagickSignature;
   clone_image->storage_class=image->storage_class;
+  clone_image->channels=image->channels;
   clone_image->colorspace=image->colorspace;
   clone_image->matte=image->matte;
   clone_image->columns=image->columns;
@@ -1168,7 +1170,7 @@ MagickExport Image *CombineImages(const Image *image,const ChannelType channel,
         indexes=GetCacheViewAuthenticIndexQueue(combine_view);
         for (x=0; x < (ssize_t) combine_image->columns; x++)
         {
-          indexes[x]=PixelIntensityToQuantum(p);
+          SetIndexPixelComponent(indexes+x,PixelIntensityToQuantum(p));
           p++;
         }
         image_view=DestroyCacheView(image_view);
@@ -1591,6 +1593,38 @@ MagickExport Image *GetImageMask(const Image *image,ExceptionInfo *exception)
   if (image->mask == (Image *) NULL)
     return((Image *) NULL);
   return(CloneImage(image->mask,0,0,MagickTrue,exception));
+}
+
+/*
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                                             %
+%                                                                             %
+%                                                                             %
+%   G e t I m a g e C h a n n e l s                                           %
+%                                                                             %
+%                                                                             %
+%                                                                             %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%  GetImageChannels() returns the number of pixel channels associated with the
+%  specified image.
+%
+%  The format of the GetChannels method is:
+%
+%      size_t GetImageChannels(Image *image)
+%
+%  A description of each parameter follows:
+%
+%    o image: the image.
+%
+*/
+MagickExport size_t GetImageChannels(Image *image)
+{
+  assert(image != (Image *) NULL);
+  assert(image->signature == MagickSignature);
+  if (image->debug != MagickFalse)
+    (void) LogMagickEvent(TraceEvent,GetMagickModule(),"%s",image->filename);
+  return(image->channels);
 }
 
 /*
@@ -2417,9 +2451,9 @@ MagickExport MagickBooleanType SeparateImageChannel(Image *image,
           break;
         for (x=0; x < (ssize_t) image->columns; x++)
         {
-          SetRedPixelComponent(q,indexes[x]);
-          SetGreenPixelComponent(q,indexes[x]);
-          SetBluePixelComponent(q,indexes[x]);
+          SetRedPixelComponent(q,GetIndexPixelComponent(indexes+x));
+          SetGreenPixelComponent(q,GetIndexPixelComponent(indexes+x));
+          SetBluePixelComponent(q,GetIndexPixelComponent(indexes+x));
           q++;
         }
         break;
@@ -2669,7 +2703,7 @@ MagickExport MagickBooleanType SetImageAlphaChannel(Image *image,
           {
             indexes=GetCacheViewAuthenticIndexQueue(image_view);
             for (x=0; x < (ssize_t) image->columns; x++)
-              indexes[x]=index;
+              SetIndexPixelComponent(indexes+x,index);
           }
         if (SyncCacheViewAuthenticPixels(image_view,exception) == MagickFalse)
           status=MagickFalse;
@@ -2833,13 +2867,45 @@ MagickExport MagickBooleanType SetImageBackgroundColor(Image *image)
 
         indexes=GetCacheViewAuthenticIndexQueue(image_view);
         for (x=0; x < (ssize_t) image->columns; x++)
-          indexes[x]=index;
+          SetIndexPixelComponent(indexes+x,index);
       }
     if (SyncCacheViewAuthenticPixels(image_view,exception) == MagickFalse)
       status=MagickFalse;
   }
   image_view=DestroyCacheView(image_view);
   return(status);
+}
+
+/*
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                                             %
+%                                                                             %
+%                                                                             %
+%   S e t I m a g e C h a n n e l s                                           %
+%                                                                             %
+%                                                                             %
+%                                                                             %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%  SetImageChannels() sets the number of pixels channels associated with the
+%  image.
+%
+%  The format of the SetImageChannels method is:
+%
+%      MagickBooleanType SetImageChannels(Image *image,const size_t channels)
+%
+%  A description of each parameter follows:
+%
+%    o image: the image.
+%
+%    o channels:  The number of pixel channels.
+%
+*/
+MagickExport MagickBooleanType SetImageChannels(Image *image,
+  const size_t channels)
+{
+  image->channels=channels;
+  return(MagickTrue);
 }
 
 /*
@@ -4233,7 +4299,8 @@ MagickExport MagickBooleanType SyncImage(Image *image)
     indexes=GetCacheViewAuthenticIndexQueue(image_view);
     for (x=0; x < (ssize_t) image->columns; x++)
     {
-      index=PushColormapIndex(image,(size_t) indexes[x],&range_exception);
+      index=PushColormapIndex(image,(size_t) GetIndexPixelComponent(indexes+x),
+        &range_exception);
       pixel=image->colormap[(ssize_t) index];
       SetRedPixelComponent(q,pixel.red);
       SetGreenPixelComponent(q,pixel.green);

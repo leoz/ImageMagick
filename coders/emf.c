@@ -42,7 +42,6 @@
 #  if defined(__CYGWIN__)
 #    include <windows.h>
 #  else
-     /* All MinGW needs ... */
 #    include <wingdi.h>
 #  endif
 #endif
@@ -58,6 +57,7 @@
 #include "magick/list.h"
 #include "magick/magick.h"
 #include "magick/memory_.h"
+#include "magick/pixel.h"
 #include "magick/quantum-private.h"
 #include "magick/static.h"
 #include "magick/string_.h"
@@ -447,11 +447,6 @@ static Image *ReadEMFImage(const ImageInfo *image_info,
   Image
     *image;
 
-  ssize_t
-    height,
-    width,
-    y;
-
   RECT
     rect;
 
@@ -464,6 +459,11 @@ static Image *ReadEMFImage(const ImageInfo *image_info,
   RGBQUAD
     *pBits,
     *ppBits;
+
+  ssize_t
+    height,
+    width,
+    y;
 
   image=AcquireImage(image_info);
   hemf=ReadEnhMetaFile(image_info->filename,&width,&height);
@@ -489,8 +489,7 @@ static Image *ReadEMFImage(const ImageInfo *image_info,
           if (image->units == PixelsPerCentimeterResolution)
             x_resolution*=CENTIMETERS_INCH;
         }
-      image->rows=(size_t) ((height/1000.0/CENTIMETERS_INCH)*
-        y_resolution+0.5);
+      image->rows=(size_t) ((height/1000.0/CENTIMETERS_INCH)*y_resolution+0.5);
       image->columns=(size_t) ((width/1000.0/CENTIMETERS_INCH)*
         x_resolution+0.5);
     }
@@ -510,14 +509,14 @@ static Image *ReadEMFImage(const ImageInfo *image_info,
       char
         *geometry;
 
-      ssize_t
-        sans;
-
       register char
         *p;
 
       MagickStatusType
         flags;
+
+      ssize_t
+        sans;
 
       geometry=GetPageGeometry(image_info->page);
       p=strchr(geometry,'>');
@@ -526,11 +525,10 @@ static Image *ReadEMFImage(const ImageInfo *image_info,
           flags=ParseMetaGeometry(geometry,&sans,&sans,&image->columns,
             &image->rows);
           if (image->x_resolution != 0.0)
-            image->columns=(size_t) floor((image->columns*
-              image->x_resolution)+0.5);
-          if (image->y_resolution != 0.0)
-            image->rows=(size_t) floor((image->rows*image->y_resolution)+
+            image->columns=(size_t) floor((image->columns*image->x_resolution)+
               0.5);
+          if (image->y_resolution != 0.0)
+            image->rows=(size_t) floor((image->rows*image->y_resolution)+0.5);
         }
       else
         {
@@ -538,11 +536,11 @@ static Image *ReadEMFImage(const ImageInfo *image_info,
           flags=ParseMetaGeometry(geometry,&sans,&sans,&image->columns,
             &image->rows);
           if (image->x_resolution != 0.0)
-            image->columns=(size_t) floor(((image->columns*
-              image->x_resolution)/DefaultResolution)+0.5);
+            image->columns=(size_t) floor(((image->columns*image->x_resolution)/
+              DefaultResolution)+0.5);
           if (image->y_resolution != 0.0)
-            image->rows=(size_t) floor(((image->rows*
-              image->y_resolution)/DefaultResolution)+0.5);
+            image->rows=(size_t) floor(((image->rows*image->y_resolution)/
+              DefaultResolution)+0.5);
         }
       geometry=DestroyString(geometry);
     }
@@ -562,8 +560,8 @@ static Image *ReadEMFImage(const ImageInfo *image_info,
   DIBinfo.bmiHeader.biPlanes=1;
   DIBinfo.bmiHeader.biBitCount=32;
   DIBinfo.bmiHeader.biCompression=BI_RGB;
-  hBitmap=CreateDIBSection(hDC,&DIBinfo,DIB_RGB_COLORS,(void **) &ppBits,
-    NULL,0);
+  hBitmap=CreateDIBSection(hDC,&DIBinfo,DIB_RGB_COLORS,(void **) &ppBits,NULL,
+    0);
   ReleaseDC(NULL,hDC);
   if (hBitmap == (HBITMAP) NULL)
     {
@@ -615,9 +613,9 @@ static Image *ReadEMFImage(const ImageInfo *image_info,
       break;
     for (x=0; x < (ssize_t) image->columns; x++)
     {
-      q->red=ScaleCharToQuantum(pBits->rgbRed);
-      q->green=ScaleCharToQuantum(pBits->rgbGreen);
-      q->blue=ScaleCharToQuantum(pBits->rgbBlue);
+      SetRedPixelComponent(q,ScaleCharToQuantum(pBits->rgbRed));
+      SetGreenPixelComponent(q,ScaleCharToQuantum(pBits->rgbGreen));
+      SetBluePixelComponent(q,ScaleCharToQuantum(pBits->rgbBlue));
       SetOpacityPixelComponent(q,OpaqueOpacity);
       pBits++;
       q++;

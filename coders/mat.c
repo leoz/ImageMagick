@@ -64,6 +64,7 @@
 #include "magick/monitor-private.h"
 #include "magick/quantum-private.h"
 #include "magick/option.h"
+#include "magick/pixel.h"
 #include "magick/resource_.h"
 #include "magick/shear.h"
 #include "magick/static.h"
@@ -189,34 +190,46 @@ static void InsertComplexDoubleRow(double *p, int y, Image * image, double MinVa
     MaxVal = 1;
 
   exception=(&image->exception);
-  q = QueueAuthenticPixels(image, 0, y, image->columns, 1,exception);
+  q=QueueAuthenticPixels(image,0,y,image->columns,1,exception);
   if (q == (PixelPacket *) NULL)
     return;
   for (x = 0; x < (ssize_t) image->columns; x++)
   {
     if (*p > 0)
     {
-      f = (*p / MaxVal) * (QuantumRange - q->red);
-      if (f + q->red > QuantumRange)
-        q->red = QuantumRange;
+      f = (*p / MaxVal) * (QuantumRange - GetRedPixelComponent(q));
+      if (f + GetRedPixelComponent(q) > QuantumRange)
+        SetRedPixelComponent(q,QuantumRange);
       else
-        q->red += (int) f;
-      if ((int) f / 2.0 > q->green)
-        q->green = q->blue = 0;
+        SetRedPixelComponent(q,GetRedPixelComponent(q)+(int) f);
+      if ((int) f / 2.0 > GetGreenPixelComponent(q))
+        {
+          SetGreenPixelComponent(q,0);
+          SetBluePixelComponent(q,0);
+        }
       else
-        q->green = q->blue -= (int) (f / 2.0);
+        {
+          SetBluePixelComponent(q,GetBluePixelComponent(q)-(int) (f/2.0));
+          SetGreenPixelComponent(q,GetBluePixelComponent(q));
+        }
     }
     if (*p < 0)
     {
-      f = (*p / MaxVal) * (QuantumRange - q->blue);
-      if (f + q->blue > QuantumRange)
-        q->blue = QuantumRange;
+      f = (*p / MaxVal) * (QuantumRange - GetBluePixelComponent(q));
+      if (f + GetBluePixelComponent(q) > QuantumRange)
+        SetBluePixelComponent(q,QuantumRange);
       else
-        q->blue += (int) f;
+        SetBluePixelComponent(q,GetBluePixelComponent(q)+(int) f);
       if ((int) f / 2.0 > q->green)
-        q->green = q->red = 0;
+        {
+          SetRedPixelComponent(q,0);
+          SetGreenPixelComponent(q,0);
+        }
       else
-        q->green = q->red -= (int) (f / 2.0);
+        {
+          SetRedPixelComponent(q,GetRedPixelComponent(q)-(int) (f/2.0));
+          SetGreenPixelComponent(q,GetRedPixelComponent(q));
+        }
     }
     p++;
     q++;
@@ -250,27 +263,39 @@ static void InsertComplexFloatRow(float *p, int y, Image * image, double MinVal,
   {
     if (*p > 0)
     {
-      f = (*p / MaxVal) * (QuantumRange - q->red);
-      if (f + q->red > QuantumRange)
-        q->red = QuantumRange;
+      f = (*p / MaxVal) * (QuantumRange - GetRedPixelComponent(q));
+      if (f + GetRedPixelComponent(q) > QuantumRange)
+        SetRedPixelComponent(q,QuantumRange);
       else
-        q->red += (int) f;
-      if ((int) f / 2.0 > q->green)
-        q->green = q->blue = 0;
+        SetRedPixelComponent(q,GetRedPixelComponent(q)+(int) f);
+      if ((int) f / 2.0 > GetGreenPixelComponent(q))
+        {
+          SetGreenPixelComponent(q,0);
+          SetBluePixelComponent(q,0);
+        }
       else
-        q->green = q->blue -= (int) (f / 2.0);
+        {
+          SetBluePixelComponent(q,GetBluePixelComponent(q)-(int) (f/2.0));
+          SetGreenPixelComponent(q,GetBluePixelComponent(q));
+        }
     }
     if (*p < 0)
     {
-      f = (*p / MaxVal) * (QuantumRange - q->blue);
-      if (f + q->blue > QuantumRange)
-        q->blue = QuantumRange;
+      f = (*p / MaxVal) * (QuantumRange - GetBluePixelComponent(q));
+      if (f + GetBluePixelComponent(q) > QuantumRange)
+        SetBluePixelComponent(q,QuantumRange);
       else
-        q->blue += (int) f;
+        SetBluePixelComponent(q,GetBluePixelComponent(q)+(int) f);
       if ((int) f / 2.0 > q->green)
-        q->green = q->red = 0;
+        {
+          SetGreenPixelComponent(q,0);
+          SetRedPixelComponent(q,0);
+        }
       else
-        q->green = q->red -= (int) (f / 2.0);
+        {
+          SetRedPixelComponent(q,GetRedPixelComponent(q)-(int) (f/2.0));
+          SetGreenPixelComponent(q,GetRedPixelComponent(q));
+        }
     }
     p++;
     q++;
@@ -399,9 +424,9 @@ static void FixSignedValues(PixelPacket *q, int y)
      /* Please note that negative values will overflow
         Q=8; QuantumRange=255: <0;127> + 127+1 = <128; 255> 
            <-1;-128> + 127+1 = <0; 127> */
-    q->red += QuantumRange/2 + 1;
-    q->green += QuantumRange/ + 1;
-    q->blue += QuantumRange/ + 1;
+    SetRedPixelComponent(q,GetRedPixelComponent(q)+QuantumRange/2+1);
+    SetGreenPixelComponent(q,GetGreenPixelComponent(q)+QuantumRange/2+1);
+    SetBluePixelComponent(q,GetBluePixelComponent(q)+QuantumRange/2+1);
     q++;
   }
 }

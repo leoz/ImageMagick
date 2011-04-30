@@ -1,3 +1,17 @@
+2011-04-30  6.6.9-7 Cristy  <quetzlzacatenango@image...>
+  * New version 6.6.9-7.
+
+2011-04-27  6.6.9-7 Cristy  <quetzlzacatenango@image...>
+  * Fix pixel interpolation for -draw image over (reference
+    http://www.imagemagick.org/discourse-server/viewtopic.php?f=3&t=18612).
+
+2011-04-26  6.6.9-7 Glenn Randers-Pehrson <glennrp@image...>
+  * Write the proper bKGD chunk value in grayscale PNG images (reference
+    http://www.imagemagick.org/discourse-server/viewtopic.php?f=3&t=18624).
+
+2011-04-25  6.6.9-7 Anthony Thyssen <A.Thyssen@griffith...>
+  * Added Inverse method for Sparse Color Interpolation
+
 2011-04-24  6.6.9-6 Cristy  <quetzlzacatenango@image...>
   * New version 6.6.9-6.
 
@@ -5,9 +19,9 @@
   * Make filter:blur define a multiplicative adjustment of filter settings
     rather than a complete override of those settings.
   * Add Flags to CommandOptions parse table, removing the need for
-    ImageListOptions parsing table. This is part of development to produce
-    a "convert" replacement that can read options from both command line and
-    from files or pipelines, in "Do it Immediately" handling.
+    ImageListOptions parsing table.  This is the start of development to
+    produce a "convert" replacement that can read options from both command
+    line and from files or pipelines, in "Do it Immediately" handling.
   * Crop Bug Fix. Prevent infinite loop with "+repage -crop 0x40"
 
 2011-04-18  6.6.9-6 Glenn Randers-Pehrson <glennrp@image...>
@@ -618,7 +632,7 @@
   * The webp format requires the webpconv delegate program (experimental).
 
 2010-10-05  6.6.5-0 Anthony Thyssen <A.Thyssen@griffith...>
-  * Replaced "Robidoux" with Cubic 'Keys' filter that is near equivelent to
+  * Replaced "Robidoux" with Cubic 'Keys' filter that is near equivalent to
     the previous sharped "Lanczos2D" filter. (C=0.31089212245300069)
     This also is very similer to a Mitchell filter but specifically designed
     for EWA use and is the new default filter for Distorting Images.
@@ -2434,10 +2448,10 @@
     distorts, just set this, the scale the result back to a normal size.
 
 2008-07-27  6.4.2-5 Anthony <anthony@griffith...>
-  * Rewrite on coefficent handlig for DistortImages so allow for generation
+  * Rewrite on coefficient handlig for DistortImages so allow for generation
     by other operators (SparseColor), and addition of verbose output of
-    equivelent -fx functions for DistortImages to report of the internal
-    coefficents that was calculated, and who they are used.
+    equivalent -fx functions for DistortImages to report of the internal
+    coefficients that was calculated, and who they are used.
   * Initial implementation of SparseColor for interpolated gradients from
     sparsely separated points of color (or posibily other forms of arguments)
   * New distortion Barrel as defined by Helmut Dersch options A,B,C,D

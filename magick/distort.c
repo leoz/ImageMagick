@@ -409,7 +409,6 @@ static double *GenerateCoefficients(const Image *image,
 #endif
       break;
     case ShepardsDistortion:
-    case VoronoiColorInterpolate:
       number_coeff=1;  /* not used, but provide some type of return */
       break;
     case ArcDistortion:
@@ -1288,7 +1287,6 @@ static double *GenerateCoefficients(const Image *image,
       return(coeff);
     }
     case ShepardsDistortion:
-    case VoronoiColorInterpolate:
     {
       /* Shepards Distortion  input arguments are the coefficents!
          Just check the number of arguments is valid!
@@ -1324,7 +1322,7 @@ static double *GenerateCoefficients(const Image *image,
 %                                                                             %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-%  DistortResizeImage() resize image using the equivelent but slower image
+%  DistortResizeImage() resize image using the equivalent but slower image
 %  distortion operator.  The filter is applied using a EWA cylindrical
 %  resampling. But like resize the final image size is limited to whole pixels
 %  with no effects by virtual-pixels on the result.
@@ -1538,7 +1536,7 @@ MagickExport Image *DistortResizeImage(const Image *image,
 %
 %    o "verbose"
 %        Output to stderr alternatives, internal coefficents, and FX
-%        equivelents for the distortion operation (if feasible).
+%        equivalents for the distortion operation (if feasible).
 %        This forms an extra check of the distortion method, and allows users
 %        access to the internal constants IM calculates for the distortion.
 %
@@ -2517,9 +2515,6 @@ MagickExport Image *DistortImage(const Image *image,DistortImageMethod method,
           if (proceed == MagickFalse)
             status=MagickFalse;
         }
-#if 0
-fprintf(stderr, "\n");
-#endif
     }
     distort_view=DestroyCacheView(distort_view);
     resample_filter=DestroyResampleFilterThreadSet(resample_filter);
@@ -2588,8 +2583,8 @@ MagickExport Image *SparseColorImage(const Image *image,
 {
 #define SparseColorTag  "Distort/SparseColor"
 
-  DistortImageMethod
-    distort_method;
+  SparseColorMethod
+    sparse_method;
 
   double
     *coeff;
@@ -2616,19 +2611,34 @@ MagickExport Image *SparseColorImage(const Image *image,
   if ( channel & OpacityChannel ) number_colors++;
 
   /*
-    Convert input arguments into mapping coefficients to apply the distortion.
-    Note some Methods may fall back to other simpler methods.
+    Convert input arguments into mapping coefficients, this this case
+    we are mapping (distorting) colors, rather than coordinates.
   */
-  distort_method=(DistortImageMethod) method;
-  coeff = GenerateCoefficients(image, &distort_method, number_arguments,
-    arguments, number_colors, exception);
-  if ( coeff == (double *) NULL )
-    return((Image *) NULL);
+  { DistortImageMethod
+      distort_method;
+
+    distort_method=(DistortImageMethod) method;
+    if ( distort_method >= SentinelDistortion )
+      distort_method = ShepardsDistortion; /* Pretend to be Shepards */
+    coeff = GenerateCoefficients(image, &distort_method, number_arguments,
+                arguments, number_colors, exception);
+    if ( coeff == (double *) NULL )
+      return((Image *) NULL);
+    /*
+      Note some Distort Methods may fall back to other simpler methods,
+      Currently the only fallback of concern is Bilinear to Affine
+      (Barycentric), which is alaso sparse_colr method.  This also ensures
+      correct two and one color Barycentric handling.
+    */
+    sparse_method = (SparseColorMethod) distort_method;
+    if ( distort_method == ShepardsDistortion )
+      sparse_method = method;   /* return non-distiort methods to normal */
+  }
 
   /* Verbose output */
   if ( GetImageArtifact(image,"verbose") != (const char *) NULL ) {
 
-    switch (method) {
+    switch (sparse_method) {
       case BarycentricColorInterpolate:
       {
         register ssize_t x=0;
@@ -2677,14 +2687,14 @@ MagickExport Image *SparseColorImage(const Image *image,
         break;
       }
       default:
-        /* unknown, or which are too complex for FX alturnatives */
+        /* sparse color method is too complex for FX emulation */
         break;
     }
   }
 
   /* Generate new image for generated interpolated gradient.
    * ASIDE: Actually we could have just replaced the colors of the original
-   * image, but IM core policy, is if storage class could change then clone
+   * image, but IM Core policy, is if storage class could change then clone
    * the image.
    */
 
@@ -2745,7 +2755,7 @@ MagickExport Image *SparseColorImage(const Image *image,
       for (i=0; i < (ssize_t) image->columns; i++)
       {
         SetMagickPixelPacket(image,q,indexes,&pixel);
-        switch (method)
+        switch (sparse_method)
         {
           case BarycentricColorInterpolate:
           {
@@ -2787,9 +2797,9 @@ MagickExport Image *SparseColorImage(const Image *image,
                               coeff[x+2]*i*j + coeff[x+3], x+=4;
             break;
           }
+          case InverseColorInterpolate:
           case ShepardsColorInterpolate:
-          { /* Shepards Method, uses its own input arguments as coefficients.
-            */
+          { /* Inverse (Squared) Distance weights average (IDW) */
             size_t
               k;
             double
@@ -2806,10 +2816,9 @@ MagickExport Image *SparseColorImage(const Image *image,
               double weight =
                   ((double)i-arguments[ k ])*((double)i-arguments[ k ])
                 + ((double)j-arguments[k+1])*((double)j-arguments[k+1]);
-              if ( weight != 0 )
-                weight = 1/weight;
-              else
-                weight = 1;
+              if ( method == InverseColorInterpolate )
+                weight = sqrt(weight);  /* inverse, not inverse squared */
+              weight = ( weight < 1.0 ) ? 1.0 : 1.0/weight;
               if ( channel & RedChannel )
                 pixel.red     += arguments[x++]*weight;
               if ( channel & GreenChannel )

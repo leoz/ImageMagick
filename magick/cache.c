@@ -192,6 +192,7 @@ MagickExport Cache AcquirePixelCache(const size_t number_threads)
   cache_info->type=UndefinedCache;
   cache_info->mode=IOMode;
   cache_info->colorspace=RGBColorspace;
+  cache_info->channels=4;
   cache_info->file=(-1);
   cache_info->id=GetMagickThreadId();
   cache_info->number_threads=number_threads;
@@ -464,7 +465,8 @@ static MagickBooleanType ClipPixelCacheNexus(Image *image,
         SetBluePixelComponent(q,GetBluePixelComponent(p));
         SetOpacityPixelComponent(q,GetOpacityPixelComponent(p));
         if (cache_info->active_index_channel != MagickFalse)
-          nexus_indexes[i]=indexes[i];
+          SetIndexPixelComponent(nexus_indexes+i,GetIndexPixelComponent(
+            indexes+i));
       }
     p++;
     q++;
@@ -2034,6 +2036,7 @@ static inline MagickBooleanType ValidatePixelCacheMorphology(const Image *image)
   cache_info=(CacheInfo *) image->cache;
   if ((image->storage_class != cache_info->storage_class) ||
       (image->colorspace != cache_info->colorspace) ||
+      (image->channels != cache_info->channels) ||
       (image->columns != cache_info->columns) ||
       (image->rows != cache_info->rows) ||
       (cache_info->nexus_info == (NexusInfo **) NULL) ||
@@ -2518,6 +2521,45 @@ static MagickBooleanType GetOneVirtualPixelFromCache(const Image *image,
     return(MagickFalse);
   *pixel=(*pixels);
   return(MagickTrue);
+}
+
+/*
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                                             %
+%                                                                             %
+%                                                                             %
++   G e t P i x e l C a c h e C h a n n e l s                                 %
+%                                                                             %
+%                                                                             %
+%                                                                             %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%  GetPixelCacheChannels() returns the number of pixel channels associated
+%  with this instance of the pixel cache.
+%
+%  The format of the GetPixelCacheChannels() method is:
+%
+%      size_t GetPixelCacheChannels(Cache cache)
+%
+%  A description of each parameter follows:
+%
+%    o type: GetPixelCacheChannels returns DirectClass or PseudoClass.
+%
+%    o cache: the pixel cache.
+%
+*/
+MagickExport size_t GetPixelCacheChannels(const Cache cache)
+{
+  CacheInfo
+    *cache_info;
+
+  assert(cache != (Cache) NULL);
+  cache_info=(CacheInfo *) cache;
+  assert(cache_info->signature == MagickSignature);
+  if (cache_info->debug != MagickFalse)
+    (void) LogMagickEvent(TraceEvent,GetMagickModule(),"%s",
+      cache_info->filename);
+  return(cache_info->channels);
 }
 
 /*
@@ -3875,7 +3917,7 @@ static MagickBooleanType MaskPixelCacheNexus(Image *image,NexusInfo *nexus_info,
     SetBluePixelComponent(q,ClampToQuantum(beta.blue));
     SetOpacityPixelComponent(q,ClampToQuantum(beta.opacity));
     if (cache_info->active_index_channel != MagickFalse)
-      SetIndexPixelComponent(nexus_indexes+i,indexes[i]);
+      SetIndexPixelComponent(nexus_indexes+i,GetIndexPixelComponent(indexes+i));
     p++;
     q++;
     r++;
@@ -4004,6 +4046,7 @@ static MagickBooleanType OpenPixelCache(Image *image,const MapMode mode,
   cache_info->mode=mode;
   cache_info->rows=image->rows;
   cache_info->columns=image->columns;
+  cache_info->channels=image->channels;
   cache_info->active_index_channel=((image->storage_class == PseudoClass) ||
     (image->colorspace == CMYKColorspace)) ? MagickTrue : MagickFalse;
   if (image->ping != MagickFalse)

@@ -120,10 +120,37 @@
 #endif
 #if !defined(RGBColorMatchExact)
 #define IsPNGColorEqual(color,target) \
-   (((color).red == (target).red) && \
-    ((color).green == (target).green) && \
-    ((color).blue == (target).blue))
+       (((color).red == (target).red) && \
+        ((color).green == (target).green) && \
+        ((color).blue == (target).blue))
 #endif
+
+/* Convenience macros for copying RGB or RGB+opacity components
+ * between a pixel and a PixelPacket.
+ */
+
+#define GetRGBOPixelComponents(pixel, packet) \
+        (packet).red = GetRedPixelComponent((pixel)); \
+        (packet).green = GetGreenPixelComponent((pixel)); \
+        (packet).red = GetBluePixelComponent((pixel)); \
+        (packet).opacity = GetOpacityPixelComponent((pixel)); \
+
+#define SetRGBOPixelComponents(pixel, packet) \
+        SetRedPixelComponent((pixel),(packet).red); \
+        SetGreenPixelComponent((pixel),(packet).green); \
+        SetBluePixelComponent((pixel),(packet).blue); \
+        SetOpacityPixelComponent((pixel),(packet).opacity); \
+
+
+#define GetRGBPixelComponents(pixel, packet) \
+        (packet).red = GetRedPixelComponent((pixel)); \
+        (packet).green = GetGreenPixelComponent((pixel)); \
+        (packet).red = GetBluePixelComponent((pixel));
+
+#define SetRGBPixelComponents(pixel, packet) \
+        SetRedPixelComponent((pixel),(packet).red); \
+        SetGreenPixelComponent((pixel),(packet).green); \
+        SetBluePixelComponent((pixel),(packet).blue);
 
 /*
   Establish thread safety.
@@ -2032,6 +2059,9 @@ static Image *ReadOnePNGImage(MngInfo *mng_info,
                       background.blue=(png_uint_16)
                         mng_info->global_plte[background.index].blue;
 
+                      background.gray=(png_uint_16)
+                        mng_info->global_plte[background.index].green;
+
                       png_set_bKGD(ping,ping_info,&background);
                     }
 #endif
@@ -2469,7 +2499,7 @@ static Image *ReadOnePNGImage(MngInfo *mng_info,
               {
                 if ((ping_color_type == PNG_COLOR_TYPE_RGBA ||
                     ping_color_type == PNG_COLOR_TYPE_GRAY_ALPHA) &&
-                   (q->opacity != OpaqueOpacity))
+                   (GetOpacityPixelComponent(q) != OpaqueOpacity))
                   {
                     if (logging != MagickFalse)
                       (void) LogMagickEvent(CoderEvent,GetMagickModule(),
@@ -2480,9 +2510,12 @@ static Image *ReadOnePNGImage(MngInfo *mng_info,
                   }
                 if ((ping_color_type == PNG_COLOR_TYPE_RGB ||
                     ping_color_type == PNG_COLOR_TYPE_GRAY) &&
-                    (ScaleQuantumToShort(q->red) == transparent_color.red &&
-                    ScaleQuantumToShort(q->green) == transparent_color.green &&
-                    ScaleQuantumToShort(q->blue) == transparent_color.blue))
+                    (ScaleQuantumToShort(GetRedPixelComponent(q))
+                    == transparent_color.red &&
+                    ScaleQuantumToShort(GetGreenPixelComponent(q))
+                    == transparent_color.green &&
+                    ScaleQuantumToShort(GetBluePixelComponent(q))
+                    == transparent_color.blue))
                   {
                     if (logging != MagickFalse)
                       (void) LogMagickEvent(CoderEvent,GetMagickModule(),
@@ -2622,8 +2655,9 @@ static Image *ReadOnePNGImage(MngInfo *mng_info,
                  * In a PNG datastream, Opaque is QuantumRange
                  * and Transparent is 0.
                  */
-                q->opacity=ScaleCharToQuantum((unsigned char) (255-(*p++)));
-                if (q->opacity != OpaqueOpacity)
+                SetOpacityPixelComponent(q,
+                    ScaleCharToQuantum((unsigned char) (255-(*p++))));
+                if (GetOpacityPixelComponent(q) != OpaqueOpacity)
                   found_transparent_pixel = MagickTrue;
                 q++;
               }
@@ -2658,8 +2692,8 @@ static Image *ReadOnePNGImage(MngInfo *mng_info,
                 {
                   quantum=((*p++) << 8);
                   quantum|=(*p++);
-                  q->opacity=(Quantum) (QuantumRange-quantum);
-                  if (q->opacity != OpaqueOpacity)
+                  SetOpacityPixelComponent(q,(Quantum) (QuantumRange-quantum));
+                  if (GetOpacityPixelComponent(q) != OpaqueOpacity)
                     found_transparent_pixel = MagickTrue;
                   q++;
                 }
@@ -2681,10 +2715,11 @@ static Image *ReadOnePNGImage(MngInfo *mng_info,
 
               if (ping_color_type == 4)
                 {
-                  q->opacity=(*p << 8) | *(p+1);
-                  q->opacity*=65537L;
-                  q->opacity=(Quantum) GetAlphaPixelComponent(q);
-                  if (q->opacity != OpaqueOpacity)
+                  quantum=(*p << 8) | *(p+1);
+                  quantum*=65537L;
+                  SetOpacityPixelComponent(q,
+                    (Quantum) GetAlphaPixelComponent(q));
+                  if (GetOpacityPixelComponent(q) != OpaqueOpacity)
                     found_transparent_pixel = MagickTrue;
                   p+=2;
                   q++;
@@ -2696,8 +2731,8 @@ static Image *ReadOnePNGImage(MngInfo *mng_info,
 
               if (ping_color_type == 4)
                 {
-                  q->opacity=(Quantum) (QuantumRange-(*p++));
-                  if (q->opacity != OpaqueOpacity)
+                  SetOpacityPixelComponent(q,(Quantum) (QuantumRange-(*p++)));
+                  if (GetOpacityPixelComponent(q) != OpaqueOpacity)
                     found_transparent_pixel = MagickTrue;
                   p++;
                   q++;
@@ -2719,7 +2754,7 @@ static Image *ReadOnePNGImage(MngInfo *mng_info,
         r=quantum_scanline;
 
         for (x=0; x < (ssize_t) image->columns; x++)
-          indexes[x]=(IndexPacket) (*r++);
+          SetIndexPixelComponent(indexes+x,*r++);
 
         if (SyncAuthenticPixels(image,exception) == MagickFalse)
           break;
@@ -2727,7 +2762,7 @@ static Image *ReadOnePNGImage(MngInfo *mng_info,
         if ((image->previous == (Image *) NULL) && (num_passes == 1))
           {
             status=SetImageProgress(image,LoadImageTag,(MagickOffsetType) y,
-                image->rows);
+              image->rows);
 
             if (status == MagickFalse)
               break;
@@ -2852,17 +2887,20 @@ static Image *ReadOnePNGImage(MngInfo *mng_info,
              */
             for (x=(ssize_t) image->columns-1; x >= 0; x--)
             {
-              if (ScaleQuantumToShort(q->red) == transparent_color.red &&
-                  ScaleQuantumToShort(q->green) == transparent_color.green &&
-                  ScaleQuantumToShort(q->blue) == transparent_color.blue)
+              if (ScaleQuantumToShort(GetRedPixelComponent(q))
+                  == transparent_color.red &&
+                  ScaleQuantumToShort(GetGreenPixelComponent(q))
+                  == transparent_color.green &&
+                  ScaleQuantumToShort(GetBluePixelComponent(q))
+                  == transparent_color.blue)
                 {
-                  q->opacity=(Quantum) TransparentOpacity;
+                  SetOpacityPixelComponent(q,TransparentOpacity);
                 }
 
 #if 0 /* I have not found a case where this is needed. */
               else
                 {
-                  q->opacity=(Quantum) OpaqueOpacity;
+                  SetOpacityPixelComponent(q)=(Quantum) OpaqueOpacity;
                 }
 #endif
 
@@ -3936,13 +3974,15 @@ static Image *ReadOneJNGImage(MngInfo *mng_info,
 
              if (image->matte != MagickFalse)
                for (x=(ssize_t) image->columns; x != 0; x--,q++,s++)
-                  q->opacity=(Quantum) QuantumRange-s->red;
+                  SetOpacityPixelComponent(q,(Quantum) QuantumRange-
+                      GetRedPixelComponent(s));
 
              else
                for (x=(ssize_t) image->columns; x != 0; x--,q++,s++)
                {
-                  q->opacity=(Quantum) QuantumRange-s->red;
-                  if (q->opacity != OpaqueOpacity)
+                  SetOpacityPixelComponent(q,(Quantum) QuantumRange-
+                      GetRedPixelComponent(s));
+                  if (GetOpacityPixelComponent(q) != OpaqueOpacity)
                     image->matte=MagickTrue;
                }
 
@@ -5765,10 +5805,14 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
 
                        for (x=(ssize_t) image->columns-1; x >= 0; x--)
                        {
-                          q->red=ScaleQuantumToShort(q->red);
-                          q->green=ScaleQuantumToShort(q->green);
-                          q->blue=ScaleQuantumToShort(q->blue);
-                          q->opacity=ScaleQuantumToShort(q->opacity);
+                          SetRedPixelComponent(q,ScaleQuantumToShort(
+                            GetRedPixelComponent(q));
+                          SetGreenPixelComponent(q,ScaleQuantumToShort(
+                            GetGreenPixelComponent(q));
+                          SetBluePixelComponent(q,ScaleQuantumToShort(
+                            GetBluePixelComponent(q));
+                          SetOpacityPixelComponent(q,ScaleQuantumToShort(
+                            GetOpacityPixelComponent(q));
                           q++;
                        }
 
@@ -5854,6 +5898,7 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
 
                   for (i=0; i < m; i++, yy++)
                   {
+                    /* To do: Rewrite using Get/Set***PixelComponent() */
                     register PixelPacket
                       *pixels;
 
@@ -5861,7 +5906,7 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
                     pixels=prev;
                     n=next;
                     q=GetAuthenticPixels(large_image,0,yy,large_image->columns,
-                          1,exception);
+                      1,exception);
                     q+=(large_image->columns-image->columns);
 
                     for (x=(ssize_t) image->columns-1; x >= 0; x--)
@@ -5966,12 +6011,15 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
                     *pixels;
 
                   q=GetAuthenticPixels(image,0,y,image->columns,1,exception);
+                  /* To do: Rewrite using Get/Set***PixelComponent() */
                   pixels=q+(image->columns-length);
                   n=pixels+1;
 
                   for (x=(ssize_t) (image->columns-length);
                     x < (ssize_t) image->columns; x++)
                   {
+                    /* To do: Rewrite using Get/Set***PixelComponent() */
+
                     if (x == (ssize_t) (image->columns-length))
                       m=(ssize_t) mng_info->magn_ml;
 
@@ -5992,6 +6040,7 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
                       if (magn_methx <= 1)
                         {
                           /* replicate previous */
+                          /* To do: Rewrite using Get/Set***PixelComponent() */
                           *q=(*pixels);
                         }
 
@@ -6066,10 +6115,14 @@ static Image *ReadMNGImage(const ImageInfo *image_info,ExceptionInfo *exception)
 
                      for (x=(ssize_t) image->columns-1; x >= 0; x--)
                      {
-                        q->red=ScaleShortToQuantum(q->red);
-                        q->green=ScaleShortToQuantum(q->green);
-                        q->blue=ScaleShortToQuantum(q->blue);
-                        q->opacity=ScaleShortToQuantum(q->opacity);
+                        SetRedPixelComponent(q,ScaleShortToQuantum(
+                            GetRedPixelComponent(q));
+                        SetGreenPixelComponent(q,ScaleShortToQuantum(
+                            GetGreenPixelComponent(q));
+                        SetBluePixelComponent(q,ScaleShortToQuantum(
+                            GetBluePixelComponent(q));
+                        SetOpacityPixelComponent(q,ScaleShortToQuantum(
+                            GetOpacityPixelComponent(q));
                         q++;
                      }
 
@@ -7082,14 +7135,17 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
           "    storage_class=PseudoClass");
     }
 
-  if (image->storage_class != PseudoClass && image->colormap != NULL)
+  if (ping_preserve_colormap == MagickFalse)
     {
-      /* Free the bogus colormap; it can cause trouble later */
-       if (logging != MagickFalse)
-          (void) LogMagickEvent(CoderEvent,GetMagickModule(),
-          "    Freeing bogus colormap");
-       (void *) RelinquishMagickMemory(image->colormap);
-       image->colormap=NULL;
+      if (image->storage_class != PseudoClass && image->colormap != NULL)
+        {
+          /* Free the bogus colormap; it can cause trouble later */
+           if (logging != MagickFalse)
+              (void) LogMagickEvent(CoderEvent,GetMagickModule(),
+              "    Freeing bogus colormap");
+           (void *) RelinquishMagickMemory(image->colormap);
+           image->colormap=NULL;
+        }
     }
    
   if (image->colorspace != RGBColorspace)
@@ -7275,20 +7331,21 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
 
        for (x=0; x < (ssize_t) image->columns; x++)
        {
-           if (image->matte == MagickFalse || q->opacity == OpaqueOpacity)
+           if (image->matte == MagickFalse ||
+              GetOpacityPixelComponent(q) == OpaqueOpacity)
              {
                if (number_opaque < 259)
                  {
                    if (number_opaque == 0)
                      {
-                       opaque[0]=*q;
+                       GetRGBPixelComponents(q, opaque[0]);
                        opaque[0].opacity=OpaqueOpacity;
                        number_opaque=1;
                      }
 
                    for (i=0; i< (ssize_t) number_opaque; i++)
                      {
-                       if (IsColorEqual(opaque+i, (PixelPacket *) q))
+                       if (IsColorEqual(q, opaque+i))
                          break;
                      }
 
@@ -7296,8 +7353,8 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
                        number_opaque < 259)
                      {
                        number_opaque++;
-                       opaque[i] = *q;
-                       opaque[i].opacity = OpaqueOpacity;
+                       GetRGBPixelComponents(q, opaque[i]);
+                       opaque[i].opacity=OpaqueOpacity;
                      }
                  }
              }
@@ -7307,7 +7364,7 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
                  {
                    if (number_transparent == 0)
                      {
-                       transparent[0]=*q;
+                       GetRGBOPixelComponents(q, transparent[0]);
                        ping_trans_color.red=
                          (unsigned short) GetRedPixelComponent(q);
                        ping_trans_color.green=
@@ -7321,7 +7378,7 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
 
                    for (i=0; i< (ssize_t) number_transparent; i++)
                      {
-                       if (IsColorEqual(transparent+i, (PixelPacket *) q))
+                       if (IsColorEqual(q, transparent+i))
                          break;
                      }
 
@@ -7329,7 +7386,7 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
                        number_transparent < 259)
                      {
                        number_transparent++;
-                       transparent[i] = *q;
+                       GetRGBOPixelComponents(q, transparent[i]);
                      }
                  }
              }
@@ -7339,15 +7396,15 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
                  {
                    if (number_semitransparent == 0)
                      {
-                       semitransparent[0]=*q;
+                       GetRGBOPixelComponents(q, semitransparent[0]);
                        number_semitransparent = 1;
                      }
 
                    for (i=0; i< (ssize_t) number_semitransparent; i++)
                      {
-                       if (IsColorEqual(semitransparent+i,
-                          (PixelPacket *) q) &&
-                          q->opacity == semitransparent[i].opacity)
+                       if (IsColorEqual(q, semitransparent+i)
+                           && GetOpacityPixelComponent(q) ==
+                           semitransparent[i].opacity)
                          break;
                      }
 
@@ -7355,7 +7412,7 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
                        number_semitransparent < 259)
                      {
                        number_semitransparent++;
-                       semitransparent[i] = *q;
+                       GetRGBOPixelComponents(q, semitransparent[i]);
                      }
                  }
              }
@@ -7368,17 +7425,31 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
          /* Add the background color to the palette, if it
           * isn't already there.
           */
+          if (logging != MagickFalse)
+            {
+              (void) LogMagickEvent(CoderEvent,GetMagickModule(),
+                  "      Check colormap for background (%d,%d,%d)",
+                  (int) image->background_color.red,
+                  (int) image->background_color.green,
+                  (int) image->background_color.blue);
+            }
           for (i=0; i<number_opaque; i++)
           {
-             if (IsColorEqual(opaque+i, &image->background_color))
-             break;
+             if (opaque[i].red == image->background_color.red &&
+                 opaque[i].green == image->background_color.green &&
+                 opaque[i].blue == image->background_color.blue)
+               break;
           }
-
           if (number_opaque < 259 && i == number_opaque)
             {
-               opaque[i]=image->background_color;
-               opaque[i].opacity = OpaqueOpacity;
-               number_opaque++;
+               opaque[i] = image->background_color;
+               ping_background.index = i;
+               if (logging != MagickFalse)
+                 {
+                   (void) LogMagickEvent(CoderEvent,GetMagickModule(),
+                       "      background_color index is %d",(int) i);
+                 }
+
             }
           else if (logging != MagickFalse)
               (void) LogMagickEvent(CoderEvent,GetMagickModule(),
@@ -7485,6 +7556,8 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
          for (i=0; i<number_opaque; i++)
             colormap[n++] = opaque[i];
 
+         ping_background.index +=
+           (number_transparent + number_semitransparent);
          
          /* image_colors < 257; search the colormap instead of the pixels
           * to get ping_have_color and ping_have_non_bw
@@ -7563,11 +7636,16 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
                 for (i=0; i< (ssize_t) image_colors; i++)
                 {
                   if ((image->matte == MagickFalse ||
-                      image->colormap[i].opacity == q->opacity) &&
-                      (IsColorEqual(&image->colormap[i],
-                         (PixelPacket *) q)))
+                      image->colormap[i].opacity == 
+                      GetOpacityPixelComponent(q)) &&
+                      image->colormap[i].red == 
+                      GetRedPixelComponent(q) &&
+                      image->colormap[i].green == 
+                      GetGreenPixelComponent(q) &&
+                      image->colormap[i].blue == 
+                      GetBluePixelComponent(q))
                   {
-                    indexes[x]=(IndexPacket) i;
+                    SetIndexPixelComponent(indexes+x,i);
                     break;
                   }
                 }
@@ -7737,23 +7815,23 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
 
             for (x=0; x < (ssize_t) image->columns; x++)
             {
-              if (r->opacity == TransparentOpacity)
+              if (GetOpacityPixelComponent(r) == TransparentOpacity)
                 {
-                  r->red = image->background_color.red;
-                  r->green = image->background_color.green;
-                  r->blue = image->background_color.blue;
+                  SetRGBPixelComponents(r,image->background_color);
                 }
               else
                 {
-                  r->red=ScaleCharToQuantum(
-                       (ScaleQuantumToChar(r->red) & 0xf0) |
-                       (ScaleQuantumToChar(r->red) & 0xf0) >> 4);
-                  r->green=ScaleCharToQuantum(
-                       (ScaleQuantumToChar(r->green) & 0xf0) |
-                       (ScaleQuantumToChar(r->green) & 0xf0) >> 4);
-                  r->blue=ScaleCharToQuantum(
-                       (ScaleQuantumToChar(r->blue) & 0xf0) |
-                       (ScaleQuantumToChar(r->blue) & 0xf0) >> 4);
+                  SetRedPixelComponent(r,ScaleCharToQuantum(
+                    (ScaleQuantumToChar(GetRedPixelComponent(r)) & 0xf0) |
+                    (ScaleQuantumToChar(GetRedPixelComponent(r)) & 0xf0) >> 4));
+                  SetGreenPixelComponent(r,ScaleCharToQuantum(
+                    (ScaleQuantumToChar(GetGreenPixelComponent(r)) & 0xf0) |
+                    (ScaleQuantumToChar(GetGreenPixelComponent(r)) & 0xf0) >>
+                    4));
+                  SetBluePixelComponent(r,ScaleCharToQuantum(
+                    (ScaleQuantumToChar(GetBluePixelComponent(r)) & 0xf0) |
+                    (ScaleQuantumToChar(GetBluePixelComponent(r)) & 0xf0) >>
+                    4));
                 }
               r++;
             }
@@ -7825,26 +7903,28 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
 
             for (x=0; x < (ssize_t) image->columns; x++)
             {
-              if (r->opacity == TransparentOpacity)
+              if (GetOpacityPixelComponent(r) == TransparentOpacity)
                 {
-                  r->red = image->background_color.red;
-                  r->green = image->background_color.green;
-                  r->blue = image->background_color.blue;
+                  SetRGBPixelComponents(r,image->background_color);
                 }
               else
                 {
-                  r->red=ScaleCharToQuantum(
-                       (ScaleQuantumToChar(r->red) & 0xe0) |
-                       (ScaleQuantumToChar(r->red) & 0xe0) >> 3 |
-                       (ScaleQuantumToChar(r->red) & 0xc0) >> 6);
-                  r->green=ScaleCharToQuantum(
-                       (ScaleQuantumToChar(r->green) & 0xe0) |
-                       (ScaleQuantumToChar(r->green) & 0xe0) >> 3 |
-                       (ScaleQuantumToChar(r->green) & 0xc0) >> 6);
-                  r->blue=ScaleCharToQuantum(
-                       (ScaleQuantumToChar(r->blue) & 0xe0) |
-                       (ScaleQuantumToChar(r->blue) & 0xe0) >> 3 |
-                       (ScaleQuantumToChar(r->blue) & 0xc0) >> 6);
+                  SetRedPixelComponent(r,ScaleCharToQuantum(
+                    (ScaleQuantumToChar(GetRedPixelComponent(r)) & 0xe0) |
+                    (ScaleQuantumToChar(GetRedPixelComponent(r)) & 0xe0) >> 3 |
+                    (ScaleQuantumToChar(GetRedPixelComponent(r)) & 0xc0) >>
+                    6));
+                  SetGreenPixelComponent(r,ScaleCharToQuantum(
+                    (ScaleQuantumToChar(GetGreenPixelComponent(r)) & 0xe0) |
+                    (ScaleQuantumToChar(GetGreenPixelComponent(r)) & 0xe0) >>
+                    3 |
+                    (ScaleQuantumToChar(GetGreenPixelComponent(r)) & 0xc0) >>
+                    6));
+                  SetBluePixelComponent(r,ScaleCharToQuantum(
+                    (ScaleQuantumToChar(GetBluePixelComponent(r)) & 0xe0) |
+                    (ScaleQuantumToChar(GetBluePixelComponent(r)) & 0xe0) >> 3 |
+                    (ScaleQuantumToChar(GetBluePixelComponent(r)) & 0xc0) >>
+                    6));
                 }
               r++;
             }
@@ -7911,19 +7991,18 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
 
             for (x=0; x < (ssize_t) image->columns; x++)
             {
-              if (r->opacity == TransparentOpacity)
+              if (GetOpacityPixelComponent(r) == TransparentOpacity)
                 {
-                  r->red = image->background_color.red;
-                  r->green = image->background_color.green;
-                  r->blue = image->background_color.blue;
+                  SetRGBPixelComponents(r,image->background_color);
                 }
               else
                 {
-                  r->blue=ScaleCharToQuantum(
-                      (ScaleQuantumToChar(r->blue) & 0xc0) |
-                      (ScaleQuantumToChar(r->blue) & 0xc0) >> 2 |
-                      (ScaleQuantumToChar(r->blue) & 0xc0) >> 4 |
-                      (ScaleQuantumToChar(r->blue) & 0xc0) >> 6);
+                  SetBluePixelComponent(r,ScaleCharToQuantum(
+                    (ScaleQuantumToChar(GetBluePixelComponent(r)) & 0xc0) |
+                    (ScaleQuantumToChar(GetBluePixelComponent(r)) & 0xc0) >> 2 |
+                    (ScaleQuantumToChar(GetBluePixelComponent(r)) & 0xc0) >> 4 |
+                    (ScaleQuantumToChar(GetBluePixelComponent(r)) & 0xc0) >>
+                    6));
                 }
               r++;
             }
@@ -7961,7 +8040,7 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
   if (mng_info->ping_exclude_tRNS != MagickFalse &&
      (number_transparent != 0 || number_semitransparent != 0))
     {
-      int colortype=mng_info->write_png_colortype;
+      unsigned int colortype=mng_info->write_png_colortype;
 
       if (ping_have_color == MagickFalse)
         mng_info->write_png_colortype = 5;
@@ -7970,7 +8049,7 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
         mng_info->write_png_colortype = 7;
 
       if (colortype != 0 &&
-         mng_info->write_png_colortype != (ssize_t) colortype)
+         mng_info->write_png_colortype != colortype)
         ping_need_colortype_warning=MagickTrue;
 
     }
@@ -8011,9 +8090,12 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
              for (x=0; x < (ssize_t) image->columns; x++)
              {
                  if (q->opacity != TransparentOpacity &&
-                     (unsigned short) q->red == ping_trans_color.red &&
-                     (unsigned short) q->green == ping_trans_color.green &&
-                     (unsigned short) q->blue == ping_trans_color.blue)
+                     (unsigned short) GetRedPixelComponent(q) ==
+                     ping_trans_color.red &&
+                     (unsigned short) GetGreenPixelComponent(q) ==
+                     ping_trans_color.green &&
+                     (unsigned short) GetBluePixelComponent(q) ==
+                     ping_trans_color.blue)
                    {
                      ping_have_cheap_transparency = MagickFalse;
                      break;
@@ -8252,12 +8334,17 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
 
        ping_background.blue=(png_uint_16)
          (ScaleQuantumToShort(image->background_color.blue) & mask);
+
+       ping_background.gray=(png_uint_16) ping_background.green;
     }
 
   if (logging != MagickFalse)
     {
       (void) LogMagickEvent(CoderEvent,GetMagickModule(),
           "    Setting up bKGD chunk (1)");
+      (void) LogMagickEvent(CoderEvent,GetMagickModule(),
+          "      background_color index is %d",
+          (int) ping_background.index);
 
       (void) LogMagickEvent(CoderEvent,GetMagickModule(),
           "    ping_bit_depth=%d",ping_bit_depth);
@@ -8345,6 +8432,13 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
             break;
 
         ping_background.index=(png_byte) i;
+
+        if (logging != MagickFalse)
+          {
+            (void) LogMagickEvent(CoderEvent,GetMagickModule(),
+                 "      background_color index is %d",
+                 (int) ping_background.index);
+          }
       }
     } /* end of write_png8 */
 
@@ -8645,7 +8739,8 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
         if (image_depth > MAGICKCORE_QUANTUM_DEPTH)
           image_depth=MAGICKCORE_QUANTUM_DEPTH;
 
-        if ((image_colors == 0) || ((ssize_t) image_colors-1 > MaxColormapSize))
+        if ((image_colors == 0) ||
+             ((ssize_t) (image_colors-1) > (ssize_t) MaxColormapSize))
           image_colors=(int) (one << image_depth);
 
         if (image_depth > 8)
@@ -8754,7 +8849,7 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
                 ping_bit_depth=1;
                 one=1;
 
-                while ((one << ping_bit_depth) < number_colors)
+                while ((one << ping_bit_depth) < (ssize_t) number_colors)
                   ping_bit_depth <<= 1;
               }
 
@@ -8851,6 +8946,9 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
          if (logging != MagickFalse)
            (void) LogMagickEvent(CoderEvent,GetMagickModule(),
              "  Setting up bKGD chunk (2)");
+         (void) LogMagickEvent(CoderEvent,GetMagickModule(),
+             "      background_color index is %d",
+             (int) ping_background.index);
 
          ping_have_bKGD = MagickTrue;
          }
@@ -9250,7 +9348,23 @@ static MagickBooleanType WriteOnePNGImage(MngInfo *mng_info,
   if (ping_exclude_bKGD == MagickFalse)
     {
       if (ping_have_bKGD != MagickFalse)
+        {
           png_set_bKGD(ping,ping_info,&ping_background);
+          if (logging)
+            {
+              (void) LogMagickEvent(CoderEvent,GetMagickModule(),
+                   "    Setting up bKGD chunk");
+              (void) LogMagickEvent(CoderEvent,GetMagickModule(),
+                   "      background color = (%d,%d,%d)",
+                        (int) ping_background.red,
+                        (int) ping_background.green,
+                        (int) ping_background.blue);
+              (void) LogMagickEvent(CoderEvent,GetMagickModule(),
+                   "      index = %d, gray=%d",
+                        (int) ping_background.index,
+                        (int) ping_background.gray);
+            }
+         }
     }
 
   if (ping_exclude_pHYs == MagickFalse)

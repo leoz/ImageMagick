@@ -55,6 +55,7 @@
 #include "magick/monitor.h"
 #include "magick/monitor-private.h"
 #include "magick/quantum-private.h"
+#include "magick/pixel.h"
 #include "magick/static.h"
 #include "magick/string_.h"
 #include "magick/module.h"
@@ -141,9 +142,6 @@ static Image *ReadRLEImage(const ImageInfo *image_info,ExceptionInfo *exception)
     operand,
     status;
 
-  ssize_t
-    y;
-
   MagickStatusType
     flags;
 
@@ -165,8 +163,16 @@ static Image *ReadRLEImage(const ImageInfo *image_info,ExceptionInfo *exception)
   register unsigned char
     *p;
 
+  size_t
+    bits_per_pixel,
+    map_length,
+    number_colormaps,
+    number_planes,
+    one;
+
   ssize_t
-    count;
+    count,
+    y;
 
   unsigned char
     background_color[256],
@@ -174,13 +180,6 @@ static Image *ReadRLEImage(const ImageInfo *image_info,ExceptionInfo *exception)
     pixel,
     plane,
     *rle_pixels;
-
-  size_t
-    bits_per_pixel,
-    map_length,
-    number_colormaps,
-    number_planes,
-    one;
 
   /*
     Open image file.
@@ -369,7 +368,8 @@ static Image *ReadRLEImage(const ImageInfo *image_info,ExceptionInfo *exception)
           for (i=0; i < (ssize_t) operand; i++)
           {
             pixel=(unsigned char) ReadBlobByte(image);
-            if ((y < (ssize_t) image->rows) && ((x+i) < (ssize_t) image->columns))
+            if ((y < (ssize_t) image->rows) &&
+                ((x+i) < (ssize_t) image->columns))
               *p=pixel;
             p+=number_planes;
           }
@@ -390,7 +390,8 @@ static Image *ReadRLEImage(const ImageInfo *image_info,ExceptionInfo *exception)
             x*number_planes+plane;
           for (i=0; i < (ssize_t) operand; i++)
           {
-            if ((y < (ssize_t) image->rows) && ((x+i) < (ssize_t) image->columns))
+            if ((y < (ssize_t) image->rows) &&
+                ((x+i) < (ssize_t) image->columns))
               *p=pixel;
             p+=number_planes;
           }
@@ -447,7 +448,7 @@ static Image *ReadRLEImage(const ImageInfo *image_info,ExceptionInfo *exception)
             SetGreenPixelComponent(q,ScaleCharToQuantum(*p++));
             SetBluePixelComponent(q,ScaleCharToQuantum(*p++));
             if (image->matte != MagickFalse)
-              SetOpacityPixelComponent(q,(QuantumRange-ScaleCharToQuantum(*p++)));
+              SetOpacityPixelComponent(q,QuantumRange-ScaleCharToQuantum(*p++));
             q++;
           }
           if (SyncAuthenticPixels(image,exception) == MagickFalse)
@@ -503,13 +504,13 @@ static Image *ReadRLEImage(const ImageInfo *image_info,ExceptionInfo *exception)
                 break;
               indexes=GetAuthenticIndexQueue(image);
               for (x=0; x < (ssize_t) image->columns; x++)
-                indexes[x]=(IndexPacket) (*p++);
+                SetIndexPixelComponent(indexes+x,*p++);
               if (SyncAuthenticPixels(image,exception) == MagickFalse)
                 break;
               if (image->previous == (Image *) NULL)
                 {
-                  status=SetImageProgress(image,LoadImageTag,(MagickOffsetType) y,
-                image->rows);
+                  status=SetImageProgress(image,LoadImageTag,(MagickOffsetType)
+                    y,image->rows);
                   if (status == MagickFalse)
                     break;
                 }
@@ -528,18 +529,19 @@ static Image *ReadRLEImage(const ImageInfo *image_info,ExceptionInfo *exception)
                 break;
               for (x=0; x < (ssize_t) image->columns; x++)
               {
-                q->red=image->colormap[*p++].red;
-                q->green=image->colormap[*p++].green;
-                q->blue=image->colormap[*p++].blue;
-                SetOpacityPixelComponent(q,(QuantumRange-ScaleCharToQuantum(*p++)));
+                SetRedPixelComponent(q,image->colormap[*p++].red);
+                SetGreenPixelComponent(q,image->colormap[*p++].green);
+                SetBluePixelComponent(q,image->colormap[*p++].blue);
+                SetOpacityPixelComponent(q,QuantumRange-
+                  ScaleCharToQuantum(*p++));
                 q++;
               }
               if (SyncAuthenticPixels(image,exception) == MagickFalse)
                 break;
               if (image->previous == (Image *) NULL)
                 {
-                  status=SetImageProgress(image,LoadImageTag,(MagickOffsetType) y,
-                image->rows);
+                  status=SetImageProgress(image,LoadImageTag,(MagickOffsetType)
+                    y,image->rows);
                   if (status == MagickFalse)
                     break;
                 }

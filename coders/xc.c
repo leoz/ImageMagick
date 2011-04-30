@@ -52,6 +52,7 @@
 #include "magick/list.h"
 #include "magick/magick.h"
 #include "magick/memory_.h"
+#include "magick/pixel.h"
 #include "magick/pixel-private.h"
 #include "magick/quantum-private.h"
 #include "magick/static.h"
@@ -102,9 +103,6 @@ static Image *ReadXCImage(const ImageInfo *image_info,ExceptionInfo *exception)
   MagickPixelPacket
     color;
 
-  ssize_t
-    y;
-
   PixelPacket
     pixel;
 
@@ -113,6 +111,9 @@ static Image *ReadXCImage(const ImageInfo *image_info,ExceptionInfo *exception)
 
   register PixelPacket
     *q;
+
+  ssize_t
+    y;
 
   /*
     Initialize Image structure.
@@ -151,7 +152,7 @@ static Image *ReadXCImage(const ImageInfo *image_info,ExceptionInfo *exception)
       {
         indexes=GetAuthenticIndexQueue(image);
         for (x=0; x < (ssize_t) image->columns; x++)
-          indexes[x]=index;
+          SetIndexPixelComponent(indexes+x,index);
       }
     if (SyncAuthenticPixels(image,exception) == MagickFalse)
       break;

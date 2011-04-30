@@ -118,7 +118,7 @@ static const OptionInfo
   ChannelOptions[] =
   {
     { "Undefined", UndefinedChannel, UndefinedOptionFlag, MagickTrue },
-    { "All", AllChannels, UndefinedOptionFlag, MagickFalse },
+    { "All", CompositeChannels, UndefinedOptionFlag, MagickFalse },
     { "Alpha", OpacityChannel, UndefinedOptionFlag, MagickFalse },
     { "Black", BlackChannel, UndefinedOptionFlag, MagickFalse },
     { "Blue", BlueChannel, UndefinedOptionFlag, MagickFalse },
@@ -796,6 +796,8 @@ static const OptionInfo
     { "DXT5", DXT5Compression, UndefinedOptionFlag, MagickFalse },
     { "Fax", FaxCompression, UndefinedOptionFlag, MagickFalse },
     { "Group4", Group4Compression, UndefinedOptionFlag, MagickFalse },
+    { "JBIG1", JBIG1Compression, UndefinedOptionFlag, MagickFalse },
+    { "JBIG2", JBIG2Compression, UndefinedOptionFlag, MagickFalse },
     { "JPEG", JPEGCompression, UndefinedOptionFlag, MagickFalse },
     { "JPEG2000", JPEG2000Compression, UndefinedOptionFlag, MagickFalse },
     { "Lossless", LosslessJPEGCompression, UndefinedOptionFlag, MagickFalse },
@@ -1420,6 +1422,7 @@ static const OptionInfo
     { "Undefined", UndefinedDistortion, UndefinedOptionFlag, MagickTrue },
     { "Barycentric", BarycentricColorInterpolate, UndefinedOptionFlag, MagickFalse },
     { "Bilinear", BilinearColorInterpolate, UndefinedOptionFlag, MagickFalse },
+    { "Inverse", InverseColorInterpolate, UndefinedOptionFlag, MagickFalse },
     { "Shepards", ShepardsColorInterpolate, UndefinedOptionFlag, MagickFalse },
     { "Voronoi", VoronoiColorInterpolate, UndefinedOptionFlag, MagickFalse },
     { (char *) NULL, UndefinedResource, UndefinedOptionFlag, MagickFalse }

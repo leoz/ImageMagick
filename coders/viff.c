@@ -213,9 +213,6 @@ static Image *ReadVIFFImage(const ImageInfo *image_info,
   int
     bit;
 
-  ssize_t
-    y;
-
   MagickBooleanType
     status;
 
@@ -237,18 +234,19 @@ static Image *ReadVIFFImage(const ImageInfo *image_info,
   register unsigned char
     *p;
 
-  ssize_t
-    count;
-
-  unsigned char
-    buffer[7],
-    *viff_pixels;
-
   size_t
     bytes_per_pixel,
     lsb_first,
     max_packets,
     quantum;
+
+  ssize_t
+    count,
+    y;
+
+  unsigned char
+    buffer[7],
+    *viff_pixels;
 
   ViffInfo
     viff_info;
@@ -346,7 +344,8 @@ static Image *ReadVIFFImage(const ImageInfo *image_info,
       (void) ReadBlobByte(image);
     image->columns=viff_info.rows;
     image->rows=viff_info.columns;
-    image->depth=viff_info.x_bits_per_pixel <= 8 ? 8UL : MAGICKCORE_QUANTUM_DEPTH;
+    image->depth=viff_info.x_bits_per_pixel <= 8 ? 8UL :
+      MAGICKCORE_QUANTUM_DEPTH;
     /*
       Verify that we can read this VIFF image.
     */
@@ -629,9 +628,9 @@ static Image *ReadVIFFImage(const ImageInfo *image_info,
             for (bit=0; bit < 8; bit++)
               if (PixelIntensity(q) < ((MagickRealType) QuantumRange/2.0))
                 {
-                  quantum=(size_t) indexes[x+bit];
+                  quantum=(size_t) GetIndexPixelComponent(indexes+x+bit);
                   quantum|=0x01;
-                  indexes[x+bit]=(IndexPacket) quantum;
+                  SetIndexPixelComponent(indexes+x+bit,quantum);
                 }
             p++;
           }
@@ -640,9 +639,9 @@ static Image *ReadVIFFImage(const ImageInfo *image_info,
               for (bit=0; bit < (ssize_t) (image->columns % 8); bit++)
                 if (PixelIntensity(q) < ((MagickRealType) QuantumRange/2.0))
                   {
-                    quantum=(size_t) indexes[x+bit];
+                    quantum=(size_t) GetIndexPixelComponent(indexes+x+bit);
                     quantum|=0x01;
-                    indexes[x+bit]=(IndexPacket) quantum;
+                    SetIndexPixelComponent(indexes+x+bit,quantum);
                   }
               p++;
             }
@@ -666,7 +665,7 @@ static Image *ReadVIFFImage(const ImageInfo *image_info,
             break;
           indexes=GetAuthenticIndexQueue(image);
           for (x=0; x < (ssize_t) image->columns; x++)
-            indexes[x]=(IndexPacket) (*p++);
+            SetIndexPixelComponent(indexes+x,*p++);
           if (SyncAuthenticPixels(image,exception) == MagickFalse)
             break;
           if (image->previous == (Image *) NULL)
@@ -691,16 +690,20 @@ static Image *ReadVIFFImage(const ImageInfo *image_info,
             for (x=0; x < (ssize_t) image->columns; x++)
             {
               SetRedPixelComponent(q,ScaleCharToQuantum(*p));
-              q->green=ScaleCharToQuantum(*(p+number_pixels));
-              q->blue=ScaleCharToQuantum(*(p+2*number_pixels));
+              SetGreenPixelComponent(q,ScaleCharToQuantum(*(p+number_pixels)));
+              SetBluePixelComponent(q,ScaleCharToQuantum(*(p+2*number_pixels)));
               if (image->colors != 0)
                 {
-                  q->red=image->colormap[(ssize_t) q->red].red;
-                  q->green=image->colormap[(ssize_t) q->green].green;
-                  q->blue=image->colormap[(ssize_t) q->blue].blue;
+                  SetRedPixelComponent(q,image->colormap[(ssize_t)
+                    GetRedPixelComponent(q)].red);
+                  SetGreenPixelComponent(q,image->colormap[(ssize_t)
+                    GetGreenPixelComponent(q)].green);
+                  SetBluePixelComponent(q,image->colormap[(ssize_t)
+                    GetBluePixelComponent(q)].blue);
                 }
-              q->opacity=(Quantum) (image->matte ? QuantumRange-
-                ScaleCharToQuantum(*(p+number_pixels*3)) : OpaqueOpacity);
+              SetOpacityPixelComponent(q,image->matte != MagickFalse ?
+                QuantumRange-ScaleCharToQuantum(*(p+number_pixels*3)) :
+                OpaqueOpacity);
               p++;
               q++;
             }
@@ -912,9 +915,6 @@ static MagickBooleanType WriteVIFFImage(const ImageInfo *image_info,
   const char
     *value;
 
-  ssize_t
-    y;
-
   MagickBooleanType
     status;
 
@@ -939,6 +939,9 @@ static MagickBooleanType WriteVIFFImage(const ImageInfo *image_info,
 
   register unsigned char
     *q;
+
+  ssize_t
+    y;
 
   unsigned char
     buffer[8],
@@ -978,7 +981,8 @@ static MagickBooleanType WriteVIFFImage(const ImageInfo *image_info,
     *viff_info.comment='\0';
     value=GetImageProperty(image,"comment");
     if (value != (const char *) NULL)
-      (void) CopyMagickString(viff_info.comment,value,MagickMin(strlen(value),511)+1);
+      (void) CopyMagickString(viff_info.comment,value,MagickMin(strlen(value),
+        511)+1);
     viff_info.rows=image->columns;
     viff_info.columns=image->rows;
     viff_info.subrows=0;

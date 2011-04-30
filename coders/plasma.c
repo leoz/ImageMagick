@@ -114,12 +114,12 @@ static inline void PlasmaPixel(Image *image,RandomInfo *random_info,double x,
   if (q == (PixelPacket *) NULL)
     return;
   range=GetQuantumRange(16UL);
-  q->red=ScaleAnyToQuantum((size_t) (65535.0*
-    GetPseudoRandomValue(random_info)+0.5),range);
-  q->green=ScaleAnyToQuantum((size_t) (65535.0*
-    GetPseudoRandomValue(random_info)+0.5),range);
-  q->blue=ScaleAnyToQuantum((size_t) (65535.0*
-    GetPseudoRandomValue(random_info)+0.5),range);
+  SetRedPixelComponent(q,ScaleAnyToQuantum((size_t) (65535.0*
+    GetPseudoRandomValue(random_info)+0.5),range));
+  SetGreenPixelComponent(q,ScaleAnyToQuantum((size_t) (65535.0*
+    GetPseudoRandomValue(random_info)+0.5),range));
+  SetBluePixelComponent(q,ScaleAnyToQuantum((size_t) (65535.0*
+    GetPseudoRandomValue(random_info)+0.5),range));
   (void) SyncAuthenticPixels(image,exception);
 }
 
@@ -131,9 +131,6 @@ static Image *ReadPlasmaImage(const ImageInfo *image_info,
 
   ImageInfo
     *read_info;
-
-  ssize_t
-    y;
 
   MagickBooleanType
     status;
@@ -154,6 +151,9 @@ static Image *ReadPlasmaImage(const ImageInfo *image_info,
     depth,
     max_depth;
 
+  ssize_t
+    y;
+
   /*
     Recursively apply plasma to the image.
   */
@@ -173,7 +173,7 @@ static Image *ReadPlasmaImage(const ImageInfo *image_info,
       break;
     for (x=0; x < (ssize_t) image->columns; x++)
     {
-      q->opacity=(Quantum) (QuantumRange/2);
+      SetOpacityPixelComponent(q,QuantumRange/2);
       q++;
     }
     if (SyncAuthenticPixels(image,exception) == MagickFalse)

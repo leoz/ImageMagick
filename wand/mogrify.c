@@ -246,7 +246,8 @@ WandExport MagickBooleanType MagickCommandGenesis(ImageInfo *image_info,
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
 %  MogrifyImage() applies simple single image processing options to a single
-%  image.  That image however may be part of a longer list of images.
+%  image that may be part of a large list, but also handles any 'region'
+%  image handling.
 %
 %  The image in the list may be modified in three different ways...
 %
@@ -682,8 +683,8 @@ WandExport MagickBooleanType MogrifyImage(ImageInfo *image_info,const int argc,
     option=argv[i];
     if (IsCommandOption(option) == MagickFalse)
       continue;
-    count=ParseCommandOption(MagickCommandOptions,MagickFalse,option);
-    count=MagickMax(count,0L);
+    count=MagickMax(ParseCommandOption(MagickCommandOptions,MagickFalse,option),
+      0L);
     if ((i+count) >= (ssize_t) argc)
       break;
     status=MogrifyImageInfo(mogrify_info,(int) count+1,argv+i,exception);
