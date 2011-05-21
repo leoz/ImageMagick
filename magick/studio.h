@@ -46,12 +46,12 @@ extern "C" {
 #if defined(_magickcore_inline) && !defined(inline)
 # define inline  _magickcore_inline
 #endif
-# if defined(__cplusplus) || defined(c_plusplus)
-#  undef inline
-# endif
 #if defined(_magickcore_restrict) && !defined(restrict)
 # define restrict  _magickcore_restrict
 #endif
+# if defined(__cplusplus) || defined(c_plusplus)
+#  undef inline
+# endif
 #endif
 
 #if defined(MAGICKCORE_NAMESPACE_PREFIX)
@@ -180,6 +180,9 @@ extern "C" {
 #include <signal.h>
 #include <assert.h>
 
+#if defined(MAGICKCORE_HAVE_XLOCALE_H)
+# include <xlocale.h>
+#endif
 #if defined(MAGICKCORE_THREAD_SUPPORT)
 # include <pthread.h>
 #elif defined(MAGICKCORE_WINDOWS_SUPPORT)

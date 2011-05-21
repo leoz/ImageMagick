@@ -1472,7 +1472,7 @@ MagickExport unsigned int DeleteImageList(Image *images,const ssize_t offset)
 %  Deprecated, replace with:
 %
 %    char key[MaxTextExtent];
-%    FormatMagickString(key,MaxTextExtent,"%ld\n",id);
+%    FormatLocaleString(key,MaxTextExtent,"%ld\n",id);
 %    DeleteImageRegistry(key);
 %
 %  The format of the DeleteMagickRegistry method is:
@@ -1489,7 +1489,7 @@ MagickExport MagickBooleanType DeleteMagickRegistry(const ssize_t id)
   char
     key[MaxTextExtent];
 
-  (void) FormatMagickString(key,MaxTextExtent,"%.20g\n",(double) id);
+  (void) FormatLocaleString(key,MaxTextExtent,"%.20g\n",(double) id);
   return(DeleteImageRegistry(key));
 }
 
@@ -1980,9 +1980,8 @@ MagickExport Image *FlattenImages(Image *image,ExceptionInfo *exception)
 %      arguments.
 %
 */
-
-MagickExport MagickBooleanType FormatImageAttributeList(Image *image,
-  const char *key,const char *format,va_list operands)
+MagickExport MagickBooleanType FormatImageAttribute(Image *image,
+  const char *key,const char *format,...)
 {
   char
     value[MaxTextExtent];
@@ -1990,29 +1989,75 @@ MagickExport MagickBooleanType FormatImageAttributeList(Image *image,
   int
     n;
 
-#if defined(MAGICKCORE_HAVE_VSNPRINTF)
-  n=vsnprintf(value,MaxTextExtent,format,operands);
-#else
-  n=vsprintf(value,format,operands);
-#endif
-  if (n < 0)
-    value[MaxTextExtent-1]='\0';
+  va_list
+    operands;
+
+  va_start(operands,format);
+  n=FormatLocaleStringList(value,MaxTextExtent,format,operands);
+  (void) n;
+  va_end(operands);
   return(SetImageProperty(image,key,value));
 }
+
+/*
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                                             %
+%                                                                             %
+%                                                                             %
+%  F o r m a t M a g i c k S t r i n g                                        %
+%                                                                             %
+%                                                                             %
+%                                                                             %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%  FormatMagickString() prints formatted output of a variable argument list.
+%
+%  The format of the FormatMagickString method is:
+%
+%      ssize_t FormatMagickString(char *string,const size_t length,
+%        const char *format,...)
+%
+%  A description of each parameter follows.
+%
+%   o string:  FormatMagickString() returns the formatted string in this
+%     character buffer.
+%
+%   o length: the maximum length of the string.
+%
+%   o format:  A string describing the format to use to write the remaining
+%     arguments.
+%
+*/
 
-MagickExport MagickBooleanType FormatImageAttribute(Image *image,
-  const char *key,const char *format,...)
+MagickExport ssize_t FormatMagickStringList(char *string,const size_t length,
+  const char *format,va_list operands)
 {
-  MagickBooleanType
-    status;
+  int
+    n;
+
+#if defined(MAGICKCORE_HAVE_VSNPRINTF)
+  n=vsnprintf(string,length,format,operands);
+#else
+  n=vsprintf(string,format,operands);
+#endif
+  if (n < 0)
+    string[length-1]='\0';
+  return((ssize_t) n);
+}
+
+MagickExport ssize_t FormatMagickString(char *string,const size_t length,
+  const char *format,...)
+{
+  ssize_t
+    n;
 
   va_list
     operands;
 
   va_start(operands,format);
-  status=FormatImagePropertyList(image,key,format,operands);
+  n=(ssize_t) FormatMagickStringList(string,length,format,operands);
   va_end(operands);
-  return(status);
+  return(n);
 }
 
 /*
@@ -2064,7 +2109,7 @@ MagickExport void FormatString(char *string,const char *format,...)
     operands;
 
   va_start(operands,format);
-  (void) FormatMagickStringList(string,MaxTextExtent,format,operands);
+  (void) FormatLocaleStringList(string,MaxTextExtent,format,operands);
   va_end(operands);
   return;
 }
@@ -2254,7 +2299,7 @@ MagickExport void *GetConfigureBlob(const char *filename,char *path,
       /*
         Search hard coded paths.
       */
-      (void) FormatMagickString(path,MaxTextExtent,"%s%s",
+      (void) FormatLocaleString(path,MaxTextExtent,"%s%s",
         MAGICKCORE_LIBRARY_PATH,filename);
       if (IsPathAccessible(path) != MagickFalse)
         blob=FileToBlob(path,~0,length,exception);
@@ -2272,7 +2317,7 @@ MagickExport void *GetConfigureBlob(const char *filename,char *path,
       key_value=NTRegistryKeyLookup("ConfigurePath");
       if (key_value != (char *) NULL)
         {
-          (void) FormatMagickString(path,MaxTextExtent,"%s%s%s",key_value,
+          (void) FormatLocaleString(path,MaxTextExtent,"%s%s%s",key_value,
             DirectorySeparator,filename);
           if (IsPathAccessible(path) != MagickFalse)
             blob=FileToBlob(path,~0,length,exception);
@@ -2292,10 +2337,10 @@ MagickExport void *GetConfigureBlob(const char *filename,char *path,
             Search MAGICK_HOME.
           */
 #if !defined(MAGICKCORE_POSIX_SUPPORT)
-          (void) FormatMagickString(path,MaxTextExtent,"%s%s%s",home,
+          (void) FormatLocaleString(path,MaxTextExtent,"%s%s%s",home,
             DirectorySeparator,filename);
 #else
-          (void) FormatMagickString(path,MaxTextExtent,"%s/lib/%s/%s",home,
+          (void) FormatLocaleString(path,MaxTextExtent,"%s/lib/%s/%s",home,
             MAGICKCORE_LIBRARY_RELATIVE_PATH,filename);
 #endif
           if (IsPathAccessible(path) != MagickFalse)
@@ -2310,7 +2355,7 @@ MagickExport void *GetConfigureBlob(const char *filename,char *path,
           /*
             Search $HOME/.magick.
           */
-          (void) FormatMagickString(path,MaxTextExtent,"%s%s.magick%s%s",home,
+          (void) FormatLocaleString(path,MaxTextExtent,"%s%s.magick%s%s",home,
             DirectorySeparator,DirectorySeparator,filename);
           if ((IsPathAccessible(path) != MagickFalse) && (blob == (void *) NULL))
             blob=FileToBlob(path,~0,length,exception);
@@ -2320,7 +2365,7 @@ MagickExport void *GetConfigureBlob(const char *filename,char *path,
   if ((blob == (void *) NULL) && (*GetClientPath() != '\0'))
     {
 #if !defined(MAGICKCORE_POSIX_SUPPORT)
-      (void) FormatMagickString(path,MaxTextExtent,"%s%s%s",GetClientPath(),
+      (void) FormatLocaleString(path,MaxTextExtent,"%s%s%s",GetClientPath(),
         DirectorySeparator,filename);
 #else
       char
@@ -2332,7 +2377,7 @@ MagickExport void *GetConfigureBlob(const char *filename,char *path,
       (void) CopyMagickString(prefix,GetClientPath(),
         MaxTextExtent);
       ChopPathComponents(prefix,1);
-      (void) FormatMagickString(path,MaxTextExtent,"%s/lib/%s/%s",prefix,
+      (void) FormatLocaleString(path,MaxTextExtent,"%s/lib/%s/%s",prefix,
         MAGICKCORE_LIBRARY_RELATIVE_PATH,filename);
 #endif
       if (IsPathAccessible(path) != MagickFalse)
@@ -2668,7 +2713,7 @@ MagickExport void *GetMagickRegistry(const ssize_t id,RegistryType *type,
 
   *type=UndefinedRegistryType;
   *length=0;
-  (void) FormatMagickString(key,MaxTextExtent,"%.20g\n",(double) id);
+  (void) FormatLocaleString(key,MaxTextExtent,"%.20g\n",(double) id);
   blob=(void *) GetImageRegistry(ImageRegistryType,key,exception);
   if (blob != (void *) NULL)
     return(blob);
@@ -6142,7 +6187,7 @@ MagickExport ssize_t SetMagickRegistry(const RegistryType type,const void *blob,
   static ssize_t
     id = 0;
 
-  (void) FormatMagickString(key,MaxTextExtent,"%.20g\n",(double) id);
+  (void) FormatLocaleString(key,MaxTextExtent,"%.20g\n",(double) id);
   status=SetImageRegistry(type,key,blob,exception);
   if (status == MagickFalse)
     return(-1);
@@ -6697,11 +6742,14 @@ MagickExport unsigned int ThresholdImageChannel(Image *image,
     else
       for (x=0; x < (ssize_t) image->columns; x++)
       {
-        SetRedPixelComponent(q,q->red <= pixel.red ? 0 : QuantumRange);
-        SetGreenPixelComponent(q,q->green <= pixel.green ? 0 : QuantumRange);
-        SetBluePixelComponent(q,q->blue <= pixel.blue ? 0 : QuantumRange);
-        SetOpacityPixelComponent(q,q->opacity <= pixel.opacity ? 0 :
-          QuantumRange);
+        SetRedPixelComponent(q,(MagickRealType) q->red <= pixel.red
+          ? 0 : QuantumRange);
+        SetGreenPixelComponent(q,(MagickRealType) q->green <= pixel.green
+          ? 0 : QuantumRange);
+        SetBluePixelComponent(q,(MagickRealType) q->blue <= pixel.blue
+          ?  0 : QuantumRange);
+        SetOpacityPixelComponent(q,(MagickRealType) q->opacity <= pixel.opacity
+          ? 0 : QuantumRange);
         q++;
       }
     if (!SyncAuthenticPixels(image,&image->exception))

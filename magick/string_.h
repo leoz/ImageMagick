@@ -75,10 +75,6 @@ extern MagickExport size_t
 
 extern MagickExport ssize_t
   FormatMagickSize(const MagickSizeType,const MagickBooleanType,char *),
-  FormatMagickString(char *,const size_t,const char *,...)
-    magick_attribute((format (printf,3,4))),
-  FormatMagickStringList(char *,const size_t,const char *,va_list)
-    magick_attribute((format (printf,3,0))),
   FormatMagickTime(const time_t,const size_t,char *);
 
 extern MagickExport StringInfo

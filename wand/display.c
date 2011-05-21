@@ -359,10 +359,12 @@ WandExport MagickBooleanType DisplayImageCommand(ImageInfo *image_info,
       if ((LocaleCompare("version",option+1) == 0) ||
           (LocaleCompare("-version",option+1) == 0))
         {
-          (void) fprintf(stdout,"Version: %s\n",
+          (void) FormatLocaleFile(stdout,"Version: %s\n",
             GetMagickVersion((size_t *) NULL));
-          (void) fprintf(stdout,"Copyright: %s\n",GetMagickCopyright());
-          (void) fprintf(stdout,"Features: %s\n\n",GetMagickFeatures());
+          (void) FormatLocaleFile(stdout,"Copyright: %s\n",
+            GetMagickCopyright());
+          (void) FormatLocaleFile(stdout,"Features: %s\n\n",
+            GetMagickFeatures());
           return(MagickFalse);
         }
     }
@@ -1310,7 +1312,7 @@ WandExport MagickBooleanType DisplayImageCommand(ImageInfo *image_info,
             i++;
             if (i == (ssize_t) argc)
               ThrowDisplayException(OptionError,"MissingArgument",option);
-            value=strtod(argv[i],&p);
+            value=InterpretLocaleValue(argv[i],&p);
             (void) value;
             if ((p == argv[i]) && (LocaleCompare("unlimited",argv[i]) != 0))
               ThrowDisplayInvalidArgumentException(option,argv[i]);
@@ -1787,10 +1789,12 @@ WandExport MagickBooleanType DisplayImageCommand(ImageInfo *image_info,
         if ((LocaleCompare("version",option+1) == 0) ||
             (LocaleCompare("-version",option+1) == 0))
           {
-            (void) fprintf(stdout,"Version: %s\n",
+            (void) FormatLocaleFile(stdout,"Version: %s\n",
               GetMagickVersion((size_t *) NULL));
-            (void) fprintf(stdout,"Copyright: %s\n",GetMagickCopyright());
-            (void) fprintf(stdout,"Features: %s\n\n",GetMagickFeatures());
+            (void) FormatLocaleFile(stdout,"Copyright: %s\n",
+              GetMagickCopyright());
+            (void) FormatLocaleFile(stdout,"Features: %s\n\n",
+              GetMagickFeatures());
             break;
           }
         if (LocaleCompare("visual",option+1) == 0)
@@ -1844,7 +1848,7 @@ WandExport MagickBooleanType DisplayImageCommand(ImageInfo *image_info,
             i++;
             if (i == (ssize_t) argc)
               ThrowDisplayException(OptionError,"MissingArgument",option);
-            if (strtod(argv[i],(char **) NULL) != 0)
+            if (InterpretLocaleValue(argv[i],(char **) NULL) != 0)
               resource_info.window_group=argv[i];
             break;
           }
@@ -1863,7 +1867,7 @@ WandExport MagickBooleanType DisplayImageCommand(ImageInfo *image_info,
                   answer[2],
                   *p;
 
-                (void) fprintf(stderr,"Overwrite %s? ",
+                (void) FormatLocaleFile(stderr,"Overwrite %s? ",
                   resource_info.write_filename);
                 p=fgets(answer,(int) sizeof(answer),stdin);
                 (void) p;

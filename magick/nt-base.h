@@ -75,7 +75,7 @@ extern "C" {
 #endif
 
 #if !defined(access)
-#  define access(path,mode)  _access(path,mode)
+#  define access(path,mode)  _access_s(path,mode)
 #endif
 #if !defined(chdir)
 #  define chdir  _chdir
@@ -137,6 +137,9 @@ extern "C" {
 #if !defined(isatty)
 #  define isatty _isatty
 #endif
+#if !defined(locale_t)
+#define locale_t _locale_t
+#endif
 #if defined(MAGICKCORE_WINDOWS_SUPPORT) && !defined(Windows95) && \
   !(defined(_MSC_VER) && (_MSC_VER < 1400)) && (__MSVCRT_VERSION__ < 0x800)
 #  define lseek  _lseeki64
@@ -191,6 +194,12 @@ extern "C" {
 #if !defined(popen)
 #  define popen  _popen
 #endif
+#if !defined(fprintf)
+#define fprintf  _fprintf_s
+#endif
+#if !defined(fprintf_l)
+#define fprintf_l  _fprintf_s_l
+#endif
 #if !defined(read)
 #  define read  _read
 #endif
@@ -205,6 +214,9 @@ extern "C" {
 #endif
 #if !defined(spawnvp)
 #  define spawnvp  _spawnvp
+#endif
+#if !defined(strtod_l)
+#define strtod_l  _strtod_l
 #endif
 #if !defined(stat) && !defined(__BORLANDC__)
 #if defined(MAGICKCORE_WINDOWS_SUPPORT) && !defined(Windows95) && \
@@ -233,12 +245,18 @@ extern "C" {
 #  define telldir(directory)  NTTellDirectory(directory)
 #endif
 #if !defined(tempnam)
-#  define tempnam  _tempnam
+#  define tempnam  _tempnam_s
+#endif
+#if !defined(vfprintf_l)
+#define vfprintf_l  _vfprintf_l
 #endif
 #if !defined(vsnprintf)
-#if !defined(_MSC_VER) || (defined(_MSC_VER) && (_MSC_VER < 1500))
-#define vsnprintf  _vsnprintf
+#if !defined(_MSC_VER) || (defined(_MSC_VER) && _MSC_VER < 1500)
+#define vsnprintf _vsnprintf 
 #endif
+#endif
+#if !defined(vsnprintf_l)
+#define vsnprintf_l  _vsnprintf_l
 #endif
 #if !defined(write)
 #  define write  _write

@@ -619,8 +619,9 @@ static int UnpackWPG2Raster(Image *image,int bpp)
             return(-2);
           break;
         case 0x7E:
-          (void) fprintf(stderr,"\nUnsupported WPG token XOR, please report!");
-    XorMe=!XorMe;
+          (void) FormatLocaleFile(stderr,
+            "\nUnsupported WPG token XOR, please report!");
+          XorMe=!XorMe;
           break;
         case 0x7F:
           RunCount=ReadBlobByte(image);   /* BLK */
@@ -630,8 +631,8 @@ static int UnpackWPG2Raster(Image *image,int bpp)
             }
           break;
         case 0xFD:
-    RunCount=ReadBlobByte(image);   /* EXT */
-    for(i=0; i<= RunCount;i++)
+          RunCount=ReadBlobByte(image);   /* EXT */
+          for(i=0; i<= RunCount;i++)
             for(bbuf=0; bbuf < SampleSize; bbuf++)
               InsertByte6(SampleBuffer[bbuf]);          
           break;
@@ -639,9 +640,9 @@ static int UnpackWPG2Raster(Image *image,int bpp)
           RunCount=ReadBlobByte(image);  /* RST */
           if(x!=0)
             {
-              (void) fprintf(stderr,
-                             "\nUnsupported WPG2 unaligned token RST x=%.20g, please report!\n"
-                             ,(double) x);
+              (void) FormatLocaleFile(stderr,
+                "\nUnsupported WPG2 unaligned token RST x=%.20g, please report!\n"
+                ,(double) x);
               return(-3);
             }
           {
@@ -804,7 +805,7 @@ static Image *ExtractPostscript(Image *image,const ImageInfo *image_info,
   
     /* Read nested image */
   /*FormatString(clone_info->filename,"%s:%s",magic_info->name,postscript_file);*/
-  FormatMagickString(clone_info->filename,MaxTextExtent,"%s",postscript_file);
+  FormatLocaleString(clone_info->filename,MaxTextExtent,"%s",postscript_file);
   image2=ReadImage(clone_info,exception);
 
   if (!image2)

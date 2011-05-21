@@ -329,7 +329,7 @@ static KernelInfo *ParseKernelArray(const char *kernel_string)
       kernel->values[i] = nan; /* do not include this value in kernel */
     }
     else {
-      kernel->values[i] = StringToDouble(token);
+      kernel->values[i] = InterpretLocaleValue(token,(char **) NULL);
       ( kernel->values[i] < 0)
           ?  ( kernel->negative_range += kernel->values[i] )
           :  ( kernel->positive_range += kernel->values[i] );
@@ -414,8 +414,8 @@ static KernelInfo *ParseKernelName(const char *kernel_string)
 
 #if 0
   /* For Debugging Geometry Input */
-  fprintf(stderr, "Geometry = 0x%04X : %lg x %lg %+lg %+lg\n",
-       flags, args.rho, args.sigma, args.xi, args.psi );
+  FormatLocaleFile(stderr, "Geometry = 0x%04X : %lg x %lg %+lg %+lg\n",
+    flags, args.rho, args.sigma, args.xi, args.psi );
 #endif
 
   /* special handling of missing values in input string */
@@ -516,8 +516,8 @@ MagickExport KernelInfo *AcquireKernelInfo(const char *kernel_string)
 
       /* Error handling -- this is not proper error handling! */
       if ( new_kernel == (KernelInfo *) NULL ) {
-        fprintf(stderr, "Failed to parse kernel number #%.20g\n",(double)
-          kernel_number);
+        FormatLocaleFile(stderr, "Failed to parse kernel number #%.20g\n",
+          (double) kernel_number);
         if ( kernel != (KernelInfo *) NULL )
           kernel=DestroyKernelInfo(kernel);
         return((KernelInfo *) NULL);
@@ -3852,19 +3852,20 @@ MagickExport Image *MorphologyApply(const Image *image, const ChannelType
                       channel, kernel, exception);
 
       if ( verbose == MagickTrue )
-        (void) fprintf(stderr, "%s:%.20g.%.20g #%.20g => Changed %.20g\n",
-            CommandOptionToMnemonic(MagickMorphologyOptions, method),
-            1.0,0.0,1.0, (double) changed);
+        (void) FormatLocaleFile(stderr,
+          "%s:%.20g.%.20g #%.20g => Changed %.20g\n",
+          CommandOptionToMnemonic(MagickMorphologyOptions, method),
+          1.0,0.0,1.0, (double) changed);
 
       if ( changed < 0 )
         goto error_cleanup;
 
       if ( method == VoronoiMorphology ) {
         /* Preserve the alpha channel of input image - but turned off */
-        SetImageAlphaChannel(rslt_image, DeactivateAlphaChannel);
+        (void) SetImageAlphaChannel(rslt_image, DeactivateAlphaChannel);
         (void) CompositeImageChannel(rslt_image, DefaultChannels,
-                CopyOpacityCompositeOp, image, 0, 0);
-        SetImageAlphaChannel(rslt_image, DeactivateAlphaChannel);
+          CopyOpacityCompositeOp, image, 0, 0);
+        (void) SetImageAlphaChannel(rslt_image, DeactivateAlphaChannel);
       }
       goto exit_cleanup;
     }
@@ -3998,11 +3999,11 @@ MagickExport Image *MorphologyApply(const Image *image, const ChannelType
         /* Extra information for debugging compound operations */
         if ( verbose == MagickTrue ) {
           if ( stage_limit > 1 )
-            (void) FormatMagickString(v_info,MaxTextExtent,"%s:%.20g.%.20g -> ",
+            (void) FormatLocaleString(v_info,MaxTextExtent,"%s:%.20g.%.20g -> ",
              CommandOptionToMnemonic(MagickMorphologyOptions,method),(double)
              method_loop,(double) stage_loop);
           else if ( primitive != method )
-            (void) FormatMagickString(v_info, MaxTextExtent, "%s:%.20g -> ",
+            (void) FormatLocaleString(v_info, MaxTextExtent, "%s:%.20g -> ",
               CommandOptionToMnemonic(MagickMorphologyOptions, method),(double)
               method_loop);
           else
@@ -4037,8 +4038,9 @@ MagickExport Image *MorphologyApply(const Image *image, const ChannelType
 
           if ( verbose == MagickTrue ) {
             if ( kernel_loop > 1 )
-              fprintf(stderr, "\n"); /* add end-of-line from previous */
-            (void) fprintf(stderr, "%s%s%s:%.20g.%.20g #%.20g => Changed %.20g",
+              FormatLocaleFile(stderr, "\n"); /* add end-of-line from previous */
+            (void) FormatLocaleFile(stderr,
+              "%s%s%s:%.20g.%.20g #%.20g => Changed %.20g",
               v_info,CommandOptionToMnemonic(MagickMorphologyOptions,
               primitive),(this_kernel == rflt_kernel ) ? "*" : "",
               (double) (method_loop+kernel_loop-1),(double) kernel_number,
@@ -4060,16 +4062,16 @@ MagickExport Image *MorphologyApply(const Image *image, const ChannelType
         } /* End Loop 4: Iterate the kernel with primitive */
 
         if ( verbose == MagickTrue && kernel_changed != (size_t)changed )
-          fprintf(stderr, "   Total %.20g",(double) kernel_changed);
+          FormatLocaleFile(stderr, "   Total %.20g",(double) kernel_changed);
         if ( verbose == MagickTrue && stage_loop < stage_limit )
-          fprintf(stderr, "\n"); /* add end-of-line before looping */
+          FormatLocaleFile(stderr, "\n"); /* add end-of-line before looping */
 
 #if 0
-    fprintf(stderr, "--E-- image=0x%lx\n", (unsigned long)image);
-    fprintf(stderr, "      curr =0x%lx\n", (unsigned long)curr_image);
-    fprintf(stderr, "      work =0x%lx\n", (unsigned long)work_image);
-    fprintf(stderr, "      save =0x%lx\n", (unsigned long)save_image);
-    fprintf(stderr, "      union=0x%lx\n", (unsigned long)rslt_image);
+    FormatLocaleFile(stderr, "--E-- image=0x%lx\n", (unsigned long)image);
+    FormatLocaleFile(stderr, "      curr =0x%lx\n", (unsigned long)curr_image);
+    FormatLocaleFile(stderr, "      work =0x%lx\n", (unsigned long)work_image);
+    FormatLocaleFile(stderr, "      save =0x%lx\n", (unsigned long)save_image);
+    FormatLocaleFile(stderr, "      union=0x%lx\n", (unsigned long)rslt_image);
 #endif
 
       } /* End Loop 3: Primative (staging) Loop for Coumpound Methods */
@@ -4087,7 +4089,7 @@ MagickExport Image *MorphologyApply(const Image *image, const ChannelType
         case TopHatMorphology:
         case BottomHatMorphology:
           if ( verbose == MagickTrue )
-            fprintf(stderr, "\n%s: Difference with original image",
+            FormatLocaleFile(stderr, "\n%s: Difference with original image",
                  CommandOptionToMnemonic(MagickMorphologyOptions, method) );
           (void) CompositeImageChannel(curr_image,
                   (ChannelType) (channel & ~SyncChannels),
@@ -4095,7 +4097,7 @@ MagickExport Image *MorphologyApply(const Image *image, const ChannelType
           break;
         case EdgeMorphology:
           if ( verbose == MagickTrue )
-            fprintf(stderr, "\n%s: Difference of Dilate and Erode",
+            FormatLocaleFile(stderr, "\n%s: Difference of Dilate and Erode",
                  CommandOptionToMnemonic(MagickMorphologyOptions, method) );
           (void) CompositeImageChannel(curr_image,
                   (ChannelType) (channel & ~SyncChannels),
@@ -4112,15 +4114,15 @@ MagickExport Image *MorphologyApply(const Image *image, const ChannelType
       else if ( rslt_compose == NoCompositeOp )
         { if ( verbose == MagickTrue ) {
             if ( this_kernel->next != (KernelInfo *) NULL )
-              fprintf(stderr, " (re-iterate)");
+              FormatLocaleFile(stderr, " (re-iterate)");
             else
-              fprintf(stderr, " (done)");
+              FormatLocaleFile(stderr, " (done)");
           }
           rslt_image = curr_image; /* return result, and re-iterate */
         }
       else if ( rslt_image == (Image *) NULL)
         { if ( verbose == MagickTrue )
-            fprintf(stderr, " (save for compose)");
+            FormatLocaleFile(stderr, " (save for compose)");
           rslt_image = curr_image;
           curr_image = (Image *) image;  /* continue with original image */
         }
@@ -4133,7 +4135,7 @@ MagickExport Image *MorphologyApply(const Image *image, const ChannelType
           ** IE: Turn off SVG composition 'alpha blending'.
           */
           if ( verbose == MagickTrue )
-            fprintf(stderr, " (compose \"%s\")",
+            FormatLocaleFile(stderr, " (compose \"%s\")",
                  CommandOptionToMnemonic(MagickComposeOptions, rslt_compose) );
           (void) CompositeImageChannel(rslt_image,
                (ChannelType) (channel & ~SyncChannels), rslt_compose,
@@ -4142,7 +4144,7 @@ MagickExport Image *MorphologyApply(const Image *image, const ChannelType
           curr_image = (Image *) image;  /* continue with original image */
         }
       if ( verbose == MagickTrue )
-        fprintf(stderr, "\n");
+        FormatLocaleFile(stderr, "\n");
 
       /* loop to the next kernel in a multi-kernel list */
       norm_kernel = norm_kernel->next;
@@ -4548,7 +4550,7 @@ MagickExport void ScaleGeometryKernelInfo (KernelInfo *kernel,
 
 #if 0
   /* For Debugging Geometry Input */
-  fprintf(stderr, "Geometry = 0x%04X : %lg x %lg %+lg %+lg\n",
+  FormatLocaleFile(stderr, "Geometry = 0x%04X : %lg x %lg %+lg %+lg\n",
        flags, args.rho, args.sigma, args.xi, args.psi );
 #endif
 
@@ -4736,38 +4738,38 @@ MagickExport void ShowKernelInfo(KernelInfo *kernel)
 
   for (c=0, k=kernel;  k != (KernelInfo *) NULL;  c++, k=k->next ) {
 
-    fprintf(stderr, "Kernel");
+    FormatLocaleFile(stderr, "Kernel");
     if ( kernel->next != (KernelInfo *) NULL )
-      fprintf(stderr, " #%lu", (unsigned long) c );
-    fprintf(stderr, " \"%s",
+      FormatLocaleFile(stderr, " #%lu", (unsigned long) c );
+    FormatLocaleFile(stderr, " \"%s",
           CommandOptionToMnemonic(MagickKernelOptions, k->type) );
     if ( fabs(k->angle) > MagickEpsilon )
-      fprintf(stderr, "@%lg", k->angle);
-    fprintf(stderr, "\" of size %lux%lu%+ld%+ld",(unsigned long) k->width,
-      (unsigned long) k->height,(long) k->x,(long) k->y);
-    fprintf(stderr,
+      FormatLocaleFile(stderr, "@%lg", k->angle);
+    FormatLocaleFile(stderr, "\" of size %lux%lu%+ld%+ld",(unsigned long)
+      k->width,(unsigned long) k->height,(long) k->x,(long) k->y);
+    FormatLocaleFile(stderr,
           " with values from %.*lg to %.*lg\n",
           GetMagickPrecision(), k->minimum,
           GetMagickPrecision(), k->maximum);
-    fprintf(stderr, "Forming a output range from %.*lg to %.*lg",
+    FormatLocaleFile(stderr, "Forming a output range from %.*lg to %.*lg",
           GetMagickPrecision(), k->negative_range,
           GetMagickPrecision(), k->positive_range);
     if ( fabs(k->positive_range+k->negative_range) < MagickEpsilon )
-      fprintf(stderr, " (Zero-Summing)\n");
+      FormatLocaleFile(stderr, " (Zero-Summing)\n");
     else if ( fabs(k->positive_range+k->negative_range-1.0) < MagickEpsilon )
-      fprintf(stderr, " (Normalized)\n");
+      FormatLocaleFile(stderr, " (Normalized)\n");
     else
-      fprintf(stderr, " (Sum %.*lg)\n",
+      FormatLocaleFile(stderr, " (Sum %.*lg)\n",
           GetMagickPrecision(), k->positive_range+k->negative_range);
     for (i=v=0; v < k->height; v++) {
-      fprintf(stderr, "%2lu:", (unsigned long) v );
+      FormatLocaleFile(stderr, "%2lu:", (unsigned long) v );
       for (u=0; u < k->width; u++, i++)
         if ( IsNan(k->values[i]) )
-          fprintf(stderr," %*s", GetMagickPrecision()+3, "nan");
+          FormatLocaleFile(stderr," %*s", GetMagickPrecision()+3, "nan");
         else
-          fprintf(stderr," %*.*lg", GetMagickPrecision()+3,
+          FormatLocaleFile(stderr," %*.*lg", GetMagickPrecision()+3,
               GetMagickPrecision(), k->values[i]);
-      fprintf(stderr,"\n");
+      FormatLocaleFile(stderr,"\n");
     }
   }
 }

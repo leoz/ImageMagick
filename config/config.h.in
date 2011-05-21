@@ -354,6 +354,9 @@
 /* Define to 1 if you have the <ndir.h> header file, and it defines `DIR'. */
 #undef HAVE_NDIR_H
 
+/* Define to 1 if you have the `newlocale' function. */
+#undef HAVE_NEWLOCALE
+
 /* Define to 1 if you have the <OpenCL/cl.h> header file. */
 #undef HAVE_OPENCL_CL_H
 
@@ -525,6 +528,12 @@
 /* Define to 1 if you have the `strstr' function. */
 #undef HAVE_STRSTR
 
+/* Define to 1 if you have the `strtod' function. */
+#undef HAVE_STRTOD
+
+/* Define to 1 if you have the `strtod_l' function. */
+#undef HAVE_STRTOD_L
+
 /* Define to 1 if you have the `strtol' function. */
 #undef HAVE_STRTOL
 
@@ -634,6 +643,9 @@
 /* Define to 1 if you have the <unistd.h> header file. */
 #undef HAVE_UNISTD_H
 
+/* Define to 1 if you have the `uselocale' function. */
+#undef HAVE_USELOCALE
+
 /* Define to 1 if you have the `usleep' function. */
 #undef HAVE_USLEEP
 
@@ -646,11 +658,20 @@
 /* Define to 1 if you have the <vfork.h> header file. */
 #undef HAVE_VFORK_H
 
+/* Define to 1 if you have the `vfprintf' function. */
+#undef HAVE_VFPRINTF
+
+/* Define to 1 if you have the `vfprintf_l' function. */
+#undef HAVE_VFPRINTF_L
+
 /* Define to 1 if you have the `vprintf' function. */
 #undef HAVE_VPRINTF
 
 /* Define to 1 if you have the `vsnprintf' function. */
 #undef HAVE_VSNPRINTF
+
+/* Define to 1 if you have the `vsnprintf_l' function. */
+#undef HAVE_VSNPRINTF_L
 
 /* Define to 1 if you have the `vsprintf' function. */
 #undef HAVE_VSPRINTF
@@ -672,6 +693,9 @@
 
 /* Define to 1 if `vfork' works. */
 #undef HAVE_WORKING_VFORK
+
+/* Define to 1 if you have the <xlocale.h> header file. */
+#undef HAVE_XLOCALE_H
 
 /* Define to 1 if the system has the type `_Bool'. */
 #undef HAVE__BOOL

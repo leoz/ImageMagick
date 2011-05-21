@@ -450,16 +450,16 @@ MagickExport MagickBooleanType AnnotateImage(Image *image,
         undercolor_info->affine=draw_info->affine;
         undercolor_info->affine.tx=offset.x-draw_info->affine.ry*metrics.ascent;
         undercolor_info->affine.ty=offset.y-draw_info->affine.sy*metrics.ascent;
-        (void) FormatMagickString(primitive,MaxTextExtent,
-          "rectangle 0.0 0.0 %g %.20g",metrics.origin.x,(double) height);
+        (void) FormatLocaleString(primitive,MaxTextExtent,
+          "rectangle 0,0 %g,%.20g",metrics.origin.x,(double) height);
         (void) CloneString(&undercolor_info->primitive,primitive);
         (void) DrawImage(image,undercolor_info);
         (void) DestroyDrawInfo(undercolor_info);
       }
     annotate_info->affine.tx=offset.x;
     annotate_info->affine.ty=offset.y;
-    (void) FormatMagickString(primitive,MaxTextExtent,"stroke-width %g "
-      "line 0.0 0.0 %g 0.0",metrics.underline_thickness,metrics.width);
+    (void) FormatLocaleString(primitive,MaxTextExtent,"stroke-width %g "
+      "line 0,0 %g,0",metrics.underline_thickness,metrics.width);
     if (annotate->decorate == OverlineDecoration)
       {
         annotate_info->affine.ty-=(draw_info->affine.sy*(metrics.ascent+
@@ -791,7 +791,7 @@ MagickExport MagickBooleanType GetTypeMetrics(Image *image,
   if (image->debug != MagickFalse)
     (void) LogMagickEvent(AnnotateEvent,GetMagickModule(),"Metrics: text: %s; "
       "width: %g; height: %g; ascent: %g; descent: %g; max advance: %g; "
-      "bounds: %g %g  %g %g; origin: %g %g; pixels per em: %g %g; "
+      "bounds: %g,%g  %g,%g; origin: %g,%g; pixels per em: %g,%g; "
       "underline position: %g; underline thickness: %g",annotate_info->text,
       metrics->width,metrics->height,metrics->ascent,metrics->descent,
       metrics->max_advance,metrics->bounds.x1,metrics->bounds.y1,
@@ -950,8 +950,8 @@ static int TraceCubicBezier(FT_Vector *p,FT_Vector *q,FT_Vector *to,
     path[MaxTextExtent];
 
   affine=draw_info->affine;
-  (void) FormatMagickString(path,MaxTextExtent,
-    "C%g %g %g %g %g %g",affine.tx+p->x/64.0,affine.ty-
+  (void) FormatLocaleString(path,MaxTextExtent,
+    "C%g,%g %g,%g %g,%g",affine.tx+p->x/64.0,affine.ty-
     p->y/64.0,affine.tx+q->x/64.0,affine.ty-q->y/64.0,affine.tx+to->x/64.0,
     affine.ty-to->y/64.0);
   (void) ConcatenateString(&draw_info->primitive,path);
@@ -967,7 +967,7 @@ static int TraceLineTo(FT_Vector *to,DrawInfo *draw_info)
     path[MaxTextExtent];
 
   affine=draw_info->affine;
-  (void) FormatMagickString(path,MaxTextExtent,"L%g %g",affine.tx+
+  (void) FormatLocaleString(path,MaxTextExtent,"L%g,%g",affine.tx+
     to->x/64.0,affine.ty-to->y/64.0);
   (void) ConcatenateString(&draw_info->primitive,path);
   return(0);
@@ -982,7 +982,7 @@ static int TraceMoveTo(FT_Vector *to,DrawInfo *draw_info)
     path[MaxTextExtent];
 
   affine=draw_info->affine;
-  (void) FormatMagickString(path,MaxTextExtent,"M%g %g",affine.tx+
+  (void) FormatLocaleString(path,MaxTextExtent,"M%g,%g",affine.tx+
     to->x/64.0,affine.ty-to->y/64.0);
   (void) ConcatenateString(&draw_info->primitive,path);
   return(0);
@@ -998,7 +998,7 @@ static int TraceQuadraticBezier(FT_Vector *control,FT_Vector *to,
     path[MaxTextExtent];
 
   affine=draw_info->affine;
-  (void) FormatMagickString(path,MaxTextExtent,"Q%g %g %g %g",
+  (void) FormatLocaleString(path,MaxTextExtent,"Q%g,%g %g,%g",
     affine.tx+control->x/64.0,affine.ty-control->y/64.0,affine.tx+to->x/64.0,
     affine.ty-to->y/64.0);
   (void) ConcatenateString(&draw_info->primitive,path);
@@ -1631,15 +1631,15 @@ static MagickBooleanType RenderPostscript(Image *image,
         filename);
       return(MagickFalse);
     }
-  (void) fprintf(file,"%%!PS-Adobe-3.0\n");
-  (void) fprintf(file,"/ReencodeType\n");
-  (void) fprintf(file,"{\n");
-  (void) fprintf(file,"  findfont dup length\n");
-  (void) fprintf(file,
+  (void) FormatLocaleFile(file,"%%!PS-Adobe-3.0\n");
+  (void) FormatLocaleFile(file,"/ReencodeType\n");
+  (void) FormatLocaleFile(file,"{\n");
+  (void) FormatLocaleFile(file,"  findfont dup length\n");
+  (void) FormatLocaleFile(file,
     "  dict begin { 1 index /FID ne {def} {pop pop} ifelse } forall\n");
-  (void) fprintf(file,
+  (void) FormatLocaleFile(file,
     "  /Encoding ISOLatin1Encoding def currentdict end definefont pop\n");
-  (void) fprintf(file,"} bind def\n");
+  (void) FormatLocaleFile(file,"} bind def\n");
   /*
     Sample to compute bounding box.
   */
@@ -1659,31 +1659,33 @@ static MagickBooleanType RenderPostscript(Image *image,
     if (point.y > extent.y)
       extent.y=point.y;
   }
-  (void) fprintf(file,"%g %g moveto\n",identity  != MagickFalse ? 0.0 :
+  (void) FormatLocaleFile(file,"%g %g moveto\n",identity  != MagickFalse ? 0.0 :
     extent.x/2.0,extent.y/2.0);
-  (void) fprintf(file,"%g %g scale\n",draw_info->pointsize,
+  (void) FormatLocaleFile(file,"%g %g scale\n",draw_info->pointsize,
     draw_info->pointsize);
   if ((draw_info->font == (char *) NULL) || (*draw_info->font == '\0') ||
       (strchr(draw_info->font,'/') != (char *) NULL))
-    (void) fprintf(file,
+    (void) FormatLocaleFile(file,
       "/Times-Roman-ISO dup /Times-Roman ReencodeType findfont setfont\n");
   else
-    (void) fprintf(file,"/%s-ISO dup /%s ReencodeType findfont setfont\n",
-      draw_info->font,draw_info->font);
-  (void) fprintf(file,"[%g %g %g %g 0 0] concat\n",
+    (void) FormatLocaleFile(file,
+      "/%s-ISO dup /%s ReencodeType findfont setfont\n",draw_info->font,
+      draw_info->font);
+  (void) FormatLocaleFile(file,"[%g %g %g %g 0 0] concat\n",
     draw_info->affine.sx,-draw_info->affine.rx,-draw_info->affine.ry,
     draw_info->affine.sy);
   text=EscapeParenthesis(draw_info->text);
   if (identity == MagickFalse)
-    (void) fprintf(file,"(%s) stringwidth pop -0.5 mul -0.5 rmoveto\n",text);
-  (void) fprintf(file,"(%s) show\n",text);
+    (void) FormatLocaleFile(file,"(%s) stringwidth pop -0.5 mul -0.5 rmoveto\n",
+      text);
+  (void) FormatLocaleFile(file,"(%s) show\n",text);
   text=DestroyString(text);
-  (void) fprintf(file,"showpage\n");
+  (void) FormatLocaleFile(file,"showpage\n");
   (void) fclose(file);
-  (void) FormatMagickString(geometry,MaxTextExtent,"%.20gx%.20g+0+0!",
+  (void) FormatLocaleString(geometry,MaxTextExtent,"%.20gx%.20g+0+0!",
     floor(extent.x+0.5),floor(extent.y+0.5));
   annotate_info=AcquireImageInfo();
-  (void) FormatMagickString(annotate_info->filename,MaxTextExtent,"ps:%s",
+  (void) FormatLocaleString(annotate_info->filename,MaxTextExtent,"ps:%s",
     filename);
   (void) CloneString(&annotate_info->page,geometry);
   if (draw_info->density != (char *) NULL)
@@ -1723,7 +1725,7 @@ static MagickBooleanType RenderPostscript(Image *image,
         ExpandAffine(&draw_info->affine)*draw_info->pointsize+0.5);
       crop_info.y=(ssize_t) ceil((resolution.y/DefaultResolution)*extent.y/8.0-
         0.5);
-      (void) FormatMagickString(geometry,MaxTextExtent,
+      (void) FormatLocaleString(geometry,MaxTextExtent,
         "%.20gx%.20g%+.20g%+.20g",(double) crop_info.width,(double)
         crop_info.height,(double) crop_info.x,(double) crop_info.y);
       (void) TransformImage(&annotate_image,geometry,(char *) NULL);
@@ -2019,7 +2021,7 @@ static MagickBooleanType RenderX11(Image *image,const DrawInfo *draw_info,
         annotate_info.degrees=(180.0/MagickPI)*
           atan2(draw_info->affine.rx,draw_info->affine.sx);
     }
-  (void) FormatMagickString(annotate_info.geometry,MaxTextExtent,
+  (void) FormatLocaleString(annotate_info.geometry,MaxTextExtent,
     "%.20gx%.20g%+.20g%+.20g",(double) width,(double) height,
     ceil(offset->x-0.5),ceil(offset->y-metrics->ascent-metrics->descent+
     draw_info->interline_spacing-0.5));

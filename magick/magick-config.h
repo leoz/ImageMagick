@@ -529,6 +529,11 @@
 /* Define to 1 if you have the <ndir.h> header file, and it defines `DIR'. */
 /* #undef HAVE_NDIR_H */
 
+/* Define to 1 if you have the `newlocale' function. */
+#ifndef MAGICKCORE_HAVE_NEWLOCALE
+#define MAGICKCORE_HAVE_NEWLOCALE 1
+#endif
+
 /* Define to 1 if you have the <OpenCL/cl.h> header file. */
 /* #undef HAVE_OPENCL_CL_H */
 
@@ -800,6 +805,16 @@
 #define MAGICKCORE_HAVE_STRSTR 1
 #endif
 
+/* Define to 1 if you have the `strtod' function. */
+#ifndef MAGICKCORE_HAVE_STRTOD
+#define MAGICKCORE_HAVE_STRTOD 1
+#endif
+
+/* Define to 1 if you have the `strtod_l' function. */
+#ifndef MAGICKCORE_HAVE_STRTOD_L
+#define MAGICKCORE_HAVE_STRTOD_L 1
+#endif
+
 /* Define to 1 if you have the `strtol' function. */
 #ifndef MAGICKCORE_HAVE_STRTOL
 #define MAGICKCORE_HAVE_STRTOL 1
@@ -967,6 +982,11 @@
 #define MAGICKCORE_HAVE_UNISTD_H 1
 #endif
 
+/* Define to 1 if you have the `uselocale' function. */
+#ifndef MAGICKCORE_HAVE_USELOCALE
+#define MAGICKCORE_HAVE_USELOCALE 1
+#endif
+
 /* Define to 1 if you have the `usleep' function. */
 #ifndef MAGICKCORE_HAVE_USLEEP
 #define MAGICKCORE_HAVE_USLEEP 1
@@ -985,6 +1005,14 @@
 /* Define to 1 if you have the <vfork.h> header file. */
 /* #undef HAVE_VFORK_H */
 
+/* Define to 1 if you have the `vfprintf' function. */
+#ifndef MAGICKCORE_HAVE_VFPRINTF
+#define MAGICKCORE_HAVE_VFPRINTF 1
+#endif
+
+/* Define to 1 if you have the `vfprintf_l' function. */
+/* #undef HAVE_VFPRINTF_L */
+
 /* Define to 1 if you have the `vprintf' function. */
 #ifndef MAGICKCORE_HAVE_VPRINTF
 #define MAGICKCORE_HAVE_VPRINTF 1
@@ -994,6 +1022,9 @@
 #ifndef MAGICKCORE_HAVE_VSNPRINTF
 #define MAGICKCORE_HAVE_VSNPRINTF 1
 #endif
+
+/* Define to 1 if you have the `vsnprintf_l' function. */
+/* #undef HAVE_VSNPRINTF_L */
 
 /* Define to 1 if you have the `vsprintf' function. */
 #ifndef MAGICKCORE_HAVE_VSPRINTF
@@ -1026,6 +1057,11 @@
 /* Define to 1 if `vfork' works. */
 #ifndef MAGICKCORE_HAVE_WORKING_VFORK
 #define MAGICKCORE_HAVE_WORKING_VFORK 1
+#endif
+
+/* Define to 1 if you have the <xlocale.h> header file. */
+#ifndef MAGICKCORE_HAVE_XLOCALE_H
+#define MAGICKCORE_HAVE_XLOCALE_H 1
 #endif
 
 /* Define to 1 if the system has the type `_Bool'. */
